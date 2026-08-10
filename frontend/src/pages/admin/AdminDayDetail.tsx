@@ -47,27 +47,28 @@ function SortableContentItem({ content, index, onEdit, onDelete }: { content: Co
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-4"
+      className="p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200"
     >
-      <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600" aria-label="Arrastrar">
-        <GripVertical className="w-6 h-6" />
-      </button>
-      <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center text-primary-600 font-bold shrink-0">
-        {index + 1}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium text-gray-900 truncate">{content.title}</span>
-          <span className="px-2 py-0.5 text-xs rounded bg-primary-100 text-primary-600 whitespace-nowrap">
-            {contentTypeLabels[content.type as string] || content.type}
-          </span>
-          {content.isRequired && <span className="px-2 py-0.5 text-xs rounded bg-red-100 text-red-600 whitespace-nowrap">Requerido</span>}
+      <div className="flex items-center gap-3">
+        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 shrink-0" aria-label="Arrastrar">
+          <GripVertical className="w-5 h-5" />
+        </button>
+        <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-sm shrink-0">
+          {index + 1}
         </div>
-        <p className="text-sm text-gray-500 truncate">{JSON.stringify(content.content).slice(0, 100)}...</p>
-      </div>
-      <div className="flex items-center gap-1">
-        <ButtonGhost onClick={() => onEdit(content)}><Edit className="w-4 h-4" /></ButtonGhost>
-        <ButtonGhost onClick={() => onDelete(content.id)}><Trash2 className="w-4 h-4 text-red-500" /></ButtonGhost>
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium text-gray-900 truncate block">{content.title}</span>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="px-2 py-0.5 text-xs rounded bg-primary-100 text-primary-600 whitespace-nowrap">
+              {contentTypeLabels[content.type as string] || content.type}
+            </span>
+            {content.isRequired && <span className="px-2 py-0.5 text-xs rounded bg-red-100 text-red-600 whitespace-nowrap">Requerido</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <ButtonGhost size="sm" onClick={() => onEdit(content)}><Edit className="w-4 h-4" /></ButtonGhost>
+          <ButtonGhost size="sm" onClick={() => onDelete(content.id)}><Trash2 className="w-4 h-4 text-red-500" /></ButtonGhost>
+        </div>
       </div>
     </div>
   );
@@ -235,7 +236,7 @@ export function AdminDayDetailPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="orderIndex">Orden</Label>
                     <Input id="orderIndex" type="number" {...register('orderIndex', { valueAsNumber: true })} />

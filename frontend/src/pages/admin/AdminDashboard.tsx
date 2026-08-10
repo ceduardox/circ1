@@ -116,10 +116,16 @@ export function AdminDashboardPage() {
         </Card>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-4">
-        <Link to="/admin/days"><ButtonPrimary><Plus className="w-4 h-4 mr-2" /> Crear Día</ButtonPrimary></Link>
-        <Link to="/admin/users"><ButtonGhost><Users className="w-4 h-4 mr-2" /> Gestionar Usuarios</ButtonGhost></Link>
-        <Link to="/admin/analytics"><ButtonGhost><BarChart className="w-4 h-4 mr-2" /> Ver Analytics</ButtonGhost></Link>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Link to="/admin/days" className="block">
+          <ButtonPrimary className="w-full justify-center"><Plus className="w-4 h-4 mr-2" /> Crear Día</ButtonPrimary>
+        </Link>
+        <Link to="/admin/users" className="block">
+          <ButtonGhost className="w-full justify-center"><Users className="w-4 h-4 mr-2" /> Gestionar Usuarios</ButtonGhost>
+        </Link>
+        <Link to="/admin/analytics" className="block">
+          <ButtonGhost className="w-full justify-center"><BarChart className="w-4 h-4 mr-2" /> Ver Analytics</ButtonGhost>
+        </Link>
       </div>
     </div>
   );

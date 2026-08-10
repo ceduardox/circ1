@@ -179,20 +179,17 @@ export function AdminDaysPage() {
           {days.map(day => (
             <Card key={day.id} className="card-hover">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-600">
-                        {day.dayNumber}
-                      </span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{day.title}</h3>
-                        <p className="text-sm text-gray-500">{day.contents?.length || 0} contenidos · {day.isActive ? 'Activo' : 'Inactivo'}</p>
-                      </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-600 shrink-0">
+                      {day.dayNumber}
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate">{day.title}</h3>
+                      <p className="text-sm text-gray-500">{day.contents?.length || 0} contenidos · {day.isActive ? 'Activo' : 'Inactivo'}</p>
                     </div>
-                    {day.description && <p className="text-gray-600 text-sm ml-13">{day.description}</p>}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0">
                     <Link to={`/admin/days/${day.id}`}>
                       <ButtonGhost size="sm"><Edit className="w-4 h-4" /></ButtonGhost>
                     </Link>
@@ -201,6 +198,7 @@ export function AdminDaysPage() {
                     </ButtonGhost>
                   </div>
                 </div>
+                {day.description && <p className="text-gray-600 text-sm mt-2 ml-13 hidden sm:block">{day.description}</p>}
               </CardContent>
             </Card>
           ))}

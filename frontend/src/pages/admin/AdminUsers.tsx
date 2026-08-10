@@ -207,22 +207,22 @@ export function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <ButtonGhost onClick={() => navigate('/admin')}>
             <ChevronLeft className="w-4 h-4" />
           </ButtonGhost>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <User className="w-6 h-6" /> Gestión de Usuarios
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <User className="w-5 h-5 sm:w-6 sm:h-6" /> Gestión de Usuarios
           </h1>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <ButtonGhost onClick={exportCSV}>
-            <Download className="w-4 h-4 mr-2" /> Exportar CSV
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <ButtonGhost onClick={exportCSV} className="flex-1 sm:flex-none justify-center">
+            <Download className="w-4 h-4 mr-2" /> CSV
           </ButtonGhost>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <ButtonPrimary>
+              <ButtonPrimary className="flex-1 sm:flex-none">
                 <Plus className="w-4 h-4 mr-2" /> Crear Usuario
               </ButtonPrimary>
             </DialogTrigger>

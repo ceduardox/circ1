@@ -172,17 +172,17 @@ export function AdminAnalyticsPage() {
                 const maxCompletions = Math.max(...completionByDay.map((d: any) => d.completions), 1);
                 const percentage = (day.completions / maxCompletions) * 100;
                 return (
-                  <div key={day.dayNumber} className="flex items-center gap-4">
-                    <div className="w-20 text-right text-sm font-medium text-gray-600">
+                  <div key={day.dayNumber} className="flex items-center gap-2 sm:gap-4">
+                    <div className="w-14 sm:w-20 text-right text-xs sm:text-sm font-medium text-gray-600">
                       Día {day.dayNumber}
                     </div>
-                    <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="flex-1 h-5 sm:h-6 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
-                    <span className="w-16 text-sm font-medium text-gray-900 text-right">
+                    <span className="w-12 sm:w-16 text-xs sm:text-sm font-medium text-gray-900 text-right">
                       {day.completions}
                     </span>
                   </div>
@@ -205,20 +205,19 @@ export function AdminAnalyticsPage() {
             <div className="space-y-3">
               {stats.recentUsers.slice(0, 10).map((u: any) => (
                 <div key={u.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
                       <span className="text-sm font-medium text-primary-600">
                         {u.firstName?.[0]}{u.lastName?.[0]}
                       </span>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{u.firstName} {u.lastName}</p>
-                      <p className="text-sm text-gray-500">@{u.username}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{u.firstName} {u.lastName}</p>
+                      <p className="text-sm text-gray-500 truncate">@{u.username}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">Registrado</p>
-                    <p className="text-xs text-gray-400">{format(new Date(u.createdAt), 'dd MMM yyyy', { locale: es })}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-gray-400">{format(new Date(u.createdAt), 'dd MMM', { locale: es })}</p>
                   </div>
                 </div>
               ))}
