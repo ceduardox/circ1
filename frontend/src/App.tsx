@@ -37,9 +37,9 @@ function App() {
           <Route element={
             <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
               <MobileHeader />
-              <div className="flex flex-1">
+              <div className="flex flex-1 overflow-hidden">
                 <DesktopSidebar />
-                <main className="flex-1 md:pl-60 p-4 md:p-8 min-h-screen">
+                <main className="flex-1 md:pl-60 pt-16 md:pt-0 p-4 md:p-8 min-h-screen overflow-x-hidden min-w-0">
                   <ProtectedRoute />
                 </main>
               </div>
