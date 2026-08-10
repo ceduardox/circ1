@@ -67,7 +67,7 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
     if (question.type === 'text') {
       return (
         <textarea
-          className="w-full min-h-[100px] p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          className="w-full min-h-[100px] p-4 rounded-lg border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           value={answers[question.id] || ''}
           onChange={e => handleAnswer(e.target.value)}
           placeholder="Escribe tu respuesta..."
@@ -82,8 +82,8 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
             ? answers[question.id] === i
             : (answers[question.id] || []).includes(i);
           const isCorrect = question.type === 'single'
-            ? q.correct === i
-            : (q.correct as number[]).includes(i);
+            ? question.correct === i
+            : (question.correct as number[]).includes(i);
           
           return (
             <button
@@ -94,12 +94,12 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
               )}
               className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                 isSelected
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  ? 'border-primary-500 bg-primary-50'
                   : showResult && isCorrect
-                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                  ? 'border-green-500 bg-green-50'
                   : showResult && isSelected && !isCorrect
-                  ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700'
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-gray-200 hover:border-primary-300'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
                     <div className={`w-2.5 h-2.5 rounded-full ${question.type === 'single' ? '' : 'rounded-sm'}`} />
                   )}
                 </div>
-                <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                <span className="text-gray-900">{option}</span>
                 {showResult && isCorrect && <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />}
                 {showResult && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-red-500 ml-auto" />}
               </div>
@@ -128,15 +128,15 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
     return (
       <div className="p-6 rounded-xl border-2 transition-all text-center">
         <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${
-          passed ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+          passed ? 'bg-green-100' : 'bg-red-100'
         }`}>
           {passed ? <CheckCircle className="w-10 h-10 text-green-500" /> : <XCircle className="w-10 h-10 text-red-500" />}
         </div>
-        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          {passed ? 'Â¡Felicidades!' : 'Sigue practicando'}
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          {passed ? '¡Felicidades!' : 'Sigue practicando'}
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          PuntuaciÃ³n: <span className="font-bold text-2xl">{score}%</span> (mÃ­nimo {passingScore}%)
+        <p className="text-gray-600 mb-4">
+          Puntuación: <span className="font-bold text-2xl">{score}%</span> (mínimo {passingScore}%)
         </p>
         <div className="grid grid-cols-3 gap-4 mb-6">
           {questions.map((q, i) => {
@@ -150,8 +150,8 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
               correct = correctSet.size === userSet.size && [...correctSet].every(v => userSet.has(v));
             }
             return (
-              <div className={`p-3 rounded-lg ${correct ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
-                <div className="text-sm font-medium">{correct ? 'âœ“' : 'âœ—'} P{i + 1}</div>
+              <div key={i} className={`p-3 rounded-lg ${correct ? 'bg-green-50' : 'bg-red-50'}`}>
+                <div className="text-sm font-medium">{correct ? '✓' : '✗'} P{i + 1}</div>
               </div>
             );
           })}
@@ -164,13 +164,13 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
   }
 
   return (
-    <div className="p-6 rounded-xl border-2 bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700">
+    <div className="p-6 rounded-xl border-2 bg-purple-50 border-purple-300">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">ðŸ§ </span>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+          <span className="text-2xl">🧠</span>
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-sm text-gray-600">
           Pregunta {currentQuestion + 1} de {questions.length}
         </div>
       </div>
@@ -183,12 +183,12 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
               className={`flex-1 h-2 rounded ${
                 i < currentQuestion ? 'bg-green-500' :
                 i === currentQuestion ? 'bg-purple-500' :
-                'bg-gray-200 dark:bg-gray-700'
+                'bg-gray-200'
               }`}
             />
           ))}
         </div>
-        <p className="text-xl font-medium text-gray-900 dark:text-gray-100">{q.text}</p>
+        <p className="text-xl font-medium text-gray-900">{q.text}</p>
       </div>
 
       <Card className="bg-transparent border-0 shadow-none">

@@ -45,25 +45,25 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
   return (
     <div className={`p-6 rounded-xl border-2 transition-all ${
       completed 
-        ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
-        : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'
+        ? 'bg-green-50 border-green-300' 
+        : 'bg-yellow-50 border-yellow-300'
     }`}>
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-3xl">ðŸ’ª</span>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+        <span className="text-3xl">💪</span>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       </div>
       
-      {instruction && <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{instruction}</p>}
+      {instruction && <p className="text-sm text-gray-600 mb-4">{instruction}</p>}
       
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-4 border border-gray-200 dark:border-gray-700">
-        <p className="text-xl font-medium text-center text-gray-900 dark:text-gray-100 leading-relaxed">
-          "{text}"
+      <div className="bg-white rounded-lg p-6 mb-4 border border-gray-200">
+        <p className="text-xl font-medium text-center text-gray-900 leading-relaxed">
+          &ldquo;{text}&rdquo;
         </p>
       </div>
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-400">RepeticiÃ³n</span>
+          <span className="text-sm text-gray-600">Repetición</span>
           <div className="flex items-center gap-1">
             {Array.from({ length: repeatCount }, (_, i) => (
               <div
@@ -73,7 +73,7 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
                     ? 'bg-green-500 text-white'
                     : i === currentRepeat
                     ? 'bg-yellow-500 text-white animate-pulse'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                    : 'bg-gray-200 text-gray-400'
                 }`}
               >
                 {i < currentRepeat ? <CheckCircle className="w-4 h-4" /> : i + 1}
@@ -92,9 +92,9 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
           Repetir ({currentRepeat + 1}/{repeatCount})
         </ButtonPrimary>
       ) : (
-        <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+        <div className="flex items-center justify-center gap-2 text-green-600">
           <CheckCircle className="w-5 h-5" />
-          <span className="font-medium">Â¡Completado! Frase internalizada.</span>
+          <span className="font-medium">¡Completado! Frase internalizada.</span>
         </div>
       )}
     </div>

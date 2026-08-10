@@ -23,17 +23,17 @@ interface ReflectionFormProps {
 }
 
 const typeIcons = {
-  DREAMS: 'ðŸŽ¯',
-  FEARS: 'ðŸ˜¨',
-  ENTHUSIASM: 'ðŸ’ª',
-  CUSTOM: 'ðŸ“',
+  DREAMS: '🎯',
+  FEARS: '😨',
+  ENTHUSIASM: '💪',
+  CUSTOM: '📝',
 };
 
 const typeLabels = {
-  DREAMS: 'SueÃ±os',
+  DREAMS: 'Sueños',
   FEARS: 'Miedos',
   ENTHUSIASM: 'Entusiasmo',
-  CUSTOM: 'ReflexiÃ³n',
+  CUSTOM: 'Reflexión',
 };
 
 export function ReflectionForm({ dayId, reflectionType, title, prompt, placeholder, minChars = 10, initialContent }: ReflectionFormProps) {
@@ -63,12 +63,12 @@ export function ReflectionForm({ dayId, reflectionType, title, prompt, placehold
   };
 
   return (
-    <div className="space-y-4 p-6 bg-gradient-to-br from-primary-50/50 to-transparent dark:from-primary-900/20 rounded-xl border border-primary-200/50 dark:border-primary-800/50">
+    <div className="space-y-4 p-6 bg-gradient-to-br from-primary-50/50 to-transparent rounded-xl border border-primary-200/50">
       <div className="flex items-center gap-3">
         <span className="text-2xl">{typeIcons[reflectionType]}</span>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       </div>
-      <p className="text-gray-600 dark:text-gray-400 text-sm ml-8">{prompt}</p>
+      <p className="text-gray-600 text-sm ml-8">{prompt}</p>
       
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
@@ -82,12 +82,12 @@ export function ReflectionForm({ dayId, reflectionType, title, prompt, placehold
           />
           {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>}
           <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>{charCount} / {minChars} caracteres mÃ­n.</span>
+            <span>{charCount} / {minChars} caracteres mín.</span>
             {saved && <span className="text-green-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Guardado</span>}
           </div>
         </div>
         <ButtonPrimary type="submit" disabled={saving || content.length < minChars} className="w-full">
-          {saving ? <Loader2 className="w-4 h-4" /> : saved ? 'Guardado âœ“' : 'Guardar ReflexiÃ³n'}
+          {saving ? <Loader2 className="w-4 h-4" /> : saved ? 'Guardado ✓' : 'Guardar Reflexión'}
         </ButtonPrimary>
       </form>
     </div>

@@ -50,15 +50,15 @@ export function MentalExercise({ title, instruction, durationMinutes, steps, onC
   return (
     <div className={`p-6 rounded-xl border-2 transition-all ${
       completed 
-        ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
-        : 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700'
+        ? 'bg-green-50 border-green-300' 
+        : 'bg-indigo-50 border-indigo-300'
     }`}>
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-3xl">ðŸ§˜</span>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+        <span className="text-3xl">🧠</span>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       </div>
       
-      <p className="text-gray-600 dark:text-gray-400 mb-6">{instruction}</p>
+      <p className="text-gray-600 mb-6">{instruction}</p>
 
       <div className="space-y-4 mb-6">
         {steps.map((step, i) => (
@@ -66,10 +66,10 @@ export function MentalExercise({ title, instruction, durationMinutes, steps, onC
             key={i}
             className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
               i < currentStep 
-                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                ? 'bg-green-50 border border-green-200' 
                 : i === currentStep && phase === 'running'
-                ? 'bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 animate-pulse'
-                : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
+                ? 'bg-indigo-50 border border-indigo-200 animate-pulse'
+                : 'bg-gray-50 border border-gray-200'
             }`}
           >
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -77,20 +77,20 @@ export function MentalExercise({ title, instruction, durationMinutes, steps, onC
                 ? 'bg-green-500 text-white' 
                 : i === currentStep && phase === 'running'
                 ? 'bg-indigo-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                : 'bg-gray-200 text-gray-400'
             }`}>
               {i < currentStep ? <CheckCircle className="w-4 h-4" /> : i + 1}
             </div>
-            <span className="text-gray-900 dark:text-gray-100 text-sm">{step}</span>
+            <span className="text-gray-900 text-sm">{step}</span>
           </div>
         ))}
       </div>
 
       <div className="text-center mb-6">
-        <div className="text-4xl font-mono font-bold text-gray-900 dark:text-gray-100 mb-2">
+        <div className="text-4xl font-mono font-bold text-gray-900 mb-2">
           {formatTime(timeLeft)}
         </div>
-        <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
           <div 
             className="h-full bg-indigo-500 transition-all duration-1000" 
             style={{ width: `${((durationMinutes * 60 - timeLeft) / (durationMinutes * 60)) * 100}%` }}
@@ -118,9 +118,9 @@ export function MentalExercise({ title, instruction, durationMinutes, steps, onC
           </ButtonPrimary>
         )}
         {phase === 'done' && (
-          <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+          <div className="flex items-center gap-2 text-green-600">
             <CheckCircle className="w-5 h-5" />
-            <span className="font-medium">Â¡Completado!</span>
+            <span className="font-medium">¡Completado!</span>
           </div>
         )}
         {(phase === 'running' || phase === 'paused') && (

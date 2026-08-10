@@ -34,7 +34,7 @@ export function ContentRenderer({ content, dayNumber }: ContentRendererProps) {
   switch (content.type) {
     case 'REFLECTION': {
       const { prompt, placeholder, minChars = 10 } = content.content;
-      const reflectionType = prompt.includes('sueÃ±o') ? 'DREAMS' : 
+      const reflectionType = prompt.includes('sueño') ? 'DREAMS' : 
                            prompt.includes('miedo') ? 'FEARS' : 
                            prompt.includes('entusiasmo') ? 'ENTHUSIASM' : 'CUSTOM';
       return (

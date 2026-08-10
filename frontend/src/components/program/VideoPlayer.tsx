@@ -59,14 +59,14 @@ export function VideoPlayer({ title, url, provider, duration, description, onCom
   return (
     <div className={`p-6 rounded-xl border-2 transition-all ${
       completed 
-        ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
-        : 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
+        ? 'bg-green-50 border-green-300' 
+        : 'bg-blue-50 border-blue-300'
     }`}>
       <div className="flex items-start gap-3 mb-4">
-        <span className="text-3xl mt-1">ðŸ“¹</span>
+        <span className="text-3xl mt-1">📹</span>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
-          {description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{description}</p>}
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
         </div>
       </div>
 
@@ -89,11 +89,11 @@ export function VideoPlayer({ title, url, provider, duration, description, onCom
         )}
       </div>
 
-      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
+      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4" />
-          <span>DuraciÃ³n: {duration ? formatTime(duration) : 'Desconocida'}</span>
-          <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <span>Duración: {duration ? formatTime(duration) : 'Desconocida'}</span>
+          <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div 
               className="h-full bg-primary-500 transition-all duration-300" 
               style={{ width: `${watchedPercent}%` }}
@@ -108,7 +108,7 @@ export function VideoPlayer({ title, url, provider, duration, description, onCom
       </div>
 
       {completed || watched ? (
-        <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+        <div className="flex items-center justify-center gap-2 text-green-600 p-4 bg-green-50 rounded-lg">
           <CheckCircle className="w-5 h-5" />
           <span className="font-medium">{completed ? 'Completado' : 'Visto >80% - Marcado como completado'}</span>
         </div>
