@@ -11,18 +11,25 @@ import { Card, CardContent } from '@/components/ui';
 interface ContentRendererProps {
   content: DayContent;
   dayNumber: number;
+  onCompleted?: () => void;
 }
 
-export function ContentRenderer({ content, dayNumber }: ContentRendererProps) {
+export function ContentRenderer({ content, dayNumber, onCompleted }: ContentRendererProps) {
   const { completeContent, saveReflection, progress } = useProgramStore();
   const userProgress = progress.find(p => p.contentId === content.id);
   const completed = userProgress?.status === 'COMPLETED';
 
-  const handleComplete = () => completeContent(dayNumber, content.id);
+  const handleComplete = () => {
+    completeContent(dayNumber, content.id);
+    onCompleted?.();
+  };
 
   const handleReflectionSave = (data: any) => {
     saveReflection({ dayId: content.dayId, reflectionType: data.reflectionType, content: data.content });
-    if (content.isRequired) handleComplete();
+    if (content.isRequired) {
+      completeContent(dayNumber, content.id);
+    }
+    onCompleted?.();
   };
 
   const baseProps = {
