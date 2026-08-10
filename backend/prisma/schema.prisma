@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ContentType {
+  REFLECTION
+  AFFIRMATION
+  VIDEO
+  QUIZ
+  MENTAL_EXERCISE
+  CONFIDENCE_TASK
+}
+
+enum ContentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ReflectionType {
+  DREAMS
+  FEARS
+  ENTHUSIASM
+  CUSTOM
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  age           Int?
+  country       String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  progress      UserProgress[]
+  reflections   UserReflection[]
+
+  @@map("users")
+}
+
+model ProgramDay {
+  id          String   @id @default(uuid())
+  dayNumber   Int      @unique @map("day_number")
+  title       String
+  description String?
+  unlockDate  DateTime? @map("unlock_date")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  contents    DayContent[]
+  progress    UserProgress[]
+  reflections UserReflection[]
+
+  @@map("program_days")
+}
+
+model DayContent {
+  id          String      @id @default(uuid())
+  dayId       String      @map("day_id")
+  type        ContentType
+  title       String
+  content     Json
+  orderIndex  Int         @default(0) @map("order_index")
+  isRequired  Boolean     @default(true) @map("is_required")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  day         ProgramDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  progress    UserProgress[]
+
+  @@map("day_contents")
+}
+
+model UserProgress {
+  id          String         @id @default(uuid())
+  userId      String         @map("user_id")
+  dayId       String         @map("day_id")
+  contentId   String         @map("content_id")
+  status      ContentStatus  @default(PENDING)
+  answers     Json?
+  completedAt DateTime?      @map("completed_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day         ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  content     DayContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+  @@map("user_progress")
+}
+
+model UserReflection {
+  id             String         @id @default(uuid())
+  userId         String         @map("user_id")
+  dayId          String         @map("day_id")
+  reflectionType ReflectionType @map("reflection_type")
+  content        String
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day            ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayId, reflectionType])
+  @@map("user_reflections")
+}
+
+model AdminSetting {
+  key   String @id
+  value Json
+}

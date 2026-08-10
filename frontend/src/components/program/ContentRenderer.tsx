@@ -1,0 +1,118 @@
+﻿import { DayContent } from '@/store/programStore';
+import { ReflectionForm } from './ReflectionForm';
+import { AffirmationCard } from './AffirmationCard';
+import { VideoPlayer } from './VideoPlayer';
+import { QuizComponent } from './QuizComponent';
+import { MentalExercise } from './MentalExercise';
+import { ConfidenceTask } from './ConfidenceTask';
+import { useProgramStore } from '@/store/programStore';
+import { Card, CardContent } from '@/components/ui';
+
+interface ContentRendererProps {
+  content: DayContent;
+  dayNumber: number;
+}
+
+export function ContentRenderer({ content, dayNumber }: ContentRendererProps) {
+  const { completeContent, saveReflection, progress } = useProgramStore();
+  const userProgress = progress.find(p => p.contentId === content.id);
+  const completed = userProgress?.status === 'COMPLETED';
+
+  const handleComplete = () => completeContent(dayNumber, content.id);
+
+  const handleReflectionSave = (data: any) => {
+    saveReflection({ dayId: content.dayId, reflectionType: data.reflectionType, content: data.content });
+    if (content.isRequired) handleComplete();
+  };
+
+  const baseProps = {
+    title: content.title,
+    onComplete: handleComplete,
+    completed,
+  };
+
+  switch (content.type) {
+    case 'REFLECTION': {
+      const { prompt, placeholder, minChars = 10 } = content.content;
+      const reflectionType = prompt.includes('sueÃ±o') ? 'DREAMS' : 
+                           prompt.includes('miedo') ? 'FEARS' : 
+                           prompt.includes('entusiasmo') ? 'ENTHUSIASM' : 'CUSTOM';
+      return (
+        <ReflectionForm
+          {...baseProps}
+          dayId={content.dayId}
+          reflectionType={reflectionType}
+          prompt={prompt}
+          placeholder={placeholder}
+          minChars={minChars}
+          initialContent={userProgress?.answers?.content}
+        />
+      );
+    }
+    case 'AFFIRMATION': {
+      const { text, repeatCount = 3, instruction } = content.content;
+      return (
+        <AffirmationCard
+          {...baseProps}
+          text={text}
+          repeatCount={repeatCount}
+          instruction={instruction}
+        />
+      );
+    }
+    case 'VIDEO': {
+      const { url, provider, duration, description } = content.content;
+      return (
+        <VideoPlayer
+          {...baseProps}
+          url={url}
+          provider={provider}
+          duration={duration}
+          description={description}
+        />
+      );
+    }
+    case 'QUIZ': {
+      const { questions, passingScore = 70 } = content.content;
+      return (
+        <QuizComponent
+          {...baseProps}
+          questions={questions}
+          passingScore={passingScore}
+          initialAnswers={userProgress?.answers}
+        />
+      );
+    }
+    case 'MENTAL_EXERCISE': {
+      const { instruction, durationMinutes, steps } = content.content;
+      return (
+        <MentalExercise
+          {...baseProps}
+          instruction={instruction}
+          durationMinutes={durationMinutes}
+          steps={steps}
+        />
+      );
+    }
+    case 'CONFIDENCE_TASK': {
+      const { task, evidenceType, description } = content.content;
+      return (
+        <ConfidenceTask
+          {...baseProps}
+          task={task}
+          evidenceType={evidenceType}
+          description={description}
+          initialEvidence={userProgress?.answers?.evidence}
+        />
+      );
+    }
+    default:
+      return (
+        <Card>
+          <CardContent className="p-6 text-center text-gray-500">
+            Tipo de contenido no soportado: {content.type}
+          </CardContent>
+        </Card>
+      );
+  }
+}

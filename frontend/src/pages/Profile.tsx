@@ -1,0 +1,228 @@
+import { useState } from 'react';
+import { useAuthStore } from '@/store/authStore';
+import { Button } from '@/components/ui/Button';
+import { Input, Label } from '@/components/ui/Input';
+import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { User, Mail, AtSign, Calendar, MapPin, Lock, Eye, EyeOff, Save } from 'lucide-react';
+
+export function ProfilePage() {
+  const { user, updateProfile } = useAuthStore();
+  const [form, setForm] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    username: user?.username || '',
+    age: user?.age || '',
+    country: user?.country || '',
+  });
+  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await updateProfile(form);
+      setSuccess('Perfil actualizado correctamente');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="pl-4 border-l-4 border-primary-600">
+        <h1 className="text-2xl font-bold text-gray-900">Mi Perfil</h1>
+        <p className="text-gray-500 mt-1">Gestiona tu información personal</p>
+      </div>
+
+      {/* User Card */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+            <span className="text-primary-700 font-bold text-xl">
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </span>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">{user?.firstName} {user?.lastName}</h2>
+            <p className="text-gray-500">@{user?.username}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Form */}
+      <Card>
+        <CardHeader className="border-b border-gray-100 pb-4">
+          <h3 className="font-semibold text-gray-900">Información Personal</h3>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Nombre</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    value={form.firstName}
+                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Apellido</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    value={form.lastName}
+                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Nombre de usuario</Label>
+              <div className="relative">
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Edad</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="number"
+                    value={form.age}
+                    onChange={(e) => setForm({ ...form, age: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>País</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    value={form.country}
+                    onChange={(e) => setForm({ ...form, country: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {success && (
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+                {success}
+              </div>
+            )}
+
+            <Button type="submit" loading={loading} className="w-full bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-md shadow-primary-600/20">
+              <Save className="w-4 h-4" />
+              Guardar Cambios
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Password Change */}
+      <Card>
+        <CardHeader className="border-b border-gray-100 pb-4">
+          <h3 className="font-semibold text-gray-900">Cambiar Contraseña</h3>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <form className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Contraseña actual</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type={showCurrent ? 'text' : 'password'}
+                  value={passwords.current}
+                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                  className="pl-10 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent(!showCurrent)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Nueva contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type={showNew ? 'text' : 'password'}
+                    value={passwords.new}
+                    onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                    className="pl-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNew(!showNew)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Confirmar contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type={showNew ? 'text' : 'password'}
+                    value={passwords.confirm}
+                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                    className="pl-10 pr-10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Button type="submit" variant="default" className="w-full bg-primary-600 hover:bg-primary-700 text-white">
+              <Lock className="w-4 h-4" />
+              Actualizar Contraseña
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
