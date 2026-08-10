@@ -63,12 +63,12 @@ export function ReflectionForm({ dayId, reflectionType, title, prompt, placehold
   };
 
   return (
-    <div className="space-y-4 p-6 bg-gradient-to-br from-primary-50/50 to-transparent rounded-xl border border-primary-200/50">
+    <div className="space-y-3 sm:space-y-4 p-4 sm:p-6 bg-gradient-to-br from-primary-50/50 to-transparent rounded-xl border border-primary-200/50">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{typeIcons[reflectionType]}</span>
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <span className="text-xl sm:text-2xl">{typeIcons[reflectionType]}</span>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">{title}</h3>
       </div>
-      <p className="text-gray-600 text-sm ml-8">{prompt}</p>
+      <p className="text-gray-600 text-sm ml-8 break-words">{prompt}</p>
       
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
@@ -76,18 +76,18 @@ export function ReflectionForm({ dayId, reflectionType, title, prompt, placehold
           <Textarea
             id={`reflection-${reflectionType}`}
             placeholder={placeholder}
-            rows={6}
+            rows={5}
             {...register('content')}
             className="font-medium"
           />
           {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>}
           <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>{charCount} / {minChars} caracteres mín.</span>
+            <span>{charCount} / {minChars} mín.</span>
             {saved && <span className="text-green-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Guardado</span>}
           </div>
         </div>
         <ButtonPrimary type="submit" disabled={saving || content.length < minChars} className="w-full">
-          {saving ? <Loader2 className="w-4 h-4" /> : saved ? 'Guardado ✓' : 'Guardar Reflexión'}
+          {saving ? <Loader2 className="w-4 h-4" /> : saved ? 'Guardado ✓' : 'Guardar'}
         </ButtonPrimary>
       </form>
     </div>

@@ -48,23 +48,23 @@ export function MentalExercise({ title, instruction, durationMinutes, steps, onC
   const reset = () => { setPhase('idle'); setTimeLeft(durationMinutes * 60); setCurrentStep(0); };
 
   return (
-    <div className={`p-6 rounded-xl border-2 transition-all ${
+    <div className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${
       completed 
         ? 'bg-green-50 border-green-300' 
         : 'bg-indigo-50 border-indigo-300'
     }`}>
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-3xl">🧠</span>
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <div className="flex items-center gap-3 mb-3 sm:mb-4">
+        <span className="text-2xl sm:text-3xl">🧠</span>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">{title}</h3>
       </div>
       
-      <p className="text-gray-600 mb-6">{instruction}</p>
+      <p className="text-sm text-gray-600 mb-4 sm:mb-6 break-words">{instruction}</p>
 
-      <div className="space-y-4 mb-6">
+      <div className="space-y-3 mb-4 sm:mb-6">
         {steps.map((step, i) => (
           <div
             key={i}
-            className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+            className={`flex items-center gap-3 p-2.5 sm:p-3 rounded-lg transition-all ${
               i < currentStep 
                 ? 'bg-green-50 border border-green-200' 
                 : i === currentStep && phase === 'running'
@@ -72,25 +72,25 @@ export function MentalExercise({ title, instruction, durationMinutes, steps, onC
                 : 'bg-gray-50 border border-gray-200'
             }`}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium shrink-0 ${
               i < currentStep 
                 ? 'bg-green-500 text-white' 
                 : i === currentStep && phase === 'running'
                 ? 'bg-indigo-500 text-white'
                 : 'bg-gray-200 text-gray-400'
             }`}>
-              {i < currentStep ? <CheckCircle className="w-4 h-4" /> : i + 1}
+              {i < currentStep ? <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" /> : i + 1}
             </div>
-            <span className="text-gray-900 text-sm">{step}</span>
+            <span className="text-gray-900 text-sm break-words">{step}</span>
           </div>
         ))}
       </div>
 
-      <div className="text-center mb-6">
-        <div className="text-4xl font-mono font-bold text-gray-900 mb-2">
+      <div className="text-center mb-4 sm:mb-6">
+        <div className="text-3xl sm:text-4xl font-mono font-bold text-gray-900 mb-2">
           {formatTime(timeLeft)}
         </div>
-        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-full h-2.5 sm:h-3 bg-gray-200 rounded-full overflow-hidden">
           <div 
             className="h-full bg-indigo-500 transition-all duration-1000" 
             style={{ width: `${((durationMinutes * 60 - timeLeft) / (durationMinutes * 60)) * 100}%` }}
@@ -98,33 +98,33 @@ export function MentalExercise({ title, instruction, durationMinutes, steps, onC
         </div>
       </div>
 
-      <div className="flex gap-3 justify-center">
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
         {phase === 'idle' && (
-          <ButtonPrimary onClick={() => setPhase('running')} className="w-48">
+          <ButtonPrimary onClick={() => setPhase('running')} className="w-full sm:w-48">
             <Play className="w-4 h-4 mr-2" />
             Iniciar
           </ButtonPrimary>
         )}
         {phase === 'running' && (
-          <ButtonGhost onClick={toggle} className="w-48 bg-yellow-500 text-white hover:bg-yellow-600">
+          <ButtonGhost onClick={toggle} className="w-full sm:w-48 bg-yellow-500 text-white hover:bg-yellow-600">
             <Pause className="w-4 h-4 mr-2" />
             Pausar
           </ButtonGhost>
         )}
         {phase === 'paused' && (
-          <ButtonPrimary onClick={toggle} className="w-48">
+          <ButtonPrimary onClick={toggle} className="w-full sm:w-48">
             <Play className="w-4 h-4 mr-2" />
             Continuar
           </ButtonPrimary>
         )}
         {phase === 'done' && (
-          <div className="flex items-center gap-2 text-green-600">
+          <div className="flex items-center justify-center gap-2 text-green-600">
             <CheckCircle className="w-5 h-5" />
             <span className="font-medium">¡Completado!</span>
           </div>
         )}
         {(phase === 'running' || phase === 'paused') && (
-          <ButtonGhost onClick={reset}>
+          <ButtonGhost onClick={reset} className="w-full sm:w-auto">
             Reiniciar
           </ButtonGhost>
         )}

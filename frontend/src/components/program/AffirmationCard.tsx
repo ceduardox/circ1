@@ -43,32 +43,32 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
   }, [completed]);
 
   return (
-    <div className={`p-6 rounded-xl border-2 transition-all ${
+    <div className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${
       completed 
         ? 'bg-green-50 border-green-300' 
         : 'bg-yellow-50 border-yellow-300'
     }`}>
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-3xl">💪</span>
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <div className="flex items-center gap-3 mb-3 sm:mb-4">
+        <span className="text-2xl sm:text-3xl">💪</span>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">{title}</h3>
       </div>
       
-      {instruction && <p className="text-sm text-gray-600 mb-4">{instruction}</p>}
+      {instruction && <p className="text-sm text-gray-600 mb-3 sm:mb-4 break-words">{instruction}</p>}
       
-      <div className="bg-white rounded-lg p-6 mb-4 border border-gray-200">
-        <p className="text-xl font-medium text-center text-gray-900 leading-relaxed">
+      <div className="bg-white rounded-lg p-4 sm:p-6 mb-3 sm:mb-4 border border-gray-200">
+        <p className="text-base sm:text-xl font-medium text-center text-gray-900 leading-relaxed break-words">
           &ldquo;{text}&rdquo;
         </p>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Repetición</span>
+          <span className="text-xs sm:text-sm text-gray-600">Repetición</span>
           <div className="flex items-center gap-1">
             {Array.from({ length: repeatCount }, (_, i) => (
               <div
                 key={i}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all ${
                   i < currentRepeat
                     ? 'bg-green-500 text-white'
                     : i === currentRepeat
@@ -76,7 +76,7 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
                     : 'bg-gray-200 text-gray-400'
                 }`}
               >
-                {i < currentRepeat ? <CheckCircle className="w-4 h-4" /> : i + 1}
+                {i < currentRepeat ? <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" /> : i + 1}
               </div>
             ))}
           </div>
@@ -94,7 +94,7 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
       ) : (
         <div className="flex items-center justify-center gap-2 text-green-600">
           <CheckCircle className="w-5 h-5" />
-          <span className="font-medium">¡Completado! Frase internalizada.</span>
+          <span className="font-medium text-sm">¡Completado!</span>
         </div>
       )}
     </div>

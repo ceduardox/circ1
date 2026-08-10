@@ -30,40 +30,41 @@ export function DayViewPage() {
   const canUnlockNext = completedRequired === totalRequired && totalRequired > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <ButtonGhost onClick={handlePrevious} className="self-start">
-          <ChevronLeft className="w-4 h-4 mr-1" /> Volver
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <ButtonGhost onClick={handlePrevious} className="shrink-0">
+          <ChevronLeft className="w-4 h-4" />
         </ButtonGhost>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">{day.title}</h1>
-          <p className="text-gray-500">Día {day.dayNumber}</p>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight break-words">{day.title}</h1>
+          <p className="text-sm text-gray-500">Día {day.dayNumber}</p>
         </div>
-        <div className="hidden sm:block w-24" />
       </div>
 
+      {/* Day Card */}
       <Card>
-        <CardHeader className="bg-gradient-to-r from-primary-50 to-transparent">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-3xl">📅</div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">{day.title}</h2>
-              {day.description && <p className="text-gray-600">{day.description}</p>}
+        <CardHeader className="bg-gradient-to-r from-primary-50 to-transparent p-4 sm:p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl sm:text-3xl shrink-0">📅</div>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-xl font-bold text-gray-900 break-words">{day.title}</h2>
+              {day.description && <p className="text-sm text-gray-600 mt-1 break-words">{day.description}</p>}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-500 rounded-full"
                 style={{ width: `${totalRequired > 0 ? (completedRequired / totalRequired) * 100 : 0}%` }}
               />
             </div>
-            <span className="text-sm font-medium text-gray-600 whitespace-nowrap">
-              {completedRequired}/{totalRequired} requeridos
+            <span className="text-xs sm:text-sm font-medium text-gray-600 whitespace-nowrap">
+              {completedRequired}/{totalRequired}
             </span>
           </div>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {day.contents.map((content: any) => (
             <div key={content.id}>
               <ContentRenderer content={content} dayNumber={day.dayNumber} />
@@ -72,26 +73,28 @@ export function DayViewPage() {
         </CardContent>
       </Card>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <ButtonGhost onClick={handlePrevious} disabled={dayNum <= 1} className="w-full sm:w-auto">
-          <ChevronLeft className="w-4 h-4 mr-1" /> Día Anterior
+      {/* Navigation */}
+      <div className="flex gap-3">
+        <ButtonGhost onClick={handlePrevious} disabled={dayNum <= 1} className="flex-1">
+          <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
         </ButtonGhost>
         <ButtonPrimary
           onClick={handleNext}
           disabled={!canUnlockNext || dayNum >= 7}
-          className="w-full sm:w-auto"
+          className="flex-1"
         >
-          Día Siguiente <ChevronLeft className="w-4 h-4 ml-1 rotate-180" />
+          Siguiente <ChevronLeft className="w-4 h-4 ml-1 rotate-180" />
         </ButtonPrimary>
       </div>
 
+      {/* Blocked Message */}
       {!canUnlockNext && dayNum < 7 && (
         <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Día Siguiente Bloqueado</h3>
-            <p className="text-gray-600">
-              Completa los {totalRequired - completedRequired} ejercicios requeridos restantes para desbloquear el día {dayNum + 1}.
+          <CardContent className="p-4 sm:p-6 text-center">
+            <AlertCircle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Día Bloqueado</h3>
+            <p className="text-sm text-gray-600">
+              Completa los {totalRequired - completedRequired} ejercicios requeridos para desbloquear el día {dayNum + 1}.
             </p>
           </CardContent>
         </Card>

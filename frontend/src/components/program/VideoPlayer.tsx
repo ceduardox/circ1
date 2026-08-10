@@ -57,20 +57,20 @@ export function VideoPlayer({ title, url, provider, duration, description, onCom
   };
 
   return (
-    <div className={`p-6 rounded-xl border-2 transition-all ${
+    <div className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${
       completed 
         ? 'bg-green-50 border-green-300' 
         : 'bg-blue-50 border-blue-300'
     }`}>
-      <div className="flex items-start gap-3 mb-4">
-        <span className="text-3xl mt-1">📹</span>
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
+      <div className="flex items-start gap-3 mb-3 sm:mb-4">
+        <span className="text-2xl sm:text-3xl mt-0.5">📹</span>
+        <div className="min-w-0">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">{title}</h3>
+          {description && <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">{description}</p>}
         </div>
       </div>
 
-      <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden relative mb-4">
+      <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden relative mb-3 sm:mb-4">
         <iframe
           ref={iframeRef}
           src={getEmbedUrl(url, provider)}
@@ -89,11 +89,11 @@ export function VideoPlayer({ title, url, provider, duration, description, onCom
         )}
       </div>
 
-      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          <span>Duración: {duration ? formatTime(duration) : 'Desconocida'}</span>
-          <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <Clock className="w-4 h-4 shrink-0" />
+          <span>{duration ? formatTime(duration) : '?'}</span>
+          <div className="w-20 sm:w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div 
               className="h-full bg-primary-500 transition-all duration-300" 
               style={{ width: `${watchedPercent}%` }}
@@ -101,21 +101,21 @@ export function VideoPlayer({ title, url, provider, duration, description, onCom
           </div>
           <span>{Math.round(watchedPercent)}%</span>
         </div>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary-600">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary-600 shrink-0">
           <ExternalLink className="w-3 h-3" />
-          Ver en {provider}
+          {provider}
         </a>
       </div>
 
       {completed || watched ? (
-        <div className="flex items-center justify-center gap-2 text-green-600 p-4 bg-green-50 rounded-lg">
-          <CheckCircle className="w-5 h-5" />
-          <span className="font-medium">{completed ? 'Completado' : 'Visto >80% - Marcado como completado'}</span>
+        <div className="flex items-center justify-center gap-2 text-green-600 p-3 sm:p-4 bg-green-50 rounded-lg">
+          <CheckCircle className="w-5 h-5 shrink-0" />
+          <span className="font-medium text-sm">Completado</span>
         </div>
       ) : (
         <ButtonPrimary onClick={onComplete} className="w-full" disabled={!watched}>
           <CheckCircle className="w-4 h-4 mr-2" />
-          {watched ? 'Marcar como completado' : 'Mira al menos el 80% para continuar'}
+          {watched ? 'Marcar completado' : 'Mira el 80% para continuar'}
         </ButtonPrimary>
       )}
     </div>
