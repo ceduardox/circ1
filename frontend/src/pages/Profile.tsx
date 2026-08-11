@@ -4,11 +4,13 @@ import { programApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-import { User, Mail, AtSign, Calendar, MapPin, Lock, Eye, EyeOff, Save, Trophy, Flame, Target } from 'lucide-react';
+import { User, Mail, AtSign, Calendar, MapPin, Lock, Eye, EyeOff, Save, Trophy, Flame, Target, Camera, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function ProfilePage() {
-  const { user, updateProfile } = useAuthStore();
+  const { user, updateProfile, updateAvatar } = useAuthStore();
   const [gamification, setGamification] = useState({ points: 0, level: 1, streak: 0 });
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -47,6 +49,25 @@ export function ProfilePage() {
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen no puede superar 5MB');
+      return;
+    }
+    setAvatarLoading(true);
+    try {
+      await updateAvatar(file);
+      toast.success('Foto de perfil actualizada');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al subir la foto');
+    } finally {
+      setAvatarLoading(false);
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
@@ -58,10 +79,20 @@ export function ProfilePage() {
       {/* User Card + Gamification */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-            <span className="text-primary-700 font-bold text-xl">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </span>
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center overflow-hidden">
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-primary-700 font-bold text-xl">
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </span>
+              )}
+            </div>
+            <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center cursor-pointer hover:bg-primary-700 transition-colors shadow-md">
+              {avatarLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </label>
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">{user?.firstName} {user?.lastName}</h2>

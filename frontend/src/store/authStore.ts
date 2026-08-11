@@ -10,6 +10,7 @@ interface User {
   lastName?: string;
   age?: number;
   country?: string;
+  avatarUrl?: string | null;
   role: 'USER' | 'ADMIN';
 }
 
@@ -23,6 +24,7 @@ interface AuthState {
   logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
+  updateAvatar: (file: File) => Promise<void>;
   setAccessToken: (token: string) => void;
 }
 
@@ -79,6 +81,11 @@ export const useAuthStore = create<AuthState>()(
       updateProfile: async (data) => {
         const { data: res } = await authApi.updateProfile(data);
         set({ user: res.user });
+      },
+
+      updateAvatar: async (file) => {
+        const { data: res } = await authApi.uploadAvatar(file);
+        set({ user: { ...get().user, avatarUrl: res.user.avatarUrl } as any });
       },
     }),
     { name: 'auth-storage', partialize: (s) => ({ user: s.user, accessToken: s.accessToken, isAuthenticated: s.isAuthenticated }) }

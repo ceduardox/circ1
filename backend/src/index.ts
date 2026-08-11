@@ -5,12 +5,18 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import { config } from './config/index.js';
 import { authRoutes } from './routes/auth.js';
 import { programRoutes } from './routes/program.js';
 import { adminRoutes } from './routes/admin.js';
 import { membershipRoutes } from './routes/membership.js';
 import { ZodError } from 'zod';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
 async function runMigrations() {
@@ -59,6 +65,14 @@ await app.register(rateLimit, {
   keyGenerator: (request) => {
     return request.headers['x-forwarded-for'] as string || request.ip || 'unknown';
   },
+});
+
+await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
+
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+await app.register(fastifyStatic, {
+  root: uploadsDir,
+  prefix: '/uploads/',
 });
 
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));

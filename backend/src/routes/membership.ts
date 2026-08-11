@@ -190,7 +190,7 @@ export async function membershipRoutes(app: FastifyInstance) {
     const direct = await prisma.user.findMany({
       where: { referrerId: userId },
       select: {
-        id: true, firstName: true, lastName: true, username: true, country: true,
+        id: true, firstName: true, lastName: true, username: true, country: true, avatarUrl: true,
         membershipStatus: true, createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -201,7 +201,7 @@ export async function membershipRoutes(app: FastifyInstance) {
       ? await prisma.user.findMany({
           where: { referrerId: { in: directIds } },
           select: {
-            id: true, firstName: true, lastName: true, username: true, country: true,
+            id: true, firstName: true, lastName: true, username: true, country: true, avatarUrl: true,
             membershipStatus: true, createdAt: true, referrerId: true,
           },
           orderBy: { createdAt: 'desc' },

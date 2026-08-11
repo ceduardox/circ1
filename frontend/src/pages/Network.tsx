@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitBranch } from 'lucide-react';
 import { membershipApi } from '@/services/api';
 import { useMembershipStore } from '@/store/membershipStore';
+import { NetworkTree, TreeMember } from '@/components/program/NetworkTree';
 import { toast } from 'sonner';
 
 const statusStyles: Record<string, { label: string; classes: string }> = {
@@ -15,6 +16,7 @@ export function NetworkPage() {
   const [network, setNetwork] = useState<any>({ level1: [], level2: [], count: { level1: 0, level2: 0, total: 0 } });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [view, setView] = useState<'list' | 'tree'>('list');
 
   useEffect(() => {
     load();
@@ -83,12 +85,64 @@ export function NetworkPage() {
     { label: 'Nivel 2 (indirectos)', value: network.count.level2, icon: Shield, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
+  // Árbol: yo en la raíz, nivel 1 como hijos, nivel 2 como nietos
+  const treeRoots: TreeMember[] = useMemo(() => {
+    const l1 = (network.level1 || []).map((u: any) => ({
+      id: u.id,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      username: u.username,
+      country: u.country,
+      avatarUrl: u.avatarUrl,
+      membershipStatus: u.membershipStatus,
+      children: (network.level2 || [])
+        .filter((c: any) => c.parentId === u.id)
+        .map((c: any) => ({
+          id: c.id,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          username: c.username,
+          country: c.country,
+          avatarUrl: c.avatarUrl,
+          membershipStatus: c.membershipStatus,
+          parentId: c.parentId,
+        })),
+    }));
+    return l1;
+  }, [network]);
+
+  const viewToggle = (
+    <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-dark-700">
+      <button
+        onClick={() => setView('list')}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          view === 'list'
+            ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
+            : 'text-gray-500 dark:text-dark-400 hover:text-gray-700'
+        }`}
+      >
+        <List className="w-3.5 h-3.5" /> Lista
+      </button>
+      <button
+        onClick={() => setView('tree')}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          view === 'tree'
+            ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
+            : 'text-gray-500 dark:text-dark-400 hover:text-gray-700'
+        }`}
+      >
+        <GitBranch className="w-3.5 h-3.5" /> Árbol
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Mi Red</h1>
         <p className="text-gray-500 dark:text-dark-400 mt-1">Tu red unilevel de referidos</p>
       </div>
+      {viewToggle}
 
       {/* Link de referido */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-5 text-white shadow-lg shadow-primary-600/20">
@@ -131,7 +185,26 @@ export function NetworkPage() {
         })}
       </div>
 
-      {/* Nivel 1 */}
+      {/* Vista árbol */}
+      {view === 'tree' && (
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900 dark:text-dark-100">Gráfico de tu red</h2>
+            <span className="text-xs text-gray-500 dark:text-dark-400">Foto de perfil por miembro</span>
+          </div>
+          {treeRoots.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 dark:text-dark-500 text-sm">
+              Aún no tienes referidos. ¡Comparte tu link para empezar a construir tu árbol!
+            </div>
+          ) : (
+            <NetworkTree roots={treeRoots} />
+          )}
+        </div>
+      )}
+
+      {/* Nivel 1 y 2 (vista lista) */}
+      {view === 'list' && (
+        <>
       <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-900 dark:text-dark-100">Nivel 1 — Referidos directos</h2>
@@ -168,6 +241,8 @@ export function NetworkPage() {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

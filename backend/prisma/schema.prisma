@@ -67,6 +67,7 @@ model User {
   lastName             String?          @map("last_name")
   age                  Int?
   country              String?
+  avatarUrl            String?          @map("avatar_url")
   role                 UserRole         @default(USER)
   streakFreezes        Int              @default(2) @map("streak_freezes")
   membershipStatus     MembershipStatus @default(INACTIVE) @map("membership_status")

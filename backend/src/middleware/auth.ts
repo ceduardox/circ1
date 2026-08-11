@@ -17,7 +17,7 @@ export async function authMiddleware(
     const payload = request.user as JWTPayload;
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, username: true, role: true, firstName: true, lastName: true },
+      select: { id: true, email: true, username: true, role: true, firstName: true, lastName: true, avatarUrl: true },
     });
     if (!user) {
       return reply.code(401).send({ error: 'Usuario no encontrado' });

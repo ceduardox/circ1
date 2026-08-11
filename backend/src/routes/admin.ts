@@ -451,7 +451,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/business/network', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
     const users = await prisma.user.findMany({
       select: {
-        id: true, firstName: true, lastName: true, username: true, country: true,
+        id: true, firstName: true, lastName: true, username: true, country: true, avatarUrl: true,
         membershipStatus: true, referralCode: true, referrerId: true, createdAt: true,
       },
       orderBy: { createdAt: 'asc' },

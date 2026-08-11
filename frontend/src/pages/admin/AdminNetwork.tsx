@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Network as NetworkIcon, Users, Crown, Globe, RefreshCw, ChevronDown, ChevronRight, TrendingUp, ShieldCheck, XCircle } from 'lucide-react';
+import { Network as NetworkIcon, Users, Crown, Globe, RefreshCw, ChevronDown, ChevronRight, TrendingUp, ShieldCheck, XCircle, List, GitBranch } from 'lucide-react';
 import { adminBusinessApi } from '@/services/api';
 import { Button } from '@/components/ui';
+import { NetworkTree, TreeMember } from '@/components/program/NetworkTree';
 import { toast } from 'sonner';
 
 interface NetUser {
@@ -10,6 +11,7 @@ interface NetUser {
   lastName?: string | null;
   username: string;
   country?: string | null;
+  avatarUrl?: string | null;
   membershipStatus: string;
   referralCode?: string | null;
   referrerId?: string | null;
@@ -27,6 +29,7 @@ export function AdminNetworkPage() {
   const [users, setUsers] = useState<NetUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<'list' | 'tree'>('list');
 
   useEffect(() => {
     load();
@@ -79,6 +82,61 @@ export function AdminNetworkPage() {
     { label: 'Membresías activas', value: activeCount, icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Sin membresía', value: inactiveCount, icon: XCircle, color: 'text-gray-600', bg: 'bg-gray-50' },
   ];
+
+  const toTreeMember = (u: NetUser, children: TreeMember[] = []): TreeMember => ({
+    id: u.id,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    username: u.username,
+    country: u.country,
+    avatarUrl: u.avatarUrl,
+    membershipStatus: u.membershipStatus,
+    children,
+  });
+
+  // Todos los usuarios como nodos, conectando por referrerId (raíces: los que no tienen referente)
+  const treeRoots: TreeMember[] = useMemo(() => {
+    const nodes = new Map<string, TreeMember>();
+    users.forEach(u => nodes.set(u.id, toTreeMember(u)));
+
+    const roots: TreeMember[] = [];
+    users.forEach(u => {
+      const node = nodes.get(u.id)!;
+      if (u.referrerId && nodes.has(u.referrerId)) {
+        const parent = nodes.get(u.referrerId)!;
+        parent.children = parent.children || [];
+        parent.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+    return roots;
+  }, [users]);
+
+  const viewToggle = (
+    <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-dark-700">
+      <button
+        onClick={() => setView('list')}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          view === 'list'
+            ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
+            : 'text-gray-500 dark:text-dark-400 hover:text-gray-700'
+        }`}
+      >
+        <List className="w-3.5 h-3.5" /> Lista
+      </button>
+      <button
+        onClick={() => setView('tree')}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          view === 'tree'
+            ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-sm'
+            : 'text-gray-500 dark:text-dark-400 hover:text-gray-700'
+        }`}
+      >
+        <GitBranch className="w-3.5 h-3.5" /> Árbol
+      </button>
+    </div>
+  );
 
   const TreeNode = ({ node, depth = 0 }: { node: NetUser; depth?: number }) => {
     const st = statusStyles[node.membershipStatus] || statusStyles.INACTIVE;
@@ -146,9 +204,12 @@ export function AdminNetworkPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Red Global</h1>
           <p className="text-gray-500 dark:text-dark-400 mt-1">Árbol unilevel de todos los usuarios</p>
         </div>
-        <Button onClick={load} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">
-          <RefreshCw className="w-4 h-4" /> Actualizar
-        </Button>
+        <div className="flex items-center gap-3">
+          {viewToggle}
+          <Button onClick={load} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">
+            <RefreshCw className="w-4 h-4" /> Actualizar
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -169,7 +230,30 @@ export function AdminNetworkPage() {
         })}
       </div>
 
-      {/* Árbol */}
+      {/* Vista árbol (organigrama con fotos) */}
+      {view === 'tree' && (
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-900/20">
+              <NetworkIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900 dark:text-dark-100">Gráfico de afiliación</h2>
+              <p className="text-xs text-gray-500 dark:text-dark-400">
+                Foto de perfil por miembro · {treeRoots.length} raíz(ces)
+              </p>
+            </div>
+          </div>
+          {users.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 dark:text-dark-500 text-sm">Sin usuarios registrados</div>
+          ) : (
+            <NetworkTree roots={treeRoots} />
+          )}
+        </div>
+      )}
+
+      {/* Vista lista */}
+      {view === 'list' && (
       <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
         <div className="flex items-center gap-2 mb-5">
           <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-900/20">
@@ -195,6 +279,7 @@ export function AdminNetworkPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

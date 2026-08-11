@@ -3,6 +3,10 @@ import { prisma } from '../utils/prisma.js';
 import { hashPassword, verifyPassword, generateReferralCode } from '../utils/auth.js';
 import { registerSchema, loginSchema, updateProfileSchema } from '../utils/schemas.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { randomUUID } from 'crypto';
+import { writeFile, mkdir } from 'fs/promises';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 interface JWTPayload {
   sub: string;
@@ -10,6 +14,8 @@ interface JWTPayload {
   role: string;
   type?: string;
 }
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export async function authRoutes(app: FastifyInstance) {
   app.post('/register', async (request, reply) => {
@@ -73,7 +79,7 @@ export async function authRoutes(app: FastifyInstance) {
       maxAge: 7 * 24 * 60 * 60 * 1000, path: '/',
     });
 
-    return { user: { id: user.id, email: user.email, username: user.username, firstName: user.firstName, lastName: user.lastName, role: user.role }, accessToken };
+    return { user: { id: user.id, email: user.email, username: user.username, firstName: user.firstName, lastName: user.lastName, role: user.role, avatarUrl: user.avatarUrl }, accessToken };
   });
 
   app.post('/refresh', async (request, reply) => {
@@ -129,9 +135,45 @@ export async function authRoutes(app: FastifyInstance) {
     const updated = await prisma.user.update({
       where: { id: userId },
       data,
-      select: { id: true, email: true, username: true, firstName: true, lastName: true, age: true, country: true, role: true },
+      select: { id: true, email: true, username: true, firstName: true, lastName: true, age: true, country: true, role: true, avatarUrl: true },
     });
 
     return { user: updated };
+  });
+
+  // Subida de foto de perfil (multipart)
+  app.post('/avatar', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+
+    let data: any;
+    try {
+      data = await request.file();
+    } catch {
+      return reply.code(400).send({ error: 'Archivo no válido' });
+    }
+    if (!data) return reply.code(400).send({ error: 'Debes enviar una imagen' });
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowed.includes(data.mimetype)) {
+      return reply.code(400).send({ error: 'Formato no permitido. Usa JPG, PNG, WEBP o GIF' });
+    }
+
+    const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+    const filename = `${userId}-${randomUUID()}.${extMap[data.mimetype]}`;
+
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+    await mkdir(uploadsDir, { recursive: true });
+    await writeFile(path.join(uploadsDir, filename), await data.toBuffer());
+
+    const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3001}`;
+    const avatarUrl = `${baseUrl}/uploads/${filename}`;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: { id: true, avatarUrl: true },
+    });
+
+    return { user };
   });
 }
