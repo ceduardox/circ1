@@ -26,6 +26,7 @@ const benefits = [
 
 export function PaymentGate({ onRequestPayment, requesting, variant = 'membership' }: PaymentGateProps) {
   const [phraseIdx, setPhraseIdx] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { payment, paid, start, checkNow } = usePaymentFlow();
 
   const isMonthly = variant === 'monthly';
@@ -36,7 +37,14 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
   }, []);
 
   const handleRequest = async () => {
-    await start(onRequestPayment);
+    // Abrir la pestaña sincrónicamente en el gesto del usuario (antes del await)
+    // para que el navegador no la bloquee como popup.
+    const win = window.open('', '_blank');
+    try {
+      await start(onRequestPayment, win);
+    } catch (e: any) {
+      setErrorMsg(e?.response?.data?.error || 'No se pudo iniciar el pago. Inténtalo de nuevo.');
+    }
   };
 
   const price = isMonthly ? '$50' : '$500';
@@ -140,6 +148,11 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
               </div>
             ) : (
               <div className="space-y-3">
+                {errorMsg && (
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 text-center">
+                    {errorMsg}
+                  </div>
+                )}
                 <ButtonPrimary
                   onClick={handleRequest}
                   disabled={requesting}

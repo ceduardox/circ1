@@ -13,14 +13,29 @@ export function usePaymentFlow() {
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
-  const start = useCallback(async (onRequest: () => Promise<PaymentInfo | null>) => {
-    const info = await onRequest();
-    if (!info) return;
+  const start = useCallback(async (onRequest: () => Promise<PaymentInfo | null>, win?: Window | null) => {
+    let info: PaymentInfo | null = null;
+    try {
+      info = await onRequest();
+    } catch (e: any) {
+      if (win && win.location.href === 'about:blank') win.close();
+      throw e;
+    }
+    if (!info) {
+      if (win && win.location.href === 'about:blank') win.close();
+      return;
+    }
     setPayment(info);
     setPaid(false);
 
     if (info.invoiceUrl) {
-      window.open(info.invoiceUrl, '_blank', 'noopener,noreferrer');
+      if (win) {
+        win.location.href = info.invoiceUrl;
+      } else {
+        window.open(info.invoiceUrl, '_blank', 'noopener,noreferrer');
+      }
+    } else if (win && !win.location.href) {
+      win.close();
     }
 
     if (pollRef.current) clearInterval(pollRef.current);

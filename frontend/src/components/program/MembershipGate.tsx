@@ -153,7 +153,7 @@ function GraceBanner({ children }: { children: ReactNode }) {
 
                 <div className="mt-6 space-y-2">
                   <ButtonPrimary
-                    onClick={() => start(requestMonthlyPayment)}
+                    onClick={() => { const win = window.open('', '_blank'); start(requestMonthlyPayment, win); }}
                     disabled={requestingPayment}
                     className="w-full"
                   >
