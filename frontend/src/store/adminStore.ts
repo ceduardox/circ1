@@ -27,6 +27,12 @@ interface AdminStats {
   totalDays: number;
   totalContents: number;
   completedToday: number;
+  totalCompletions: number;
+  activeUsersWeek: number;
+  reflectionsCount: number;
+  quizzesPassed: number;
+  uniqueDaysCompleted: number;
+  avgProgress: number;
   recentDays?: Day[];
   recentUsers?: User[];
 }

@@ -13,22 +13,25 @@ interface ContentRendererProps {
   content: DayContent;
   dayNumber: number;
   onCompleted?: () => void;
+  preview?: boolean;
 }
 
-export function ContentRenderer({ content, dayNumber, onCompleted }: ContentRendererProps) {
+export function ContentRenderer({ content, dayNumber, onCompleted, preview = false }: ContentRendererProps) {
   const { completeContent, saveReflection, progress } = useProgramStore();
-  const userProgress = progress.find(p => p.contentId === content.id);
-  const completed = userProgress?.status === 'COMPLETED';
+  const userProgress = preview ? undefined : progress.find(p => p.contentId === content.id);
+  const completed = preview ? false : userProgress?.status === 'COMPLETED';
 
   const handleComplete = async () => {
-    await completeContent(dayNumber, content.id);
+    if (!preview) await completeContent(dayNumber, content.id);
     onCompleted?.();
   };
 
   const handleReflectionSave = async (data: any) => {
-    await saveReflection({ dayId: content.dayId, reflectionType: data.reflectionType, content: data.content });
-    if (content.isRequired) {
-      await completeContent(dayNumber, content.id, { content: data.content });
+    if (!preview) {
+      await saveReflection({ dayId: content.dayId, reflectionType: data.reflectionType, content: data.content });
+      if (content.isRequired) {
+        await completeContent(dayNumber, content.id, { content: data.content });
+      }
     }
     onCompleted?.();
   };

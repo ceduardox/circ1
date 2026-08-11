@@ -4,11 +4,13 @@ import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader } from '@/components/ui';
 import { ButtonPrimary, ButtonGhost, ButtonDanger, Input, Label, Textarea, Select } from '@/components/ui';
-import { Plus, Trash2, Edit, ChevronLeft, Loader2, GripVertical, Save, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Plus, Trash2, Edit, ChevronLeft, Loader2, GripVertical, Save, X, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { DndContext, closestCenter, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ContentRenderer } from '@/components/program/ContentRenderer';
 
 const contentTypeLabels: Record<string, string> = {
   REFLECTION: '🎯 Reflexión',
@@ -29,7 +31,7 @@ interface ContentItem {
   isRequired: boolean;
 }
 
-function SortableContentItem({ content, index, onEdit, onDelete }: { content: ContentItem; index: number; onEdit: (c: ContentItem) => void; onDelete: (id: string) => void }) {
+function SortableContentItem({ content, index, onEdit, onDelete, onPreview }: { content: ContentItem; index: number; onEdit: (c: ContentItem) => void; onDelete: (id: string) => void; onPreview: (c: ContentItem) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: content.id });
 
   return (
@@ -55,6 +57,7 @@ function SortableContentItem({ content, index, onEdit, onDelete }: { content: Co
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <ButtonGhost size="sm" onClick={() => onPreview(content)}><Eye className="w-4 h-4" /></ButtonGhost>
           <ButtonGhost size="sm" onClick={() => onEdit(content)}><Edit className="w-4 h-4" /></ButtonGhost>
           <ButtonGhost size="sm" onClick={() => onDelete(content.id)}><Trash2 className="w-4 h-4 text-red-500" /></ButtonGhost>
         </div>
@@ -333,6 +336,7 @@ export function AdminDayDetailPage() {
   const [formOrderIndex, setFormOrderIndex] = useState(0);
   const [formIsRequired, setFormIsRequired] = useState(true);
   const [formContentData, setFormContentData] = useState<any>({});
+  const [previewContent, setPreviewContent] = useState<ContentItem | null>(null);
 
   useEffect(() => {
     if (dayId) fetchDays();
@@ -476,7 +480,7 @@ export function AdminDayDetailPage() {
             <SortableContext items={contents.map(c => c.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-3">
                 {contents.map((content, index) => (
-                  <SortableContentItem key={content.id} content={content} index={index} onEdit={handleEdit} onDelete={handleDelete} />
+                  <SortableContentItem key={content.id} content={content} index={index} onEdit={handleEdit} onDelete={handleDelete} onPreview={setPreviewContent} />
                 ))}
               </div>
             </SortableContext>
@@ -489,6 +493,29 @@ export function AdminDayDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Vista previa */}
+      <Dialog open={!!previewContent} onOpenChange={(open) => { if (!open) setPreviewContent(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="pr-8">
+              Vista Previa: {previewContent?.title || ''}
+              {previewContent && (
+                <span className="ml-2 px-2 py-0.5 text-xs rounded bg-primary-100 text-primary-600 align-middle whitespace-nowrap">
+                  {contentTypeLabels[previewContent.type as string] || previewContent.type}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {previewContent && (
+            <ContentRenderer
+              content={previewContent as any}
+              dayNumber={currentDay.dayNumber}
+              preview
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

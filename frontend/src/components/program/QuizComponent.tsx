@@ -24,12 +24,14 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
   const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
+  const [justAnswered, setJustAnswered] = useState<number | null>(null);
 
   const question = questions[currentQuestion];
   const isLast = currentQuestion === questions.length - 1;
 
   const handleAnswer = (value: any) => {
     setAnswers(prev => ({ ...prev, [question.id]: value }));
+    if (question.type !== 'text') setJustAnswered(value);
   };
 
   const calculateScore = () => {
@@ -92,14 +94,16 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
               onClick={() => handleAnswer(
                 question.type === 'single' ? i : [...(answers[question.id] || []), i].filter((v, idx, arr) => arr.indexOf(v) === idx)
               )}
-              className={`w-full p-3 sm:p-4 rounded-lg border-2 text-left transition-all ${
+              className={`w-full p-3 sm:p-4 rounded-lg border-2 text-left transition-all duration-200 active:scale-[0.98] ${
                 isSelected
-                  ? 'border-primary-500 bg-primary-50'
+                  ? justAnswered === i
+                    ? 'border-primary-500 bg-primary-50 animate-pop-correct'
+                    : 'border-primary-500 bg-primary-50'
                   : showResult && isCorrect
                   ? 'border-green-500 bg-green-50'
                   : showResult && isSelected && !isCorrect
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-200 hover:border-primary-300'
+                  ? 'border-red-500 bg-red-50 animate-shake'
+                  : 'border-gray-200 hover:border-primary-300 hover:bg-primary-50/30'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -126,8 +130,8 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
   if (showResult) {
     const passed = score >= passingScore;
     return (
-      <div className="p-4 sm:p-6 rounded-xl border-2 transition-all text-center">
-        <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${
+      <div className={`p-4 sm:p-6 rounded-xl border-2 text-center animate-enter-up ${passed ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
+        <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-4 flex items-center justify-center animate-pop-correct ${
           passed ? 'bg-green-100' : 'bg-red-100'
         }`}>
           {passed ? <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-500" /> : <XCircle className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />}
@@ -175,12 +179,12 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
         </div>
       </div>
 
-      <div className="mb-4 sm:mb-6">
+      <div key={currentQuestion} className="animate-enter-up mb-4 sm:mb-6">
         <div className="flex gap-1 mb-2">
           {questions.map((_, i) => (
             <div
               key={i}
-              className={`flex-1 h-1.5 sm:h-2 rounded ${
+              className={`flex-1 h-1.5 sm:h-2 rounded transition-all duration-500 ${
                 i < currentQuestion ? 'bg-green-500' :
                 i === currentQuestion ? 'bg-purple-500' :
                 'bg-gray-200'

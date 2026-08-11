@@ -125,12 +125,13 @@ export function DayViewPage() {
       <div className="flex-1 flex flex-col">
         <div className="flex-1">
           {currentContent && (
-            <ContentRenderer
-              key={currentContent.id}
-              content={currentContent}
-              dayNumber={day.dayNumber}
-              onCompleted={handleContentCompleted}
-            />
+            <div key={currentContent.id} className="animate-enter-up">
+              <ContentRenderer
+                content={currentContent}
+                dayNumber={day.dayNumber}
+                onCompleted={handleContentCompleted}
+              />
+            </div>
           )}
         </div>
 
