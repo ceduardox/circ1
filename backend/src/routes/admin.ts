@@ -4,6 +4,8 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
 import { ContentType } from '@prisma/client';
 import { activateMembership } from '../utils/activation.js';
+import { getPaymentStatus } from '../utils/nowpayments.js';
+import { config } from '../config/index.js';
 
 const createDaySchema = z.object({
   dayNumber: z.number().int().positive(),
@@ -348,6 +350,42 @@ export async function adminRoutes(app: FastifyInstance) {
       },
     });
     return { payments };
+  });
+
+  // Verificación manual: reconsulta el estado en NowPayments y, si está confirmado, activa.
+  app.post('/business/payments/:id/verify', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as PaymentParams;
+    const payment = await prisma.membershipPayment.findUnique({ where: { id }, include: { user: true } });
+    if (!payment) return reply.code(404).send({ error: 'Pago no encontrado' });
+    if (payment.status !== 'PENDING' || !payment.npPaymentId) {
+      return reply.code(400).send({ error: 'Este pago no está pendiente de NowPayments' });
+    }
+    if (!config.nowpayments.apiKey) {
+      return reply.code(400).send({ error: 'NowPayments no está configurado' });
+    }
+
+    const FINAL = ['confirmed', 'finished'];
+    let npStatus: string;
+    try {
+      const status = await getPaymentStatus(Number(payment.npPaymentId));
+      npStatus = status.payment_status;
+    } catch (err: any) {
+      request.log.warn({ err }, 'Error consultando NowPayments');
+      return reply.code(502).send({ error: 'No se pudo consultar NowPayments' });
+    }
+
+    await prisma.membershipPayment.update({ where: { id }, data: { npStatus } });
+
+    if (FINAL.includes(npStatus)) {
+      try {
+        await activateMembership(id, 'nowpayments-verify');
+        return { verified: true, npStatus, activated: true };
+      } catch (err: any) {
+        return { verified: true, npStatus, activated: false, error: err.message };
+      }
+    }
+
+    return { verified: true, npStatus, activated: false };
   });
 
   interface PaymentParams { id: string; }

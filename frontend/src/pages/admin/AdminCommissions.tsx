@@ -111,6 +111,23 @@ export function AdminCommissionsPage() {
     }
   };
 
+  const handleVerify = async (payment: any) => {
+    setProcessingId(payment.id);
+    try {
+      const { data } = await adminBusinessApi.verifyPayment(payment.id);
+      if (data.activated) {
+        toast.success(`Pago confirmado por NowPayments (${data.npStatus}): membresía activada`);
+      } else {
+        toast.info(`NowPayments reporta estado: ${data.npStatus}. Sigue sin confirmar.`);
+      }
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al verificar');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const fmt = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
   const pendingPayments = payments.filter(p => p.status === 'PENDING').length;
   const pendingWithdrawals = withdrawals.filter(w => w.status === 'PENDING').length;
@@ -204,10 +221,22 @@ export function AdminCommissionsPage() {
                     <p className="text-xs text-gray-500 dark:text-dark-400">
                       {fmt(p.amount)} · {new Date(p.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
+                    {p.method === 'nowpayments' && p.npStatus && (
+                      <p className="text-[11px] text-indigo-500 dark:text-indigo-400 mt-0.5 capitalize">
+                        NowPayments · {p.npStatus}
+                      </p>
+                    )}
                   </div>
                   <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${st.classes}`}>{st.label}</span>
                   {p.status === 'PENDING' && (
                     <div className="flex items-center gap-2">
+                      {p.method === 'nowpayments' && (
+                        <Button size="sm" loading={processingId === p.id}
+                          className="bg-indigo-600 text-white hover:bg-indigo-700"
+                          onClick={() => handleVerify(p)}>
+                          <RefreshCw className="w-4 h-4" /> Verificar
+                        </Button>
+                      )}
                       <Button size="sm" loading={processingId === p.id}
                         className="bg-emerald-600 text-white hover:bg-emerald-700"
                         onClick={() => handlePayment(p.id, 'approve')}>

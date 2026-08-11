@@ -111,6 +111,7 @@ export const adminBusinessApi = {
   approvePayment: (id: string) => api.post(`/admin/business/payments/${id}/approve`),
   rejectPayment: (id: string) => api.post(`/admin/business/payments/${id}/reject`),
   deactivatePayment: (id: string) => api.post(`/admin/business/payments/${id}/deactivate`),
+  verifyPayment: (id: string) => api.post(`/admin/business/payments/${id}/verify`),
   network: () => api.get('/admin/business/network'),
   withdrawals: () => api.get('/admin/business/withdrawals'),
   approveWithdrawal: (id: string) => api.post(`/admin/business/withdrawals/${id}/approve`),
