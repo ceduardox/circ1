@@ -2,6 +2,9 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
+import { config } from '../config/index.js';
+import { createInvoice, getPaymentStatus, verifyWebhookSignature } from '../utils/nowpayments.js';
+import { activateMembership } from '../utils/activation.js';
 
 const defaults = {
   MEMBERSHIP_PRICE: 500,
@@ -85,7 +88,7 @@ export async function membershipRoutes(app: FastifyInstance) {
     };
   });
 
-  // ─── Solicitar pago de membresía (simulado) ───
+  // ─── Solicitar pago de membresía ($500, vía NowPayments) ───
   const requestPaymentSchema = z.object({
     method: z.string().optional(),
     reference: z.string().optional(),
@@ -116,10 +119,38 @@ export async function membershipRoutes(app: FastifyInstance) {
       },
     });
 
-    return { payment, settings };
+    // Crear invoice en NowPayments para que el usuario pague con cripto.
+    let invoiceUrl: string | null = null;
+    if (config.nowpayments.apiKey) {
+      try {
+        const invoice = await createInvoice({
+          priceAmount: payment.amount,
+          priceCurrency: 'usd',
+          orderId: `c1-${payment.id}`,
+          orderDescription: `Membresía Círculo 1 - ${user.firstName} ${user.lastName || ''}`.trim(),
+          successUrl: `${config.frontendUrl}/program`,
+          cancelUrl: `${config.frontendUrl}/program`,
+          ipnCallbackUrl: `${config.backendUrl}/api/membership/payments/webhook`,
+        });
+        invoiceUrl = invoice.invoiceUrl;
+        await prisma.membershipPayment.update({
+          where: { id: payment.id },
+          data: {
+            npPaymentId: String(invoice.paymentId),
+            npInvoiceUrl: invoice.invoiceUrl,
+            npStatus: invoice.paymentStatus,
+          },
+        });
+      } catch (err: any) {
+        request.log.warn({ err }, 'No se pudo crear el invoice de NowPayments');
+        return reply.code(502).send({ error: 'No se pudo iniciar el pago. Inténtalo de nuevo en unos segundos.' });
+      }
+    }
+
+    return { payment, invoiceUrl, settings };
   });
 
-  // ─── Solicitar pago de la cuota mensual ($50, renovación) ───
+  // ─── Solicitar pago de la cuota mensual ($50, renovación, vía NowPayments) ───
   const requestMonthlySchema = z.object({
     method: z.string().optional(),
     reference: z.string().optional(),
@@ -153,10 +184,108 @@ export async function membershipRoutes(app: FastifyInstance) {
       },
     });
 
-    return { payment, settings };
+    let invoiceUrl: string | null = null;
+    if (config.nowpayments.apiKey) {
+      try {
+        const invoice = await createInvoice({
+          priceAmount: payment.amount,
+          priceCurrency: 'usd',
+          orderId: `c1-${payment.id}`,
+          orderDescription: `Cuota mensual Círculo 1 - ${user.firstName} ${user.lastName || ''}`.trim(),
+          successUrl: `${config.frontendUrl}/program`,
+          cancelUrl: `${config.frontendUrl}/program`,
+          ipnCallbackUrl: `${config.backendUrl}/api/membership/payments/webhook`,
+        });
+        invoiceUrl = invoice.invoiceUrl;
+        await prisma.membershipPayment.update({
+          where: { id: payment.id },
+          data: {
+            npPaymentId: String(invoice.paymentId),
+            npInvoiceUrl: invoice.invoiceUrl,
+            npStatus: invoice.paymentStatus,
+          },
+        });
+      } catch (err: any) {
+        request.log.warn({ err }, 'No se pudo crear el invoice de NowPayments');
+        return reply.code(502).send({ error: 'No se pudo iniciar el pago. Inténtalo de nuevo en unos segundos.' });
+      }
+    }
+
+    return { payment, invoiceUrl, settings };
   });
 
-  // ─── Mis ganancias (comisiones) ───
+  // ─── Webhook IPN de NowPayments (público, verificado por firma) ───
+  const FINAL_STATUSES = ['confirmed', 'finished'];
+
+  async function applyNowPaymentsStatus(paymentId: string, npStatus: string) {
+    const payment = await prisma.membershipPayment.findUnique({ where: { id: paymentId } });
+    if (!payment) return;
+    if (payment.npStatus === npStatus && payment.status !== 'PENDING') return;
+
+    await prisma.membershipPayment.update({
+      where: { id: paymentId },
+      data: { npStatus },
+    });
+
+    if (payment.status === 'PENDING' && FINAL_STATUSES.includes(npStatus)) {
+      await activateMembership(paymentId, 'nowpayments');
+    }
+  }
+
+  // El webhook necesita el body crudo para validar la firma HMAC, así que
+  // registramos la ruta en un contexto con parser de string.
+  await app.register(async (instance) => {
+    instance.addContentTypeParser('application/json', { parseAs: 'string' }, (_req, body, done) => done(null, body));
+
+    instance.post('/payments/webhook', async (request, reply) => {
+      const rawBody = (request.body as string) ?? '';
+      const signature = (request.headers['x-nowpayments-sig'] as string) || '';
+
+      if (!verifyWebhookSignature(rawBody, signature)) {
+        return reply.code(401).send({ error: 'Firma inválida' });
+      }
+
+      let payload: any;
+      try { payload = JSON.parse(rawBody); } catch { return reply.code(400).send({ error: 'Body inválido' }); }
+
+      // order_id llega con prefijo único del proyecto (c1-...) para identificar sus pagos.
+      const rawOrderId = (payload.order_id as string) || '';
+      const paymentId = rawOrderId.startsWith('c1-') ? rawOrderId.slice(3) : rawOrderId;
+      const npStatus = payload.payment_status as string;
+      if (!paymentId || !npStatus) return reply.code(200).send({ ok: true });
+
+      try {
+        await applyNowPaymentsStatus(paymentId, npStatus);
+      } catch (err: any) {
+        request.log.error({ err }, 'Error procesando webhook NowPayments');
+      }
+
+      return { ok: true };
+    });
+  });
+
+  // ─── Estado de un pago (para polling del frontend) ───
+  app.get('/payments/:id/status', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const { id } = request.params as { id: string };
+    const payment = await prisma.membershipPayment.findUnique({ where: { id } });
+    if (!payment) return reply.code(404).send({ error: 'Pago no encontrado' });
+    if (payment.userId !== userId) return reply.code(403).send({ error: 'No autorizado' });
+
+    if (payment.npPaymentId && payment.status === 'PENDING' && config.nowpayments.apiKey) {
+      try {
+        const status = await getPaymentStatus(Number(payment.npPaymentId));
+        await applyNowPaymentsStatus(payment.id, status.payment_status);
+        const updated = await prisma.membershipPayment.findUnique({ where: { id } });
+        return { payment: updated };
+      } catch (err: any) {
+        request.log.warn({ err }, 'No se pudo consultar estado NowPayments');
+        return { payment };
+      }
+    }
+
+    return { payment };
+  });
   app.get('/earnings', { preHandler: authMiddleware }, async (request) => {
     const userId = (request.user as JWTPayload).sub;
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { balance: true } });

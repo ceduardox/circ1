@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ButtonPrimary } from '@/components/ui';
-import { Crown, Zap, Rocket, Shield, Infinity as InfinityIcon, ChevronRight, Loader2 } from 'lucide-react';
+import { Crown, Zap, Rocket, Shield, Infinity as InfinityIcon, ChevronRight, Loader2, ExternalLink, CheckCircle2, RefreshCw } from 'lucide-react';
+import { PaymentInfo } from '@/store/membershipStore';
+import { usePaymentFlow } from './usePaymentFlow';
 
 interface PaymentGateProps {
-  onRequestPayment: () => Promise<void>;
+  onRequestPayment: () => Promise<PaymentInfo | null>;
   requesting?: boolean;
   variant?: 'membership' | 'monthly';
 }
@@ -24,7 +26,8 @@ const benefits = [
 
 export function PaymentGate({ onRequestPayment, requesting, variant = 'membership' }: PaymentGateProps) {
   const [phraseIdx, setPhraseIdx] = useState(0);
-  const [requested, setRequested] = useState(false);
+  const { payment, paid, start, checkNow } = usePaymentFlow();
+
   const isMonthly = variant === 'monthly';
 
   useEffect(() => {
@@ -33,8 +36,7 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
   }, []);
 
   const handleRequest = async () => {
-    await onRequestPayment();
-    setRequested(true);
+    await start(onRequestPayment);
   };
 
   const price = isMonthly ? '$50' : '$500';
@@ -95,15 +97,46 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
               ))}
             </div>
 
-            {/* CTA */}
-            {requested ? (
-              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-center animate-enter-up">
-                <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
-                  {isMonthly ? 'Renovación solicitada' : 'Pago solicitado'}
+            {/* CTA / estados */}
+            {paid ? (
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-center animate-enter-up">
+                <div className="flex items-center justify-center gap-2 font-semibold text-emerald-700 dark:text-emerald-300 text-sm">
+                  <CheckCircle2 className="w-5 h-5" />
+                  ¡Pago confirmado! Tu acceso está activo.
+                </div>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                  Recarga la página para entrar a tu programa.
                 </p>
-                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                  Tu solicitud está pendiente de aprobación. El equipo la revisará en breve y renovará tu acceso.
+              </div>
+            ) : payment ? (
+              <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 animate-enter-up">
+                <div className="flex items-center gap-2 font-semibold text-indigo-800 dark:text-indigo-300 text-sm">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Esperando confirmación del pago…
+                </div>
+                <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-1">
+                  Completaste el pago en la pestaña de NowPayments? La activación es automática.
                 </p>
+                <div className="mt-4 space-y-2">
+                  {payment.invoiceUrl && (
+                    <a
+                      href={payment.invoiceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-dark-700 border border-indigo-200 dark:border-indigo-700 text-sm font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-dark-600 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Abrir página de pago
+                    </a>
+                  )}
+                  <button
+                    onClick={checkNow}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Verificar estado del pago
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -120,7 +153,7 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                   </span>
                 </ButtonPrimary>
                 <p className="text-center text-xs text-gray-400 dark:text-dark-500">
-                  Pago seguro · Acceso inmediato tras aprobación
+                  Pago en cripto seguro vía NowPayments · Activación automática
                 </p>
               </div>
             )}

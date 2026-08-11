@@ -18,13 +18,24 @@ interface MembershipStatus {
   };
 }
 
+export interface PaymentInfo {
+  id: string;
+  status: string;
+  invoiceUrl?: string | null;
+  npStatus?: string | null;
+  amount?: number;
+  type?: string;
+}
+
 interface MembershipState {
   status: MembershipStatus | null;
   loadingStatus: boolean;
   requestingPayment: boolean;
+  checkingPayment: boolean;
   fetchStatus: () => Promise<void>;
-  requestPayment: () => Promise<void>;
-  requestMonthlyPayment: () => Promise<void>;
+  requestPayment: () => Promise<PaymentInfo | null>;
+  requestMonthlyPayment: () => Promise<PaymentInfo | null>;
+  checkPayment: (paymentId: string) => Promise<PaymentInfo>;
   reset: () => void;
 }
 
@@ -32,6 +43,7 @@ export const useMembershipStore = create<MembershipState>((set, get) => ({
   status: null,
   loadingStatus: false,
   requestingPayment: false,
+  checkingPayment: false,
 
   fetchStatus: async () => {
     set({ loadingStatus: true });
@@ -46,8 +58,16 @@ export const useMembershipStore = create<MembershipState>((set, get) => ({
   requestPayment: async () => {
     set({ requestingPayment: true });
     try {
-      await membershipApi.requestPayment({ method: 'manual' });
+      const { data } = await membershipApi.requestPayment({ method: 'nowpayments' });
       await get().fetchStatus();
+      return {
+        id: data.payment.id,
+        status: data.payment.status,
+        invoiceUrl: data.invoiceUrl ?? data.payment.npInvoiceUrl,
+        npStatus: data.payment.npStatus,
+        amount: data.payment.amount,
+        type: data.payment.type,
+      };
     } finally {
       set({ requestingPayment: false });
     }
@@ -56,10 +76,28 @@ export const useMembershipStore = create<MembershipState>((set, get) => ({
   requestMonthlyPayment: async () => {
     set({ requestingPayment: true });
     try {
-      await membershipApi.requestMonthlyPayment({ method: 'manual' });
+      const { data } = await membershipApi.requestMonthlyPayment({ method: 'nowpayments' });
       await get().fetchStatus();
+      return {
+        id: data.payment.id,
+        status: data.payment.status,
+        invoiceUrl: data.invoiceUrl ?? data.payment.npInvoiceUrl,
+        npStatus: data.payment.npStatus,
+        amount: data.payment.amount,
+        type: data.payment.type,
+      };
     } finally {
       set({ requestingPayment: false });
+    }
+  },
+
+  checkPayment: async (paymentId: string) => {
+    set({ checkingPayment: true });
+    try {
+      const { data } = await membershipApi.paymentStatus(paymentId);
+      return data.payment as PaymentInfo;
+    } finally {
+      set({ checkingPayment: false });
     }
   },
 

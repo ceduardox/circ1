@@ -103,6 +103,12 @@ model MembershipPayment {
   processedAt DateTime?     @map("processed_at")
   processedBy String?       @map("processed_by")
 
+  npPaymentId String?       @map("np_payment_id")
+  npInvoiceUrl String?      @map("np_invoice_url")
+  npStatus    String?       @map("np_status")
+  npPayAmount Float?        @map("np_pay_amount")
+  npPayCurrency String?     @map("np_pay_currency")
+
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   commissions Commission[]
 

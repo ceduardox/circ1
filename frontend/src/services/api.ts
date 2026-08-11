@@ -97,6 +97,7 @@ export const membershipApi = {
   status: () => api.get('/membership/status'),
   requestPayment: (data?: any) => api.post('/membership/membership/payment/request', data),
   requestMonthlyPayment: (data?: any) => api.post('/membership/monthly/payment/request', data),
+  paymentStatus: (id: string) => api.get(`/membership/payments/${id}/status`),
   earnings: () => api.get('/membership/earnings'),
   network: () => api.get('/membership/network'),
   withdrawals: () => api.get('/membership/withdrawals'),

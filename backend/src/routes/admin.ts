@@ -3,6 +3,7 @@ import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
 import { ContentType } from '@prisma/client';
+import { activateMembership } from '../utils/activation.js';
 
 const createDaySchema = z.object({
   dayNumber: z.number().int().positive(),
@@ -355,81 +356,14 @@ export async function adminRoutes(app: FastifyInstance) {
   app.post('/business/payments/:id/approve', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
     const { id } = request.params as PaymentParams;
     const adminUser = (request as any).user as JWTPayload;
-    const settings = await getSettings();
 
-    const payment = await prisma.membershipPayment.findUnique({ where: { id }, include: { user: true } });
-    if (!payment) return reply.code(404).send({ error: 'Pago no encontrado' });
-    if (payment.status !== 'PENDING') return reply.code(400).send({ error: 'Este pago ya fue procesado' });
-
-    const now = new Date();
-    const isRenewal = payment.type === 'MONTHLY';
-
-    // Renovación: parte de la fecha de vencimiento actual (o de hoy si ya venció).
-    const baseExpiry = isRenewal
-      ? (payment.user.membershipExpiresAt && payment.user.membershipExpiresAt > now
-        ? payment.user.membershipExpiresAt
-        : now)
-      : now;
-    const expires = new Date(baseExpiry);
-    expires.setDate(expires.getDate() + 30);
-
-    await prisma.$transaction(async (tx) => {
-      await tx.membershipPayment.update({
-        where: { id },
-        data: { status: 'APPROVED', processedAt: now, processedBy: adminUser.sub },
-      });
-
-      await tx.user.update({
-        where: { id: payment.userId },
-        data: {
-          membershipStatus: 'ACTIVE',
-          membershipPaidAt: now,
-          membershipExpiresAt: expires,
-        },
-      });
-
-      // Nivel 1: el referido directo que trajo a este usuario (25%).
-      // Solo recibe comisión si tiene la membresía pagada; si no, se pierde.
-      const source = await tx.user.findUnique({ where: { id: payment.userId } });
-      const referrer = source?.referrerId ? await tx.user.findUnique({ where: { id: source.referrerId } }) : null;
-      if (referrer && referrer.membershipStatus === 'ACTIVE') {
-        const percent = settings.level1Percent;
-        const amount = Math.round((payment.amount * percent) / 100 * 100) / 100;
-        await tx.commission.create({
-          data: {
-            paymentId: payment.id,
-            userId: referrer.id,
-            sourceUserId: payment.userId,
-            level: 1,
-            percent,
-            amount,
-          },
-        });
-        await tx.user.update({ where: { id: referrer.id }, data: { balance: { increment: amount } } });
-      }
-
-      // Nivel 2: el referido del referido (5%). Igual regla: solo si está pagado.
-      if (referrer) {
-        const grandReferrer = referrer.referrerId
-          ? await tx.user.findUnique({ where: { id: referrer.referrerId } })
-          : null;
-        if (grandReferrer && grandReferrer.membershipStatus === 'ACTIVE') {
-          const percent2 = settings.level2Percent;
-          const amount2 = Math.round((payment.amount * percent2) / 100 * 100) / 100;
-          await tx.commission.create({
-            data: {
-              paymentId: payment.id,
-              userId: grandReferrer.id,
-              sourceUserId: payment.userId,
-              level: 2,
-              percent: percent2,
-              amount: amount2,
-            },
-          });
-          await tx.user.update({ where: { id: grandReferrer.id }, data: { balance: { increment: amount2 } } });
-        }
-      }
-    });
+    try {
+      await activateMembership(id, adminUser.sub);
+    } catch (err: any) {
+      if (err.message === 'Pago no encontrado') return reply.code(404).send({ error: err.message });
+      if (err.message === 'Este pago ya fue procesado') return reply.code(400).send({ error: err.message });
+      throw err;
+    }
 
     return { success: true };
   });
