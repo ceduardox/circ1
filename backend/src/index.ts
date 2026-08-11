@@ -55,6 +55,9 @@ await app.register(jwt, {
 await app.register(rateLimit, {
   max: config.rateLimit.max,
   timeWindow: config.rateLimit.timeWindow,
+  keyGenerator: (request) => {
+    return request.headers['x-forwarded-for'] as string || request.ip || 'unknown';
+  },
 });
 
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));

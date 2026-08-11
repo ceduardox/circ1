@@ -2,15 +2,18 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { useEffect } from 'react';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
+import { DesktopHeader } from '@/components/layout/DesktopHeader';
 import { LoginPage } from '@/pages/Login';
 import { RegisterPage } from '@/pages/Register';
 import { DashboardPage } from '@/pages/Dashboard';
 import { DayViewPage } from '@/pages/DayView';
 import { ProfilePage } from '@/pages/Profile';
 import { ProgressPage } from '@/pages/Progress';
+import { ProgramPage } from '@/pages/Program';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboard';
 import { AdminDaysPage } from '@/pages/admin/AdminDays';
 import { AdminDayDetailPage } from '@/pages/admin/AdminDayDetail';
@@ -27,19 +30,21 @@ function App() {
   }, [isAuthenticated, fetchMe]);
 
   return (
+    <ThemeProvider>
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 dark:bg-dark-900">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
           <Route element={
-            <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
+            <div className="min-h-screen bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-dark-100 flex flex-col">
               <MobileHeader />
-              <div className="flex flex-1 overflow-hidden">
-                <DesktopSidebar />
-                <main className="flex-1 md:pl-60 pt-16 md:pt-0 p-4 md:p-8 min-h-screen overflow-x-hidden min-w-0">
+              <DesktopSidebar />
+              <div className="flex flex-col flex-1 overflow-hidden md:pl-60">
+                <DesktopHeader />
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 min-h-screen overflow-x-hidden min-w-0 max-w-7xl mx-auto w-full">
                   <ProtectedRoute />
                 </main>
               </div>
@@ -49,6 +54,7 @@ function App() {
             <Route path="/day/:dayNumber" element={<DayViewPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/progress" element={<ProgressPage />} />
+            <Route path="/program" element={<ProgramPage />} />
 
             <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
@@ -62,6 +68,7 @@ function App() {
         <Toaster position="top-right" />
       </div>
     </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

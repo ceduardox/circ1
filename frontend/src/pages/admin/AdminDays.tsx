@@ -103,7 +103,7 @@ export function AdminDaysPage() {
           <ButtonGhost onClick={() => navigate('/admin')}>
             <ChevronLeft className="w-4 h-4" />
           </ButtonGhost>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2">
             <BookOpen className="w-6 h-6" /> Días del Programa
           </h1>
         </div>
@@ -115,14 +115,14 @@ export function AdminDaysPage() {
         {showCreate && (
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold">Crear Nuevo Día</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-100">Crear Nuevo Día</h2>
             </CardHeader>
             <CardContent>
               <form onSubmit={dayHandleSubmit(onCreateDay)} className="space-y-4">
                 <div>
                   <Label htmlFor="dayNumber">Número de Día</Label>
                   <Input id="dayNumber" type="number" {...dayRegister('dayNumber')} />
-                  {dayErrors.dayNumber && <p className="text-red-500 text-sm mt-1">{dayErrors.dayNumber.message}</p>}
+                  {dayErrors.dayNumber && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{dayErrors.dayNumber.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor="title">Título</Label>
@@ -147,7 +147,7 @@ export function AdminDaysPage() {
         {editingDay && (
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold">Editar Día {editingDay.dayNumber}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-100">Editar Día {editingDay.dayNumber}</h2>
             </CardHeader>
             <CardContent>
               <form onSubmit={dayHandleSubmit(onUpdateDay)} className="space-y-4">
@@ -181,12 +181,12 @@ export function AdminDaysPage() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-600 shrink-0">
+                    <span className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center font-bold text-primary-600 dark:text-primary-400 shrink-0">
                       {day.dayNumber}
                     </span>
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">{day.title}</h3>
-                      <p className="text-sm text-gray-500">{day.contents?.length || 0} contenidos · {day.isActive ? 'Activo' : 'Inactivo'}</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-dark-100 truncate">{day.title}</h3>
+                      <p className="text-sm text-gray-500 dark:text-dark-400">{day.contents?.length || 0} contenidos · {day.isActive ? 'Activo' : 'Inactivo'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -198,7 +198,7 @@ export function AdminDaysPage() {
                     </ButtonGhost>
                   </div>
                 </div>
-                {day.description && <p className="text-gray-600 text-sm mt-2 ml-13 hidden sm:block">{day.description}</p>}
+                {day.description && <p className="text-gray-600 dark:text-dark-400 text-sm mt-2 ml-13 hidden sm:block">{day.description}</p>}
               </CardContent>
             </Card>
           ))}
@@ -207,9 +207,9 @@ export function AdminDaysPage() {
         {days.length === 0 && !showCreate && (
           <Card>
             <CardContent className="p-12 text-center">
-              <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay días creados</h3>
-              <p className="text-gray-500 mb-4">Crea el primer día del programa</p>
+              <BookOpen className="w-16 h-16 text-gray-300 dark:text-dark-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">No hay días creados</h3>
+              <p className="text-gray-500 dark:text-dark-400 mb-4">Crea el primer día del programa</p>
               <ButtonPrimary onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-2" /> Crear Primer Día</ButtonPrimary>
             </CardContent>
           </Card>

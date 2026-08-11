@@ -19,6 +19,7 @@ enum ContentType {
   QUIZ
   MENTAL_EXERCISE
   CONFIDENCE_TASK
+  INTERACTIVE_EXERCISE
 }
 
 enum ContentStatus {
@@ -44,6 +45,7 @@ model User {
   age           Int?
   country       String?
   role          UserRole  @default(USER)
+  streakFreezes Int       @default(2) @map("streak_freezes")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 

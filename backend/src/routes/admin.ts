@@ -46,13 +46,55 @@ interface UserQuery { page?: string; limit?: string; search?: string; }
 
 export async function adminRoutes(app: FastifyInstance) {
   app.get('/stats', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
-    const [totalUsers, totalDays, totalContents, completedToday] = await Promise.all([
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+    const weekAgo = new Date(Date.now() - 7 * 86400000);
+
+    const [
+      totalUsers,
+      totalDays,
+      totalContents,
+      completedToday,
+      totalCompletions,
+      activeUsersWeek,
+      reflectionsCount,
+      quizzesPassed,
+      dayCompletions,
+    ] = await Promise.all([
       prisma.user.count(),
       prisma.programDay.count(),
       prisma.dayContent.count(),
-      prisma.userProgress.count({ where: { status: 'COMPLETED', completedAt: { gte: new Date(new Date().setHours(0,0,0,0)) } } }),
+      prisma.userProgress.count({ where: { status: 'COMPLETED', completedAt: { gte: todayStart } } }),
+      prisma.userProgress.count({ where: { status: 'COMPLETED' } }),
+      prisma.userProgress.findMany({
+        where: { status: 'COMPLETED', completedAt: { gte: weekAgo } },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      prisma.userReflection.count(),
+      prisma.userProgress.count({ where: { content: { type: 'QUIZ' }, status: 'COMPLETED' } }),
+      prisma.userProgress.findMany({
+        where: { status: 'COMPLETED' },
+        select: { dayId: true },
+        distinct: ['dayId'],
+      }),
     ]);
-    return { totalUsers, totalDays, totalContents, completedToday };
+
+    const avgProgress = totalUsers > 0 && totalContents > 0
+      ? Math.round((totalCompletions / (totalUsers * totalContents)) * 100)
+      : 0;
+
+    return {
+      totalUsers,
+      totalDays,
+      totalContents,
+      completedToday,
+      totalCompletions,
+      activeUsersWeek: activeUsersWeek.length,
+      reflectionsCount,
+      quizzesPassed,
+      uniqueDaysCompleted: dayCompletions.length,
+      avgProgress,
+    };
   });
 
   app.get('/users', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {

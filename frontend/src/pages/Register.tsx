@@ -58,19 +58,19 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-900 px-4 py-12">
       <Card className="w-full max-w-md shadow-lg">
         <CardContent className="p-8">
           <div className="text-center mb-8">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mx-auto mb-4">
               <UserPlus className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Crear Cuenta</h1>
-            <p className="text-gray-500 mt-2">Únete a la comunidad de neuroentrenamiento</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Crear Cuenta</h1>
+            <p className="text-gray-500 dark:text-dark-400 mt-2">Únete a la comunidad de neuroentrenamiento</p>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm mb-6">
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm mb-6">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -81,12 +81,12 @@ export function RegisterPage() {
               <div>
                 <Label htmlFor="firstName">Nombre</Label>
                 <Input id="firstName" placeholder="Juan" {...register('firstName')} />
-                {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>}
+                {errors.firstName && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.firstName.message}</p>}
               </div>
               <div>
                 <Label htmlFor="lastName">Apellido</Label>
                 <Input id="lastName" placeholder="Pérez" {...register('lastName')} />
-                {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>}
+                {errors.lastName && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.lastName.message}</p>}
               </div>
             </div>
 
@@ -96,7 +96,7 @@ export function RegisterPage() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input id="email" type="email" placeholder="tu@email.com" className="pl-10" {...register('email')} />
               </div>
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+              {errors.email && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.email.message}</p>}
             </div>
 
             <div>
@@ -105,7 +105,7 @@ export function RegisterPage() {
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input id="username" placeholder="juanperez" className="pl-10" {...register('username')} />
               </div>
-              {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>}
+              {errors.username && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.username.message}</p>}
             </div>
 
             <div>
@@ -123,7 +123,7 @@ export function RegisterPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+              {errors.password && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.password.message}</p>}
             </div>
 
             <div>
@@ -132,7 +132,7 @@ export function RegisterPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input id="confirmPassword" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10" {...register('confirmPassword')} />
               </div>
-              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>}
+              {errors.confirmPassword && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.confirmPassword.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -151,8 +151,8 @@ export function RegisterPage() {
             </ButtonPrimary>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            ¿Ya tienes cuenta? <Link to="/login" className="text-primary-600 hover:underline font-medium">Inicia sesión</Link>
+          <p className="text-center text-sm text-gray-500 dark:text-dark-400 mt-6">
+            ¿Ya tienes cuenta? <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:underline font-medium">Inicia sesión</Link>
           </p>
         </CardContent>
       </Card>

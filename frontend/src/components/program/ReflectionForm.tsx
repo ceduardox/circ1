@@ -20,6 +20,7 @@ interface ReflectionFormProps {
   placeholder: string;
   minChars?: number;
   initialContent?: string;
+  onSave?: (data: { reflectionType: ReflectionFormProps['reflectionType']; content: string }) => Promise<void>;
 }
 
 const typeIcons = {
@@ -36,7 +37,7 @@ const typeLabels = {
   CUSTOM: 'Reflexión',
 };
 
-export function ReflectionForm({ dayId, reflectionType, title, prompt, placeholder, minChars = 10, initialContent }: ReflectionFormProps) {
+export function ReflectionForm({ dayId, reflectionType, title, prompt, placeholder, minChars = 10, initialContent, onSave }: ReflectionFormProps) {
   const { saveReflection } = useProgramStore();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -54,7 +55,11 @@ export function ReflectionForm({ dayId, reflectionType, title, prompt, placehold
   const onSubmit = async (data: ReflectionFormData) => {
     setSaving(true);
     try {
-      await saveReflection({ dayId, reflectionType, content: data.content });
+      if (onSave) {
+        await onSave({ reflectionType, content: data.content });
+      } else {
+        await saveReflection({ dayId, reflectionType, content: data.content });
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } finally {

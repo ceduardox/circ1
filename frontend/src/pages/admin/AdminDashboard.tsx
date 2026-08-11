@@ -4,7 +4,7 @@ import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader } from '@/components/ui';
 import { ButtonPrimary, ButtonGhost } from '@/components/ui';
-import { Plus, Users, BookOpen, BarChart, Crown, CheckCircle, Edit } from 'lucide-react';
+import { Plus, Users, BookOpen, BarChart, Crown, CheckCircle, Edit, Target, Brain, PenLine, Flame } from 'lucide-react';
 
 export function AdminDashboardPage() {
   const { fetchStats, stats } = useAdminStore();
@@ -18,9 +18,16 @@ export function AdminDashboardPage() {
 
   const adminStats = [
     { label: 'Usuarios Totales', value: stats?.totalUsers || 0, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'Días del Programa', value: stats?.totalDays || 0, icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'Contenidos Totales', value: stats?.totalContents || 0, icon: BarChart, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { label: 'Completados Hoy', value: stats?.completedToday || 0, icon: CheckCircle, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { label: 'Activos esta Semana', value: stats?.activeUsersWeek || 0, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { label: 'Completados Hoy', value: stats?.completedToday || 0, icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'Total Completados', value: stats?.totalCompletions || 0, icon: Target, color: 'text-purple-500', bg: 'bg-purple-50' },
+  ];
+
+  const contentStats = [
+    { label: 'Reflexiones', value: stats?.reflectionsCount || 0, icon: PenLine, color: 'text-pink-500', bg: 'bg-pink-50' },
+    { label: 'Quizzes Aprobados', value: stats?.quizzesPassed || 0, icon: Brain, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'Días Únicos Completados', value: stats?.uniqueDaysCompleted || 0, icon: BookOpen, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { label: 'Progreso Promedio', value: `${stats?.avgProgress || 0}%`, icon: BarChart, color: 'text-teal-500', bg: 'bg-teal-50' },
   ];
 
   return (
@@ -50,6 +57,27 @@ export function AdminDashboardPage() {
                   <div className="min-w-0">
                     <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                     <p className="text-gray-500 text-sm truncate">{stat.label}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {contentStats.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center shrink-0`}>
+                    <Icon className={`w-5 h-5 ${stat.color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-gray-500 text-xs truncate">{stat.label}</p>
                   </div>
                 </div>
               </CardContent>

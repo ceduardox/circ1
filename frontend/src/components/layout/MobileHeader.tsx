@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun } from 'lucide-react';
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuthStore();
+  const { isDark, toggle } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -37,24 +39,24 @@ export function MobileHeader() {
 
       {/* Sidebar Drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 md:hidden bg-white shadow-xl transform transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 md:hidden bg-white dark:bg-dark-800 shadow-xl transform transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Menú de navegación"
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-dark-700">
             <Link to="/dashboard" className="flex items-center gap-2" onClick={closeMenu}>
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">C1</span>
               </div>
-              <span className="font-semibold text-gray-900">Círculo 1</span>
+              <span className="font-semibold text-gray-900 dark:text-dark-100">Círculo 1</span>
             </Link>
             <button
               onClick={closeMenu}
               aria-label="Cerrar menú"
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              className="p-2 rounded-lg text-gray-500 dark:text-dark-400 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-700 dark:hover:text-dark-200 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -72,8 +74,8 @@ export function MobileHeader() {
                   onClick={closeMenu}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
                     active
-                      ? 'bg-primary-50 text-primary-700 font-semibold'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
+                      : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -84,7 +86,7 @@ export function MobileHeader() {
 
             {user?.role === 'ADMIN' && (
               <div className="pt-4">
-                <p className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-dark-500 uppercase tracking-wider">
                   Administración
                 </p>
                 {adminItems.map(item => {
@@ -97,8 +99,8 @@ export function MobileHeader() {
                       onClick={closeMenu}
                       className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
                         active
-                          ? 'bg-primary-50 text-primary-700 font-semibold'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
+                          : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -110,24 +112,35 @@ export function MobileHeader() {
             )}
           </nav>
 
+          {/* Dark Mode Toggle */}
+          <div className="px-3 pb-2">
+            <button
+              onClick={toggle}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+            >
+              {isDark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
+              {isDark ? 'Modo Claro' : 'Modo Oscuro'}
+            </button>
+          </div>
+
           {/* User Info & Logout */}
-          <div className="p-4 border-t border-gray-100">
+          <div className="p-4 border-t border-gray-100 dark:border-dark-700">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                <span className="text-primary-700 font-semibold text-sm">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/50 dark:to-primary-800/50 flex items-center justify-center">
+                <span className="text-primary-700 dark:text-primary-300 font-semibold text-sm">
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-dark-100 truncate">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs text-gray-500">{user?.role}</p>
+                <p className="text-xs text-gray-500 dark:text-dark-400">{user?.role}</p>
               </div>
             </div>
             <button
               onClick={() => { logout(); navigate('/login'); closeMenu(); }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               <LogOut className="w-5 h-5" />
               Cerrar Sesión
@@ -137,13 +150,13 @@ export function MobileHeader() {
       </aside>
 
       {/* Top Bar */}
-      <header className="md:hidden sticky top-0 z-30 bg-white border-b border-gray-200">
+      <header className="md:hidden sticky top-0 z-30 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
         <div className="flex items-center justify-between px-4 py-3">
           <Link to="/dashboard" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center">
               <span className="text-white font-bold text-sm">C1</span>
             </div>
-            <span className="font-semibold text-gray-900">Círculo 1</span>
+            <span className="font-semibold text-gray-900 dark:text-dark-100">Círculo 1</span>
           </Link>
           <button
             onClick={() => setOpen(!open)}

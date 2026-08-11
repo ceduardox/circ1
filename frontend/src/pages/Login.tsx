@@ -30,7 +30,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-900 px-4 py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
@@ -38,22 +38,22 @@ export function LoginPage() {
             <span className="text-white font-bold text-lg">C1</span>
           </div>
           <div>
-            <p className="font-semibold text-gray-900">Círculo 1</p>
-            <p className="text-sm text-gray-500">Neuroentrenamiento</p>
+            <p className="font-semibold text-gray-900 dark:text-dark-100">Círculo 1</p>
+            <p className="text-sm text-gray-500 dark:text-dark-400">Neuroentrenamiento</p>
           </div>
         </div>
 
         <Card className="shadow-lg">
-          <CardHeader className="text-center border-b border-gray-100 pb-6">
-            <h1 className="text-xl font-bold text-gray-900">Iniciar Sesión</h1>
-            <p className="text-gray-500 text-sm mt-1">
+          <CardHeader className="text-center border-b border-gray-100 dark:border-dark-700 pb-6">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-dark-100">Iniciar Sesión</h1>
+            <p className="text-gray-500 dark:text-dark-400 text-sm mt-1">
               Accede a tu programa de entrenamiento
             </p>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
                   {error}
                 </div>
               )}
@@ -90,7 +90,7 @@ export function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-200"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -111,9 +111,9 @@ export function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center mt-6 text-sm text-gray-500">
+        <p className="text-center mt-6 text-sm text-gray-500 dark:text-dark-400">
           ¿No tienes cuenta?{' '}
-          <Link to="/register" className="text-primary-600 hover:text-primary-700 font-semibold">
+          <Link to="/register" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold">
             Regístrate aquí
           </Link>
         </p>

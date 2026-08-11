@@ -5,6 +5,7 @@ import { VideoPlayer } from './VideoPlayer';
 import { QuizComponent } from './QuizComponent';
 import { MentalExercise } from './MentalExercise';
 import { ConfidenceTask } from './ConfidenceTask';
+import { InteractiveExercise } from './InteractiveExercise';
 import { useProgramStore } from '@/store/programStore';
 import { Card, CardContent } from '@/components/ui';
 
@@ -19,15 +20,15 @@ export function ContentRenderer({ content, dayNumber, onCompleted }: ContentRend
   const userProgress = progress.find(p => p.contentId === content.id);
   const completed = userProgress?.status === 'COMPLETED';
 
-  const handleComplete = () => {
-    completeContent(dayNumber, content.id);
+  const handleComplete = async () => {
+    await completeContent(dayNumber, content.id);
     onCompleted?.();
   };
 
-  const handleReflectionSave = (data: any) => {
-    saveReflection({ dayId: content.dayId, reflectionType: data.reflectionType, content: data.content });
+  const handleReflectionSave = async (data: any) => {
+    await saveReflection({ dayId: content.dayId, reflectionType: data.reflectionType, content: data.content });
     if (content.isRequired) {
-      completeContent(dayNumber, content.id);
+      await completeContent(dayNumber, content.id, { content: data.content });
     }
     onCompleted?.();
   };
@@ -53,6 +54,7 @@ export function ContentRenderer({ content, dayNumber, onCompleted }: ContentRend
           placeholder={placeholder}
           minChars={minChars}
           initialContent={userProgress?.answers?.content}
+          onSave={handleReflectionSave}
         />
       );
     }
@@ -110,6 +112,16 @@ export function ContentRenderer({ content, dayNumber, onCompleted }: ContentRend
           evidenceType={evidenceType}
           description={description}
           initialEvidence={userProgress?.answers?.evidence}
+        />
+      );
+    }
+    case 'INTERACTIVE_EXERCISE': {
+      const { type: exerciseType, instruction, ...exerciseData } = content.content;
+      return (
+        <InteractiveExercise
+          {...baseProps}
+          title={content.title}
+          exercise={{ type: exerciseType, instruction, data: exerciseData }}
         />
       );
     }

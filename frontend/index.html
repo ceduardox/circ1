@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Círculo 1 - Mentoría Neuroentrenamiento</title>
+    <script>
+      // Aplicar tema ANTES de que React cargue (sin flash)
+      (function() {
+        var theme = localStorage.getItem('circulo1-theme');
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

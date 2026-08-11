@@ -2,12 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Card, CardContent, CardHeader } from '@/components/ui';
-import { ButtonPrimary, ButtonGhost, Input, Label, Textarea, Select } from '@/components/ui';
-import { Plus, Trash2, Edit, ChevronLeft, ChevronUp, ChevronDown, Loader2, GripVertical, Save } from 'lucide-react';
+import { ButtonPrimary, ButtonGhost, ButtonDanger, Input, Label, Textarea, Select } from '@/components/ui';
+import { Plus, Trash2, Edit, ChevronLeft, Loader2, GripVertical, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { DndContext, closestCenter, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
@@ -20,15 +17,7 @@ const contentTypeLabels: Record<string, string> = {
   QUIZ: '🧠 Quiz',
   MENTAL_EXERCISE: '🧘 Ejercicio Mental',
   CONFIDENCE_TASK: '💼 Reto Confianza',
-};
-
-const contentTypeDefaults: Record<string, string> = {
-  REFLECTION: JSON.stringify({ prompt: '', placeholder: '', minChars: 10 }, null, 2),
-  AFFIRMATION: JSON.stringify({ text: '', repeatCount: 3, instruction: '' }, null, 2),
-  VIDEO: JSON.stringify({ url: '', provider: 'facebook', duration: 0, description: '' }, null, 2),
-  QUIZ: JSON.stringify({ questions: [], passingScore: 70 }, null, 2),
-  MENTAL_EXERCISE: JSON.stringify({ instruction: '', durationMinutes: 5, steps: [] }, null, 2),
-  CONFIDENCE_TASK: JSON.stringify({ task: '', evidenceType: 'text', description: '' }, null, 2),
+  INTERACTIVE_EXERCISE: '🧩 Ejercicio Interactivo',
 };
 
 interface ContentItem {
@@ -47,7 +36,7 @@ function SortableContentItem({ content, index, onEdit, onDelete }: { content: Co
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200"
+      className="p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-200 transition-colors"
     >
       <div className="flex items-center gap-3">
         <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 shrink-0" aria-label="Arrastrar">
@@ -74,57 +63,317 @@ function SortableContentItem({ content, index, onEdit, onDelete }: { content: Co
   );
 }
 
+function ReflectionForm({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Prompt (pregunta para el usuario)</Label>
+        <Textarea rows={3} value={value.prompt || ''} onChange={e => onChange({ ...value, prompt: e.target.value })} placeholder="Ej: ¿Cuáles son tus sueños?" />
+      </div>
+      <div>
+        <Label>Placeholder del textarea</Label>
+        <Input value={value.placeholder || ''} onChange={e => onChange({ ...value, placeholder: e.target.value })} placeholder="Escribe aquí..." />
+      </div>
+      <div>
+        <Label>Mínimo de caracteres</Label>
+        <Input type="number" value={value.minChars || 10} onChange={e => onChange({ ...value, minChars: parseInt(e.target.value) || 10 })} />
+      </div>
+    </div>
+  );
+}
+
+function AffirmationForm({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Texto de la afirmación</Label>
+        <Textarea rows={3} value={value.text || ''} onChange={e => onChange({ ...value, text: e.target.value })} placeholder="YO SOY CAPAZ DE..." />
+      </div>
+      <div>
+        <Label>Repeticiones</Label>
+        <Input type="number" value={value.repeatCount || 3} onChange={e => onChange({ ...value, repeatCount: parseInt(e.target.value) || 3 })} />
+      </div>
+      <div>
+        <Label>Instrucción</Label>
+        <Textarea rows={2} value={value.instruction || ''} onChange={e => onChange({ ...value, instruction: e.target.value })} placeholder="Lee en voz alta con convicción..." />
+      </div>
+    </div>
+  );
+}
+
+function VideoForm({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>URL del video</Label>
+        <Input value={value.url || ''} onChange={e => onChange({ ...value, url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." />
+      </div>
+      <div>
+        <Label>Plataforma</Label>
+        <Select value={value.provider || 'youtube'} onChange={e => onChange({ ...value, provider: e.target.value })}>
+          <option value="youtube">YouTube</option>
+          <option value="facebook">Facebook</option>
+          <option value="vimeo">Vimeo</option>
+          <option value="otro">Otro</option>
+        </Select>
+      </div>
+      <div>
+        <Label>Duración (segundos)</Label>
+        <Input type="number" value={value.duration || 0} onChange={e => onChange({ ...value, duration: parseInt(e.target.value) || 0 })} />
+      </div>
+      <div>
+        <Label>Descripción</Label>
+        <Textarea rows={2} value={value.description || ''} onChange={e => onChange({ ...value, description: e.target.value })} />
+      </div>
+    </div>
+  );
+}
+
+function QuizForm({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+  const questions = value.questions || [];
+
+  const addQuestion = () => {
+    onChange({
+      ...value,
+      questions: [...questions, { id: `q${questions.length + 1}`, text: '', type: 'single', options: ['', ''], correct: 0 }],
+    });
+  };
+
+  const updateQuestion = (index: number, field: string, val: any) => {
+    const updated = questions.map((q: any, i: number) => i === index ? { ...q, [field]: val } : q);
+    onChange({ ...value, questions: updated });
+  };
+
+  const removeQuestion = (index: number) => {
+    onChange({ ...value, questions: questions.filter((_: any, i: number) => i !== index) });
+  };
+
+  const addOption = (qIndex: number) => {
+    const q = questions[qIndex];
+    updateQuestion(qIndex, 'options', [...q.options, '']);
+  };
+
+  const updateOption = (qIndex: number, oIndex: number, val: string) => {
+    const q = questions[qIndex];
+    const opts = q.options.map((o: string, i: number) => i === oIndex ? val : o);
+    updateQuestion(qIndex, 'options', opts);
+  };
+
+  const removeOption = (qIndex: number, oIndex: number) => {
+    const q = questions[qIndex];
+    updateQuestion(qIndex, 'options', q.options.filter((_: string, i: number) => i !== oIndex));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Puntaje mínimo para aprobar (%)</Label>
+        <Input type="number" value={value.passingScore || 70} onChange={e => onChange({ ...value, passingScore: parseInt(e.target.value) || 70 })} />
+      </div>
+      {questions.map((q: any, qi: number) => (
+        <div key={qi} className="p-3 bg-white rounded-lg border border-gray-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-700">Pregunta {qi + 1}</span>
+            <button onClick={() => removeQuestion(qi)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+          </div>
+          <Input value={q.text} onChange={e => updateQuestion(qi, 'text', e.target.value)} placeholder="¿Pregunta?" />
+          <div className="space-y-2">
+            {q.options.map((opt: string, oi: number) => (
+              <div key={oi} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name={`correct-${qi}`}
+                  checked={q.correct === oi}
+                  onChange={() => updateQuestion(qi, 'correct', oi)}
+                  className="w-4 h-4 text-primary-600"
+                />
+                <Input
+                  value={opt}
+                  onChange={e => updateOption(qi, oi, e.target.value)}
+                  placeholder={`Opción ${oi + 1}`}
+                  className="flex-1"
+                />
+                {q.options.length > 2 && (
+                  <button onClick={() => removeOption(qi, oi)} className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button onClick={() => addOption(qi)} className="text-xs text-primary-600 hover:text-primary-700 font-medium">+ Agregar opción</button>
+        </div>
+      ))}
+      <button onClick={addQuestion} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:border-primary-400 hover:text-primary-600 transition-colors">
+        + Agregar Pregunta
+      </button>
+    </div>
+  );
+}
+
+function MentalExerciseForm({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+  const steps = value.steps || [];
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Instrucción principal</Label>
+        <Textarea rows={3} value={value.instruction || ''} onChange={e => onChange({ ...value, instruction: e.target.value })} placeholder="Cierra los ojos y respira profundo..." />
+      </div>
+      <div>
+        <Label>Duración (minutos)</Label>
+        <Input type="number" value={value.durationMinutes || 5} onChange={e => onChange({ ...value, durationMinutes: parseInt(e.target.value) || 5 })} />
+      </div>
+      <div>
+        <Label>Pasos de la meditación</Label>
+        {steps.map((step: string, i: number) => (
+          <div key={i} className="flex items-center gap-2 mt-2">
+            <span className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-xs font-bold shrink-0">{i + 1}</span>
+            <Input value={step} onChange={e => {
+              const updated = [...steps]; updated[i] = e.target.value;
+              onChange({ ...value, steps: updated });
+            }} placeholder="Paso..." className="flex-1" />
+            <button onClick={() => onChange({ ...value, steps: steps.filter((_: string, j: number) => j !== i) })} className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+          </div>
+        ))}
+        <button onClick={() => onChange({ ...value, steps: [...steps, ''] })} className="mt-2 text-xs text-primary-600 hover:text-primary-700 font-medium">+ Agregar paso</button>
+      </div>
+    </div>
+  );
+}
+
+function ConfidenceTaskForm({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Descripción de la tarea</Label>
+        <Textarea rows={3} value={value.task || ''} onChange={e => onChange({ ...value, task: e.target.value })} placeholder="Escribe algo y compártelo con..." />
+      </div>
+      <div>
+        <Label>Tipo de evidencia</Label>
+        <Select value={value.evidenceType || 'text'} onChange={e => onChange({ ...value, evidenceType: e.target.value })}>
+          <option value="text">Texto</option>
+          <option value="photo">Foto</option>
+          <option value="video">Video</option>
+        </Select>
+      </div>
+      <div>
+        <Label>Dato o explicación</Label>
+        <Textarea rows={2} value={value.description || ''} onChange={e => onChange({ ...value, description: e.target.value })} placeholder="Estudios muestran que..." />
+      </div>
+    </div>
+  );
+}
+
+function InteractiveExerciseForm({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+  const exType = value.type || 'matching';
+
+  const setType = (type: string) => {
+    const defaults: Record<string, any> = {
+      matching: { type: 'matching', instruction: 'Conecta cada objeción con su respuesta correcta', pairs: [{ left: '', right: '' }] },
+      ordering: { type: 'ordering', instruction: 'Ordena los pasos del proceso', items: [''] },
+      scenarios: { type: 'scenarios', instruction: 'Elige la mejor respuesta', scenarios: [{ situation: '', options: ['', ''], correct: 0, explanation: '' }] },
+      fill_blanks: { type: 'fill_blanks', instruction: 'Completa la frase', sentences: [{ id: 's1', text: 'La ___ es el arte de...', answer: '' }] },
+      scale: { type: 'scale', instruction: 'Evalúa del 1 al 10', questions: [{ id: 'q1', question: '', lowLabel: 'Bajo', highLabel: 'Alto' }] },
+      puzzle: { type: 'puzzle', instruction: 'Arrastra las piezas al lugar correcto', pieces: [''], slots: ['___ es...'] },
+    };
+    onChange({ ...defaults[type], instruction: value.instruction || defaults[type].instruction });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Tipo de ejercicio</Label>
+        <Select value={exType} onChange={e => setType(e.target.value)}>
+          <option value="matching">🔗 Conectar Pares (Matching)</option>
+          <option value="ordering">📋 Ordenar Pasos</option>
+          <option value="scenarios">🎭 Escenarios de Venta</option>
+          <option value="fill_blanks">✏️ Completar Frases</option>
+          <option value="scale">📊 Autoevaluación (Escala)</option>
+          <option value="puzzle">🧩 Rompecabezas</option>
+        </Select>
+      </div>
+      <div>
+        <Label>Instrucción</Label>
+        <Textarea rows={2} value={value.instruction || ''} onChange={e => onChange({ ...value, instruction: e.target.value })} />
+      </div>
+      <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+        <p className="text-xs text-gray-500">
+          El contenido se edita con formularios especiales por tipo. Edita el JSON directamente si necesitas ajustes avanzados.
+        </p>
+        <Textarea
+          rows={6}
+          className="font-mono text-xs mt-2"
+          value={JSON.stringify(value, null, 2)}
+          onChange={e => { try { onChange(JSON.parse(e.target.value)); } catch {} }}
+        />
+      </div>
+    </div>
+  );
+}
+
+const formComponents: Record<string, React.ComponentType<{ value: any; onChange: (v: any) => void }>> = {
+  REFLECTION: ReflectionForm,
+  AFFIRMATION: AffirmationForm,
+  VIDEO: VideoForm,
+  QUIZ: QuizForm,
+  MENTAL_EXERCISE: MentalExerciseForm,
+  CONFIDENCE_TASK: ConfidenceTaskForm,
+  INTERACTIVE_EXERCISE: InteractiveExerciseForm,
+};
+
 export function AdminDayDetailPage() {
   const { dayId } = useParams<{ dayId: string }>();
   const { days, fetchDays, createContent, updateContent, deleteContent, reorderContents } = useAdminStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [showCreate, setShowCreate] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editingContent, setEditingContent] = useState<ContentItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedType, setSelectedType] = useState('REFLECTION');
-  const [jsonContent, setJsonContent] = useState(contentTypeDefaults.REFLECTION);
+  const [formTitle, setFormTitle] = useState('');
+  const [formOrderIndex, setFormOrderIndex] = useState(0);
+  const [formIsRequired, setFormIsRequired] = useState(true);
+  const [formContentData, setFormContentData] = useState<any>({});
 
   useEffect(() => {
     if (dayId) fetchDays();
   }, [dayId, fetchDays]);
 
   const currentDay = days.find(d => d.id === dayId);
+  const contents: ContentItem[] = (currentDay?.contents || []).sort((a, b) => a.orderIndex - b.orderIndex);
 
   const resetForm = () => {
     setEditingContent(null);
     setSelectedType('REFLECTION');
-    setJsonContent(contentTypeDefaults.REFLECTION);
-    setValue('title', '');
-    setValue('orderIndex', 0);
-    setValue('isRequired', true);
-    setShowCreate(true);
+    setFormTitle('');
+    setFormOrderIndex(contents.length);
+    setFormIsRequired(true);
+    setFormContentData({});
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
-    defaultValues: { title: '', orderIndex: 0, isRequired: true },
-  });
+  const handleEdit = (content: ContentItem) => {
+    setEditingContent(content);
+    setSelectedType(content.type);
+    setFormTitle(content.title);
+    setFormOrderIndex(content.orderIndex);
+    setFormIsRequired(content.isRequired);
+    setFormContentData(content.content);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  const onSubmit = async (data: { title: string; orderIndex: number; isRequired: boolean }) => {
+  const handleSubmit = async () => {
+    if (!formTitle.trim()) { toast.error('El título es requerido'); return; }
     setSubmitting(true);
     try {
-      let parsed: any;
-      try {
-        parsed = JSON.parse(jsonContent);
-      } catch {
-        toast.error('El contenido no es JSON válido');
-        setSubmitting(false);
-        return;
-      }
-
       const payload = {
         type: selectedType,
-        title: data.title,
-        content: parsed,
-        orderIndex: data.orderIndex,
-        isRequired: data.isRequired,
+        title: formTitle,
+        content: formContentData,
+        orderIndex: formOrderIndex,
+        isRequired: formIsRequired,
       };
-
       if (editingContent) {
         await updateContent(editingContent.id, payload);
         toast.success('Contenido actualizado');
@@ -132,7 +381,7 @@ export function AdminDayDetailPage() {
         await createContent({ ...payload, dayId: dayId! });
         toast.success('Contenido creado');
       }
-      setShowCreate(false);
+      setShowForm(false);
       resetForm();
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Error');
@@ -149,26 +398,7 @@ export function AdminDayDetailPage() {
     }
   };
 
-  const handleEdit = (content: ContentItem) => {
-    setEditingContent(content);
-    setSelectedType(content.type);
-    setJsonContent(JSON.stringify(content.content, null, 2));
-    setValue('title', content.title);
-    setValue('orderIndex', content.orderIndex);
-    setValue('isRequired', content.isRequired);
-    setShowCreate(true);
-  };
-
-  const handleTypeChange = (type: string) => {
-    setSelectedType(type);
-    setJsonContent(contentTypeDefaults[type] || contentTypeDefaults.REFLECTION);
-  };
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
-
-  const contents: ContentItem[] = (currentDay?.contents || []).sort((a, b) => a.orderIndex - b.orderIndex);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const onDragEnd = async (event: any) => {
     const { active, over } = event;
@@ -182,110 +412,83 @@ export function AdminDayDetailPage() {
   if (!user || user.role !== 'ADMIN') return <div className="min-h-screen flex items-center justify-center text-gray-400">Acceso denegado</div>;
   if (!currentDay) return <div className="min-h-screen flex items-center justify-center text-gray-400">Cargando...</div>;
 
+  const FormComponent = formComponents[selectedType];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <ButtonGhost onClick={() => navigate('/admin/days')}>
-            <ChevronLeft className="w-4 h-4" />
-          </ButtonGhost>
+          <ButtonGhost onClick={() => navigate('/admin/days')}><ChevronLeft className="w-4 h-4" /></ButtonGhost>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Día {currentDay.dayNumber}: {currentDay.title}</h1>
             <p className="text-gray-500">{contents.length} contenidos</p>
           </div>
         </div>
-        <ButtonPrimary onClick={resetForm} className="shrink-0">
-          <Plus className="w-4 h-4 mr-2" /> Agregar Contenido
-        </ButtonPrimary>
+        <ButtonPrimary onClick={resetForm} className="shrink-0"><Plus className="w-4 h-4 mr-2" /> Agregar Contenido</ButtonPrimary>
       </div>
 
-        {showCreate && (
-          <Card>
-            <CardHeader>
-              <h2 className="text-lg font-semibold">{editingContent ? 'Editar' : 'Nuevo'} Contenido</h2>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <Label>Tipo de Contenido</Label>
-                  <Select value={selectedType} onChange={(e) => handleTypeChange(e.target.value)} className="w-full">
-                    {Object.entries(contentTypeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="title">Título</Label>
-                  <Input id="title" {...register('title')} />
-                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
-                </div>
-
-                <div>
-                  <Label>Contenido (JSON)</Label>
-                  <Textarea
-                    id="content"
-                    rows={8}
-                    className="font-mono text-xs"
-                    value={jsonContent}
-                    onChange={(e) => setJsonContent(e.target.value)}
-                    placeholder={contentTypeDefaults.REFLECTION}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Formato JSON específico del tipo de contenido. Cambia arriba el tipo para ver el formato base.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="orderIndex">Orden</Label>
-                    <Input id="orderIndex" type="number" {...register('orderIndex', { valueAsNumber: true })} />
-                  </div>
-                  <div className="flex items-center gap-2 pt-6">
-                    <Input type="checkbox" id="isRequired" {...register('isRequired')} className="w-4 h-4" />
-                    <Label htmlFor="isRequired" className="mb-0">Requerido para avanzar</Label>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <ButtonPrimary type="submit" disabled={submitting}>
-                    {submitting ? <Loader2 className="w-4 h-4" /> : <Save className="w-4 h-4 mr-2" />} {editingContent ? 'Actualizar' : 'Crear'}
-                  </ButtonPrimary>
-                  <ButtonGhost onClick={() => setShowCreate(false)}>Cancelar</ButtonGhost>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-
+      {showForm && (
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold">Contenidos (arrastra para reordenar)</h2>
+            <h2 className="text-lg font-semibold">{editingContent ? 'Editar' : 'Nuevo'} Contenido</h2>
           </CardHeader>
-          <CardContent>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={contents.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-3">
-                  {contents.map((content, index) => (
-                    <SortableContentItem
-                      key={content.id}
-                      content={content}
-                      index={index}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-            {contents.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
-                <Plus className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No hay contenidos. Agrega el primero.</p>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Tipo de Contenido</Label>
+              <Select value={selectedType} onChange={e => { setSelectedType(e.target.value); setFormContentData({}); }} className="w-full">
+                {Object.entries(contentTypeLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </Select>
+            </div>
+            <div>
+              <Label>Título</Label>
+              <Input value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Título del contenido" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Orden</Label>
+                <Input type="number" value={formOrderIndex} onChange={e => setFormOrderIndex(parseInt(e.target.value) || 0)} />
               </div>
-            )}
+              <div className="flex items-center gap-2 pt-6">
+                <input type="checkbox" id="isRequired" checked={formIsRequired} onChange={e => setFormIsRequired(e.target.checked)} className="w-4 h-4 rounded text-primary-600" />
+                <Label htmlFor="isRequired" className="mb-0">Requerido para avanzar</Label>
+              </div>
+            </div>
+            <div className="border-t border-gray-200 pt-4">
+              <Label className="text-base font-semibold">Configuración del Contenido</Label>
+              {FormComponent && <div className="mt-3"><FormComponent value={formContentData} onChange={setFormContentData} /></div>}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <ButtonPrimary onClick={handleSubmit} disabled={submitting}>
+                {submitting ? <Loader2 className="w-4 h-4" /> : <Save className="w-4 h-4 mr-2" />} {editingContent ? 'Actualizar' : 'Crear'}
+              </ButtonPrimary>
+              <ButtonGhost onClick={() => setShowForm(false)}>Cancelar</ButtonGhost>
+            </div>
           </CardContent>
         </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold">Contenidos (arrastra para reordenar)</h2>
+        </CardHeader>
+        <CardContent>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={contents.map(c => c.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {contents.map((content, index) => (
+                  <SortableContentItem key={content.id} content={content} index={index} onEdit={handleEdit} onDelete={handleDelete} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+          {contents.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <Plus className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p>No hay contenidos. Agrega el primero.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

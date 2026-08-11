@@ -2,14 +2,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProgramStore } from '@/store/programStore';
 import { ContentRenderer } from '@/components/program/ContentRenderer';
-import { Card, CardContent, CardHeader } from '@/components/ui';
-import { ButtonPrimary, ButtonGhost } from '@/components/ui';
-import { ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Lock } from 'lucide-react';
 
 export function DayViewPage() {
   const { dayNumber } = useParams<{ dayNumber: string }>();
   const dayNum = parseInt(dayNumber || '1');
-  const { fetchDay, progress, completeContent } = useProgramStore();
+  const { fetchDay, progress } = useProgramStore();
   const navigate = useNavigate();
   const [day, setDay] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +19,9 @@ export function DayViewPage() {
   }, [dayNum, fetchDay]);
 
   const handlePrevDay = () => navigate(`/day/${dayNum - 1}`);
-  const handleNextDay = () => navigate(`/day/${dayNum + 1}`);
+  const handleNextDay = () => {
+    if (canUnlockNext && dayNum < 7) navigate(`/day/${dayNum + 1}`);
+  };
 
   const goNext = useCallback(() => {
     if (day && currentStep < day.contents.length - 1) {
@@ -39,6 +39,10 @@ export function DayViewPage() {
     setTimeout(() => goNext(), 800);
   }, [goNext]);
 
+  const isContentCompleted = useCallback((contentId: string) => {
+    return progress.some((p: any) => p.contentId === contentId && p.status === 'COMPLETED');
+  }, [progress]);
+
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Cargando...</div>;
   if (!day) return <div className="min-h-screen flex items-center justify-center text-gray-400">Día no encontrado</div>;
 
@@ -54,28 +58,35 @@ export function DayViewPage() {
   const completedCount = dayProgress.filter((p: any) => p.status === 'COMPLETED').length;
   const overallProgress = totalContents > 0 ? Math.round((completedCount / totalContents) * 100) : 0;
 
+  const currentContentCompleted = currentContent ? isContentCompleted(currentContent.id) : true;
+  const currentIsRequired = currentContent?.isRequired ?? false;
+  const canGoNext = currentContentCompleted || !currentIsRequired;
+
   return (
     <div className="min-h-[calc(100vh-5rem)] flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <ButtonGhost onClick={handlePrevDay} className="shrink-0">
-          <ChevronLeft className="w-4 h-4" />
-        </ButtonGhost>
+      <div className="flex items-start gap-3 mb-4">
+        <button
+          onClick={handlePrevDay}
+          className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors shrink-0 mt-0.5"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight break-words">{day.title}</h1>
-          <p className="text-xs sm:text-sm text-gray-500">Día {day.dayNumber}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{day.title}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Día {day.dayNumber}</p>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="mb-4">
+      <div className="mb-5">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs sm:text-sm font-medium text-gray-600">{completedCount}/{totalContents} completados</span>
-          <span className="text-xs sm:text-sm font-medium text-primary-600">{overallProgress}%</span>
+          <span className="text-sm text-gray-500">{completedCount}/{totalContents} completados</span>
+          <span className="text-sm font-semibold text-primary-600">{overallProgress}%</span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500"
+            className="h-full bg-primary-500 rounded-full transition-all duration-500"
             style={{ width: `${overallProgress}%` }}
           />
         </div>
@@ -83,41 +94,39 @@ export function DayViewPage() {
 
       {/* Step indicators */}
       {totalContents > 1 && (
-        <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2.5 mb-5">
           {contents.map((content: any, i: number) => {
-            const isCompleted = dayProgress.some((p: any) => p.contentId === content.id && p.status === 'COMPLETED');
+            const isCompleted = isContentCompleted(content.id);
             const isCurrent = i === currentStep;
             return (
               <button
                 key={content.id}
                 onClick={() => setCurrentStep(i)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                   isCurrent
-                    ? 'bg-primary-600 text-white shadow-sm'
+                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30 scale-110'
                     : isCompleted
-                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                 }`}
               >
                 {isCompleted ? (
-                  <CheckCircle className="w-3.5 h-3.5" />
+                  <CheckCircle className="w-5 h-5" />
                 ) : (
-                  <span className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center text-[10px]">
-                    {i + 1}
-                  </span>
+                  i + 1
                 )}
-                <span className="hidden sm:inline truncate max-w-[80px]">{content.title.slice(0, 12)}</span>
               </button>
             );
           })}
         </div>
       )}
 
-      {/* Content Slider */}
+      {/* Content area */}
       <div className="flex-1 flex flex-col">
         <div className="flex-1">
           {currentContent && (
             <ContentRenderer
+              key={currentContent.id}
               content={currentContent}
               dayNumber={day.dayNumber}
               onCompleted={handleContentCompleted}
@@ -125,53 +134,88 @@ export function DayViewPage() {
           )}
         </div>
 
+        {/* Warning if current required content not completed */}
+        {currentIsRequired && !currentContentCompleted && (
+          <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3">
+            <Lock className="w-5 h-5 text-amber-500 shrink-0" />
+            <p className="text-sm text-amber-700">
+              Debes completar este ejercicio antes de continuar al siguiente.
+            </p>
+          </div>
+        )}
+
         {/* Slider Navigation */}
         {totalContents > 1 && (
-          <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100">
-            <ButtonGhost onClick={goPrev} disabled={currentStep === 0} className="flex-1">
-              <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
-            </ButtonGhost>
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between gap-4 mt-4 pt-1">
+            <button
+              onClick={goPrev}
+              disabled={currentStep === 0}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Anterior
+            </button>
+            <div className="flex items-center gap-2">
               {contents.map((_: any, i: number) => (
                 <div
                   key={i}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    i === currentStep ? 'bg-primary-600 w-6' : 'bg-gray-300'
+                  className={`rounded-full transition-all ${
+                    i === currentStep
+                      ? 'w-6 h-2 bg-primary-600'
+                      : 'w-2 h-2 bg-gray-300'
                   }`}
                 />
               ))}
             </div>
-            <ButtonGhost onClick={goNext} disabled={currentStep === totalContents - 1} className="flex-1">
-              Siguiente <ChevronRight className="w-4 h-4 ml-1" />
-            </ButtonGhost>
+            <button
+              onClick={goNext}
+              disabled={currentStep === totalContents - 1 || !canGoNext}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary-500/20"
+            >
+              Siguiente
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>
 
       {/* Day Navigation */}
-      <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-        <ButtonGhost onClick={handlePrevDay} disabled={dayNum <= 1} className="flex-1">
-          <ChevronLeft className="w-4 h-4 mr-1" /> Día Anterior
-        </ButtonGhost>
-        <ButtonPrimary
+      <div className="flex gap-3 mt-6 pt-5 border-t border-gray-100">
+        <button
+          onClick={handlePrevDay}
+          disabled={dayNum <= 1}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Día Anterior
+        </button>
+        <button
           onClick={handleNextDay}
           disabled={!canUnlockNext || dayNum >= 7}
-          className="flex-1"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary-500/20"
         >
-          Día Siguiente <ChevronRight className="w-4 h-4 ml-1" />
-        </ButtonPrimary>
+          {canUnlockNext ? (
+            <>
+              Día Siguiente
+              <ChevronRight className="w-4 h-4" />
+            </>
+          ) : (
+            <>
+              <Lock className="w-4 h-4" />
+              Completa todos los ejercicios
+            </>
+          )}
+        </button>
       </div>
 
       {/* Blocked Message */}
       {!canUnlockNext && dayNum < 7 && (
-        <Card className="border-yellow-200 bg-yellow-50 mt-4">
-          <CardContent className="p-4 text-center">
-            <AlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">
-              Completa los {totalRequired - completedRequired} ejercicios requeridos para desbloquear el día {dayNum + 1}.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="mt-4 p-4 rounded-xl bg-yellow-50 border border-yellow-200 text-center">
+          <AlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+          <p className="text-sm text-gray-600">
+            Completa los {totalRequired - completedRequired} ejercicios requeridos para desbloquear el día {dayNum + 1}.
+          </p>
+        </div>
       )}
     </div>
   );

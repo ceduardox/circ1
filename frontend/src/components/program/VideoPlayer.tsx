@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react';
-import { ButtonPrimary, ButtonGhost } from '@/components/ui';
-import { Play, Pause, CheckCircle, Clock, ExternalLink } from 'lucide-react';
+import { ButtonPrimary } from '@/components/ui';
+import { Play, CheckCircle, ExternalLink } from 'lucide-react';
 
 interface VideoPlayerProps {
   title: string;
@@ -16,7 +16,7 @@ interface VideoPlayerProps {
 function getEmbedUrl(url: string, provider: string): string {
   if (provider === 'youtube') {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-    return match ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&origin=${window.location.origin}` : url;
+    return match ? `https://www.youtube.com/embed/${match[1]}` : url;
   }
   if (provider === 'facebook') {
     return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&width=100%`;
@@ -30,25 +30,13 @@ function getEmbedUrl(url: string, provider: string): string {
 
 export function VideoPlayer({ title, url, provider, duration, description, onComplete, completed, autoplay = false }: VideoPlayerProps) {
   const [watched, setWatched] = useState(false);
-  const [watchedPercent, setWatchedPercent] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin && !event.origin.includes('youtube.com') && !event.origin.includes('facebook.com')) return;
-      if (event.data?.event === 'onStateChange' && event.data.data === 1) {
-        setWatched(true);
-      }
-      if (event.data?.info?.currentTime !== undefined) {
-        const percent = (event.data.info.currentTime / (duration || 1)) * 100;
-        setWatchedPercent(Math.min(100, percent));
-        if (percent >= 80) setWatched(true);
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [duration]);
+  const handleMarkWatched = async () => {
+    await onComplete();
+    setWatched(true);
+  };
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -90,17 +78,7 @@ export function VideoPlayer({ title, url, provider, duration, description, onCom
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 shrink-0" />
-          <span>{duration ? formatTime(duration) : '?'}</span>
-          <div className="w-20 sm:w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary-500 transition-all duration-300" 
-              style={{ width: `${watchedPercent}%` }}
-            />
-          </div>
-          <span>{Math.round(watchedPercent)}%</span>
-        </div>
+        <div />
         <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary-600 shrink-0">
           <ExternalLink className="w-3 h-3" />
           {provider}
@@ -113,9 +91,9 @@ export function VideoPlayer({ title, url, provider, duration, description, onCom
           <span className="font-medium text-sm">Completado</span>
         </div>
       ) : (
-        <ButtonPrimary onClick={onComplete} className="w-full" disabled={!watched}>
+        <ButtonPrimary onClick={handleMarkWatched} className="w-full">
           <CheckCircle className="w-4 h-4 mr-2" />
-          {watched ? 'Marcar completado' : 'Mira el 80% para continuar'}
+          Marcar como visto y continuar
         </ButtonPrimary>
       )}
     </div>

@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { programApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-import { User, Mail, AtSign, Calendar, MapPin, Lock, Eye, EyeOff, Save } from 'lucide-react';
+import { User, Mail, AtSign, Calendar, MapPin, Lock, Eye, EyeOff, Save, Trophy, Flame, Target } from 'lucide-react';
 
 export function ProfilePage() {
   const { user, updateProfile } = useAuthStore();
+  const [gamification, setGamification] = useState({ points: 0, level: 1, streak: 0 });
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -20,6 +22,16 @@ export function ProfilePage() {
   const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    programApi.progress().then(res => {
+      setGamification({
+        points: res.data.points || 0,
+        level: res.data.level || 1,
+        streak: res.data.streak || 0,
+      });
+    }).catch(() => {});
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +55,7 @@ export function ProfilePage() {
         <p className="text-gray-500 mt-1">Gestiona tu información personal</p>
       </div>
 
-      {/* User Card */}
+      {/* User Card + Gamification */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
@@ -54,6 +66,29 @@ export function ProfilePage() {
           <div>
             <h2 className="text-lg font-bold text-gray-900">{user?.firstName} {user?.lastName}</h2>
             <p className="text-gray-500">@{user?.username}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-gray-100">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-amber-500">
+              <Trophy className="w-4 h-4" />
+              <span className="font-bold text-lg">{gamification.level}</span>
+            </div>
+            <p className="text-xs text-gray-500">Nivel</p>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-primary-500">
+              <Target className="w-4 h-4" />
+              <span className="font-bold text-lg">{gamification.points}</span>
+            </div>
+            <p className="text-xs text-gray-500">Puntos</p>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-orange-500">
+              <Flame className="w-4 h-4" />
+              <span className="font-bold text-lg">{gamification.streak}</span>
+            </div>
+            <p className="text-xs text-gray-500">Racha</p>
           </div>
         </div>
       </div>

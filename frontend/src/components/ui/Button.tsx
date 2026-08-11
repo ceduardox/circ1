@@ -20,7 +20,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled={disabled || loading}
       className={clsx(
         'inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200',
-        'focus:outline-none focus:ring-2 focus:ring-offset-2',
+        'focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-dark-800',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         sizeClasses[size],
         className
@@ -39,7 +39,7 @@ export const ButtonPrimary = ({ children, ...props }: ButtonProps) => (
 );
 
 export const ButtonSecondary = ({ children, ...props }: ButtonProps) => (
-  <Button className="bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-400" {...props}>{children}</Button>
+  <Button className="bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-dark-200 hover:bg-gray-200 dark:hover:bg-dark-600 focus:ring-gray-400" {...props}>{children}</Button>
 );
 
 export const ButtonGhost = ({ children, ...props }: ButtonProps) => (
@@ -47,8 +47,8 @@ export const ButtonGhost = ({ children, ...props }: ButtonProps) => (
     className={clsx(
       'bg-transparent',
       props.variant === 'danger'
-        ? 'text-red-600 hover:bg-red-50'
-        : 'hover:bg-gray-100'
+        ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+        : 'text-gray-600 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700'
     )}
     {...props}
   >

@@ -86,16 +86,29 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
 
   fetchDay: async (dayNumber) => {
     const { data } = await programApi.getDay(dayNumber);
+    set({ currentDay: data.day, progress: data.progress || [] });
     return data.day;
   },
 
   completeContent: async (dayNumber, contentId, answers) => {
-    await programApi.completeContent(dayNumber, contentId, answers);
+    const { data } = await programApi.completeContent(dayNumber, contentId, answers);
     const { currentDay } = get();
     if (currentDay) {
-      const updatedProgress = get().progress.map(p =>
-        p.contentId === contentId ? { ...p, status: 'COMPLETED' as const, answers, completedAt: new Date().toISOString() } : p
-      );
+      const existingIndex = get().progress.findIndex(p => p.contentId === contentId);
+      const content = currentDay.contents.find(item => item.id === contentId);
+      const completedProgress = {
+        ...data.progress,
+        status: 'COMPLETED' as const,
+        answers,
+        content,
+        day: currentDay,
+      } as UserProgress;
+      const updatedProgress = [...get().progress];
+      if (existingIndex >= 0) {
+        updatedProgress[existingIndex] = { ...updatedProgress[existingIndex], ...completedProgress };
+      } else {
+        updatedProgress.push(completedProgress);
+      }
       const completedRequired = updatedProgress.filter(p => p.content.isRequired && p.status === 'COMPLETED').length;
       const totalRequired = currentDay.contents.filter(c => c.isRequired).length;
       set({ progress: updatedProgress, completedRequired, canUnlockNext: completedRequired === totalRequired });

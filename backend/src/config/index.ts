@@ -16,7 +16,7 @@ export const config = {
   },
   
   rateLimit: {
-    max: 100,
+    max: 300,
     timeWindow: '1 minute',
   },
 };

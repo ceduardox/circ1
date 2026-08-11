@@ -1,22 +1,63 @@
 import axios from 'axios';
 
+let getAccessToken: () => string | null = () => null;
+let updateAccessToken: (token: string | null) => void = () => {};
+let refreshPromise: Promise<string> | null = null;
+
+export function configureAuthTokenHandlers(
+  getter: () => string | null,
+  setter: (token: string | null) => void,
+) {
+  getAccessToken = getter;
+  updateAccessToken = setter;
+}
+
 export const api = axios.create({
   baseURL: '/api',
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
 
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const requestUrl = originalRequest?.url || '';
+    const isAuthRequest = requestUrl.includes('/auth/login')
+      || requestUrl.includes('/auth/register')
+      || requestUrl.includes('/auth/refresh');
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthRequest) {
       originalRequest._retry = true;
       try {
-        await api.post('/auth/refresh');
+        if (!refreshPromise) {
+          refreshPromise = api.post('/auth/refresh')
+            .then(({ data }) => {
+              updateAccessToken(data.accessToken);
+              return data.accessToken as string;
+            })
+            .finally(() => {
+              refreshPromise = null;
+            });
+        }
+
+        const accessToken = await refreshPromise;
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch {
-        window.location.href = '/login';
+        updateAccessToken(null);
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);
@@ -34,11 +75,15 @@ export const authApi = {
 export const programApi = {
   currentDay: () => api.get('/program/current-day'),
   getDay: (dayNumber: number) => api.get(`/program/day/${dayNumber}`),
+  getDays: () => api.get('/program/days'),
+  achievements: () => api.get('/program/achievements'),
   completeContent: (dayNumber: number, contentId: string, answers?: any) =>
     api.post(`/program/day/${dayNumber}/content/${contentId}/complete`, { answers }),
   saveReflection: (data: any) => api.post('/program/reflection', data),
   progress: () => api.get('/program/progress'),
   previousDay: () => api.post('/program/previous-day'),
+  search: (q: string) => api.get('/program/search', { params: { q } }),
+  useFreeze: () => api.post('/program/use-freeze'),
 };
 
 export const adminApi = {

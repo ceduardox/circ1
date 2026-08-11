@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi } from '../services/api';
+import { authApi, configureAuthTokenHandlers } from '../services/api';
 
 interface User {
   id: string;
@@ -36,7 +36,6 @@ export const useAuthStore = create<AuthState>()(
 
       setAccessToken: (token) => {
         set({ accessToken: token });
-        authApi.login = authApi.login;
       },
 
       login: async (identifier, password) => {
@@ -84,4 +83,12 @@ export const useAuthStore = create<AuthState>()(
     }),
     { name: 'auth-storage', partialize: (s) => ({ user: s.user, accessToken: s.accessToken, isAuthenticated: s.isAuthenticated }) }
   )
+);
+
+configureAuthTokenHandlers(
+  () => useAuthStore.getState().accessToken,
+  (accessToken) => useAuthStore.setState({
+    accessToken,
+    ...(accessToken ? {} : { user: null, isAuthenticated: false }),
+  }),
 );
