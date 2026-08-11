@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Settings2, DollarSign, CheckCircle, XCircle, Loader2, Wallet, RefreshCw, UserCheck,
+  Settings2, DollarSign, CheckCircle, XCircle, Loader2, Wallet, RefreshCw, UserCheck, Ban,
 } from 'lucide-react';
 import { adminBusinessApi } from '@/services/api';
 import { Input, Label, Card, CardContent, ButtonPrimary, Button } from '@/components/ui';
@@ -91,6 +91,21 @@ export function AdminCommissionsPage() {
       await load();
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Error al procesar');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeactivate = async (payment: any) => {
+    const name = payment.user?.firstName || payment.user?.username || 'este usuario';
+    if (!confirm(`¿Desactivar la membresía de ${name}? Se revierten las comisiones generadas por este pago, como si no hubiera pagado.`)) return;
+    setProcessingId(payment.id);
+    try {
+      await adminBusinessApi.deactivatePayment(payment.id);
+      toast.success('Membresía desactivada: revierte comisiones');
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al desactivar');
     } finally {
       setProcessingId(null);
     }
@@ -204,6 +219,13 @@ export function AdminCommissionsPage() {
                         <XCircle className="w-4 h-4" /> Rechazar
                       </Button>
                     </div>
+                  )}
+                  {p.status === 'APPROVED' && (
+                    <Button size="sm" disabled={processingId === p.id}
+                      className="bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-900/40"
+                      onClick={() => handleDeactivate(p)}>
+                      {processingId === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />} Desactivar
+                    </Button>
                   )}
                 </div>
               );

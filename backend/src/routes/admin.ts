@@ -381,6 +381,44 @@ export async function adminRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  // Desactivar membresía de un pago aprobado: revierte todo como si no hubiera pagado.
+  app.post('/business/payments/:id/deactivate', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as PaymentParams;
+    const adminUser = (request as any).user as JWTPayload;
+    const payment = await prisma.membershipPayment.findUnique({ where: { id }, include: { user: true } });
+    if (!payment) return reply.code(404).send({ error: 'Pago no encontrado' });
+    if (payment.status !== 'APPROVED') return reply.code(400).send({ error: 'Solo se puede desactivar un pago aprobado' });
+
+    await prisma.$transaction(async (tx) => {
+      // Revierte las comisiones que este pago generó.
+      const commissions = await tx.commission.findMany({ where: { paymentId: id } });
+      for (const c of commissions) {
+        await tx.user.update({
+          where: { id: c.userId },
+          data: { balance: { decrement: c.amount } },
+        });
+      }
+      await tx.commission.deleteMany({ where: { paymentId: id } });
+
+      // La membresía del usuario vuelve a estar sin pagar.
+      await tx.user.update({
+        where: { id: payment.userId },
+        data: {
+          membershipStatus: 'INACTIVE',
+          membershipPaidAt: null,
+          membershipExpiresAt: null,
+        },
+      });
+
+      await tx.membershipPayment.update({
+        where: { id },
+        data: { status: 'REJECTED', processedAt: new Date(), processedBy: adminUser.sub },
+      });
+    });
+
+    return { success: true };
+  });
+
   // Red global (todas las redes, para que el admin vea todo)
   app.get('/business/network', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
     const users = await prisma.user.findMany({
