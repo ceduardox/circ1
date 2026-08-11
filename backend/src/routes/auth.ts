@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../utils/prisma.js';
-import { hashPassword, verifyPassword } from '../utils/auth.js';
+import { hashPassword, verifyPassword, generateReferralCode } from '../utils/auth.js';
 import { registerSchema, loginSchema, updateProfileSchema } from '../utils/schemas.js';
 import { authMiddleware } from '../middleware/auth.js';
 
@@ -21,8 +21,26 @@ export async function authRoutes(app: FastifyInstance) {
     if (existingUsername) return reply.code(409).send({ error: 'Usuario ya existe' });
 
     const passwordHash = await hashPassword(body.password);
+
+    // Resolve referrer if a referral code was provided
+    let referrerId: string | null = null;
+    if (body.referralCode) {
+      const referrer = await prisma.user.findUnique({ where: { referralCode: body.referralCode } });
+      if (referrer) referrerId = referrer.id;
+    }
+
     const user = await prisma.user.create({
-      data: { email: body.email, username: body.username, passwordHash, firstName: body.firstName, lastName: body.lastName, age: body.age, country: body.country },
+      data: {
+        email: body.email,
+        username: body.username,
+        passwordHash,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        age: body.age,
+        country: body.country,
+        referralCode: generateReferralCode(body.username),
+        referrerId,
+      },
       select: { id: true, email: true, username: true, firstName: true, lastName: true, role: true },
     });
 

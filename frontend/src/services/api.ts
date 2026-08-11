@@ -86,6 +86,28 @@ export const programApi = {
   useFreeze: () => api.post('/program/use-freeze'),
 };
 
+export const membershipApi = {
+  status: () => api.get('/membership/status'),
+  requestPayment: (data?: any) => api.post('/membership/membership/payment/request', data),
+  requestMonthlyPayment: (data?: any) => api.post('/membership/monthly/payment/request', data),
+  earnings: () => api.get('/membership/earnings'),
+  network: () => api.get('/membership/network'),
+  withdrawals: () => api.get('/membership/withdrawals'),
+  requestWithdrawal: (data: any) => api.post('/membership/withdrawals', data),
+};
+
+export const adminBusinessApi = {
+  settings: () => api.get('/admin/business/settings'),
+  updateSettings: (data: any) => api.put('/admin/business/settings', data),
+  payments: () => api.get('/admin/business/payments'),
+  approvePayment: (id: string) => api.post(`/admin/business/payments/${id}/approve`),
+  rejectPayment: (id: string) => api.post(`/admin/business/payments/${id}/reject`),
+  network: () => api.get('/admin/business/network'),
+  withdrawals: () => api.get('/admin/business/withdrawals'),
+  approveWithdrawal: (id: string) => api.post(`/admin/business/withdrawals/${id}/approve`),
+  rejectWithdrawal: (id: string) => api.post(`/admin/business/withdrawals/${id}/reject`),
+};
+
 export const adminApi = {
   stats: () => api.get('/admin/stats'),
   users: (params?: any) => api.get('/admin/users', { params }),

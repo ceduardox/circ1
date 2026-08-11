@@ -35,24 +35,110 @@ enum ReflectionType {
   CUSTOM
 }
 
-model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  username      String    @unique
-  passwordHash  String    @map("password_hash")
-  firstName     String?   @map("first_name")
-  lastName      String?   @map("last_name")
-  age           Int?
-  country       String?
-  role          UserRole  @default(USER)
-  streakFreezes Int       @default(2) @map("streak_freezes")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+enum MembershipStatus {
+  INACTIVE
+  ACTIVE
+  REVOKED
+}
 
-  progress      UserProgress[]
-  reflections   UserReflection[]
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentType {
+  MEMBERSHIP
+  MONTHLY
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                   String           @id @default(uuid())
+  email                String           @unique
+  username             String           @unique
+  passwordHash         String           @map("password_hash")
+  firstName            String?          @map("first_name")
+  lastName             String?          @map("last_name")
+  age                  Int?
+  country              String?
+  role                 UserRole         @default(USER)
+  streakFreezes        Int              @default(2) @map("streak_freezes")
+  membershipStatus     MembershipStatus @default(INACTIVE) @map("membership_status")
+  membershipPaidAt     DateTime?        @map("membership_paid_at")
+  membershipExpiresAt  DateTime?        @map("membership_expires_at")
+  balance              Float            @default(0)
+  referralCode         String?          @unique @map("referral_code")
+  referrerId           String?          @map("referrer_id")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  progress        UserProgress[]
+  reflections     UserReflection[]
+  payments        MembershipPayment[]
+  commissions     Commission[]          @relation("CommissionReceiver")
+  earnedFrom      Commission[]          @relation("CommissionSource")
+  withdrawals     Withdrawal[]
+  referrer        User?                 @relation("Referrals", fields: [referrerId], references: [id])
+  referrals       User[]                @relation("Referrals")
 
   @@map("users")
+}
+
+model MembershipPayment {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  amount      Float
+  type        PaymentType   @default(MEMBERSHIP)
+  status      PaymentStatus @default(PENDING)
+  method      String?
+  reference   String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  processedAt DateTime?     @map("processed_at")
+  processedBy String?       @map("processed_by")
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commissions Commission[]
+
+  @@map("membership_payments")
+}
+
+model Commission {
+  id           String   @id @default(uuid())
+  paymentId    String   @map("payment_id")
+  userId       String   @map("user_id")
+  sourceUserId String   @map("source_user_id")
+  level        Int
+  percent      Float
+  amount       Float
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  payment      MembershipPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  user         User              @relation("CommissionReceiver", fields: [userId], references: [id], onDelete: Cascade)
+  sourceUser   User              @relation("CommissionSource", fields: [sourceUserId], references: [id], onDelete: Cascade)
+
+  @@map("commissions")
+}
+
+model Withdrawal {
+  id          String           @id @default(uuid())
+  userId      String           @map("user_id")
+  amount      Float
+  method      String?
+  account     String?
+  status      WithdrawalStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  processedAt DateTime?        @map("processed_at")
+  processedBy String?          @map("processed_by")
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("withdrawals")
 }
 
 model ProgramDay {

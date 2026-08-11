@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ButtonPrimary, Input, Label, Card, CardContent } from '@/components/ui';
+import { CountrySelect } from '@/components/ui/CountrySelect';
 import { useAuthStore } from '@/store/authStore';
 import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -26,9 +27,15 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register: registerUser, isLoading: authLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+
+  const referralCode = useMemo(() => {
+    const ref = searchParams.get('ref');
+    return ref ? ref.trim() : null;
+  }, [searchParams]);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -36,6 +43,7 @@ export function RegisterPage() {
   });
 
   const password = watch('password');
+  const [countryValue, setCountryValue] = useState('');
 
   const onSubmit = async (data: RegisterFormData) => {
     setError('');
@@ -47,7 +55,8 @@ export function RegisterPage() {
         firstName: data.firstName,
         lastName: data.lastName,
         age: data.age,
-        country: data.country,
+        country: countryValue,
+        referralCode: referralCode || undefined,
       });
       toast.success('¡Cuenta creada! Bienvenido a Círculo 1');
       navigate('/dashboard');
@@ -67,6 +76,12 @@ export function RegisterPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Crear Cuenta</h1>
             <p className="text-gray-500 dark:text-dark-400 mt-2">Únete a la comunidad de neuroentrenamiento</p>
+            {referralCode && (
+              <p className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-full text-sm text-primary-700 dark:text-primary-400 font-medium">
+                <UserPlus className="w-4 h-4" />
+                Invitado por {referralCode}
+              </p>
+            )}
           </div>
 
           {error && (
@@ -142,7 +157,11 @@ export function RegisterPage() {
               </div>
               <div>
                 <Label htmlFor="country">País</Label>
-                <Input id="country" placeholder="México" {...register('country')} />
+                <CountrySelect
+                  id="country"
+                  value={countryValue}
+                  onChange={v => setCountryValue(v)}
+                />
               </div>
             </div>
 

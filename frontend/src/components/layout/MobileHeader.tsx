@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap } from 'lucide-react';
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
@@ -14,6 +14,8 @@ export function MobileHeader() {
   const navItems = [
     { path: '/dashboard', label: 'Mi Día', icon: Home },
     { path: '/progress', label: 'Progreso', icon: BarChart },
+    { path: '/network', label: 'Mi Red', icon: Network },
+    { path: '/earnings', label: 'Ganancias', icon: Wallet },
     { path: '/profile', label: 'Perfil', icon: User },
   ];
 
@@ -22,6 +24,8 @@ export function MobileHeader() {
     { path: '/admin/days', label: 'Días', icon: BookOpen },
     { path: '/admin/users', label: 'Usuarios', icon: Users },
     { path: '/admin/analytics', label: 'Analytics', icon: BarChart },
+    { path: '/admin/commissions', label: 'Comisiones', icon: Zap },
+    { path: '/admin/network', label: 'Red Global', icon: Network },
   ];
 
   const closeMenu = () => setOpen(false);

@@ -43,6 +43,7 @@ const reorderContentsSchema = z.object({
 interface IdParams { id: string; }
 interface DayIdParams { dayId: string; }
 interface UserQuery { page?: string; limit?: string; search?: string; }
+interface JWTPayload { sub: string; email: string; role: string; type?: string; }
 
 export async function adminRoutes(app: FastifyInstance) {
   app.get('/stats', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
@@ -284,5 +285,230 @@ export async function adminRoutes(app: FastifyInstance) {
     const completionByDay = usersByDay.map(u => ({ dayNumber: dayMap.get(u.dayId)?.dayNumber, title: dayMap.get(u.dayId)?.title, completions: u._count })).sort((a, b) => (a.dayNumber || 0) - (b.dayNumber || 0));
     const recentUsers = await prisma.user.findMany({ take: 10, orderBy: { createdAt: 'desc' }, select: { id: true, email: true, username: true, firstName: true, lastName: true, createdAt: true } });
     return { completionByDay, recentUsers };
+  });
+
+  // ══════════════════════════════════════════════════════
+  // NEGOCIO: pagos, comisiones, red y retiros
+  // ══════════════════════════════════════════════════════
+
+  interface SettingsResult {
+    membershipPrice: number;
+    monthlyFee: number;
+    level1Percent: number;
+    level2Percent: number;
+  }
+
+  async function getSettings(): Promise<SettingsResult> {
+    const rows = await prisma.adminSetting.findMany();
+    const map: Record<string, any> = {};
+    for (const r of rows) {
+      try { map[r.key] = JSON.parse(r.value as any); } catch { map[r.key] = r.value; }
+    }
+    return {
+      membershipPrice: Number(map.MEMBERSHIP_PRICE ?? 500),
+      monthlyFee: Number(map.MONTHLY_FEE ?? 50),
+      level1Percent: Number(map.LEVEL1_PERCENT ?? 25),
+      level2Percent: Number(map.LEVEL2_PERCENT ?? 5),
+    };
+  }
+
+  // Configuración editable (precios y porcentajes)
+  const settingsSchema = z.object({
+    membershipPrice: z.number().positive().optional(),
+    monthlyFee: z.number().positive().optional(),
+    level1Percent: z.number().min(0).max(100).optional(),
+    level2Percent: z.number().min(0).max(100).optional(),
+  });
+
+  app.get('/business/settings', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    return getSettings();
+  });
+
+  app.put('/business/settings', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const body = settingsSchema.parse(request.body);
+    const entries = Object.entries(body);
+    for (const [key, value] of entries) {
+      await prisma.adminSetting.upsert({
+        where: { key },
+        update: { value: JSON.stringify(value) },
+        create: { key, value: JSON.stringify(value) },
+      });
+    }
+    return getSettings();
+  });
+
+  // Pagos (membresía)
+  app.get('/business/payments', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const payments = await prisma.membershipPayment.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, username: true, country: true } },
+      },
+    });
+    return { payments };
+  });
+
+  interface PaymentParams { id: string; }
+
+  // Aprobar pago → activa membresía + genera comisiones 2 niveles
+  app.post('/business/payments/:id/approve', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as PaymentParams;
+    const adminUser = (request as any).user as JWTPayload;
+    const settings = await getSettings();
+
+    const payment = await prisma.membershipPayment.findUnique({ where: { id }, include: { user: true } });
+    if (!payment) return reply.code(404).send({ error: 'Pago no encontrado' });
+    if (payment.status !== 'PENDING') return reply.code(400).send({ error: 'Este pago ya fue procesado' });
+
+    const now = new Date();
+    const isRenewal = payment.type === 'MONTHLY';
+
+    // Renovación: parte de la fecha de vencimiento actual (o de hoy si ya venció).
+    const baseExpiry = isRenewal
+      ? (payment.user.membershipExpiresAt && payment.user.membershipExpiresAt > now
+        ? payment.user.membershipExpiresAt
+        : now)
+      : now;
+    const expires = new Date(baseExpiry);
+    expires.setDate(expires.getDate() + 30);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.membershipPayment.update({
+        where: { id },
+        data: { status: 'APPROVED', processedAt: now, processedBy: adminUser.sub },
+      });
+
+      await tx.user.update({
+        where: { id: payment.userId },
+        data: {
+          membershipStatus: 'ACTIVE',
+          membershipPaidAt: now,
+          membershipExpiresAt: expires,
+        },
+      });
+
+      // Nivel 1: el referido directo que trajo a este usuario (25%).
+      // Solo recibe comisión si tiene la membresía pagada; si no, se pierde.
+      const source = await tx.user.findUnique({ where: { id: payment.userId } });
+      const referrer = source?.referrerId ? await tx.user.findUnique({ where: { id: source.referrerId } }) : null;
+      if (referrer && referrer.membershipStatus === 'ACTIVE') {
+        const percent = settings.level1Percent;
+        const amount = Math.round((payment.amount * percent) / 100 * 100) / 100;
+        await tx.commission.create({
+          data: {
+            paymentId: payment.id,
+            userId: referrer.id,
+            sourceUserId: payment.userId,
+            level: 1,
+            percent,
+            amount,
+          },
+        });
+        await tx.user.update({ where: { id: referrer.id }, data: { balance: { increment: amount } } });
+      }
+
+      // Nivel 2: el referido del referido (5%). Igual regla: solo si está pagado.
+      if (referrer) {
+        const grandReferrer = referrer.referrerId
+          ? await tx.user.findUnique({ where: { id: referrer.referrerId } })
+          : null;
+        if (grandReferrer && grandReferrer.membershipStatus === 'ACTIVE') {
+          const percent2 = settings.level2Percent;
+          const amount2 = Math.round((payment.amount * percent2) / 100 * 100) / 100;
+          await tx.commission.create({
+            data: {
+              paymentId: payment.id,
+              userId: grandReferrer.id,
+              sourceUserId: payment.userId,
+              level: 2,
+              percent: percent2,
+              amount: amount2,
+            },
+          });
+          await tx.user.update({ where: { id: grandReferrer.id }, data: { balance: { increment: amount2 } } });
+        }
+      }
+    });
+
+    return { success: true };
+  });
+
+  app.post('/business/payments/:id/reject', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const { id } = request.params as PaymentParams;
+    const adminUser = (request as any).user as JWTPayload;
+    const payment = await prisma.membershipPayment.findUnique({ where: { id } });
+    if (!payment) return { error: 'Pago no encontrado' };
+    if (payment.status !== 'PENDING') return { error: 'Este pago ya fue procesado' };
+    await prisma.membershipPayment.update({
+      where: { id },
+      data: { status: 'REJECTED', processedAt: new Date(), processedBy: adminUser.sub },
+    });
+    return { success: true };
+  });
+
+  // Red global (todas las redes, para que el admin vea todo)
+  app.get('/business/network', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true, firstName: true, lastName: true, username: true, country: true,
+        membershipStatus: true, referralCode: true, referrerId: true, createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return { users };
+  });
+
+  // Retiros
+  app.get('/business/withdrawals', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const withdrawals = await prisma.withdrawal.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, username: true, country: true } },
+      },
+    });
+    return { withdrawals };
+  });
+
+  interface WithdrawalParams { id: string; }
+
+  app.post('/business/withdrawals/:id/approve', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as WithdrawalParams;
+    const adminUser = (request as any).user as JWTPayload;
+    const withdrawal = await prisma.withdrawal.findUnique({ where: { id } });
+    if (!withdrawal) return reply.code(404).send({ error: 'Retiro no encontrado' });
+    if (withdrawal.status !== 'PENDING') return reply.code(400).send({ error: 'Este retiro ya fue procesado' });
+
+    const user = await prisma.user.findUnique({ where: { id: withdrawal.userId } });
+    if (!user || user.balance < withdrawal.amount) {
+      await prisma.withdrawal.update({
+        where: { id },
+        data: { status: 'REJECTED', processedAt: new Date(), processedBy: adminUser.sub },
+      });
+      return reply.code(400).send({ error: 'Saldo insuficiente, retiro rechazado automáticamente' });
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: withdrawal.userId }, data: { balance: { decrement: withdrawal.amount } } }),
+      prisma.withdrawal.update({
+        where: { id },
+        data: { status: 'APPROVED', processedAt: new Date(), processedBy: adminUser.sub },
+      }),
+    ]);
+
+    return { success: true };
+  });
+
+  app.post('/business/withdrawals/:id/reject', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const { id } = request.params as WithdrawalParams;
+    const adminUser = (request as any).user as JWTPayload;
+    const withdrawal = await prisma.withdrawal.findUnique({ where: { id } });
+    if (!withdrawal) return { error: 'Retiro no encontrado' };
+    if (withdrawal.status !== 'PENDING') return { error: 'Este retiro ya fue procesado' };
+    await prisma.withdrawal.update({
+      where: { id },
+      data: { status: 'REJECTED', processedAt: new Date(), processedBy: adminUser.sub },
+    });
+    return { success: true };
   });
 }

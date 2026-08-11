@@ -9,6 +9,7 @@ import { config } from './config/index.js';
 import { authRoutes } from './routes/auth.js';
 import { programRoutes } from './routes/program.js';
 import { adminRoutes } from './routes/admin.js';
+import { membershipRoutes } from './routes/membership.js';
 import { ZodError } from 'zod';
 
 
@@ -65,6 +66,7 @@ app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOStrin
 await app.register(authRoutes, { prefix: '/api/auth' });
 await app.register(programRoutes, { prefix: '/api/program' });
 await app.register(adminRoutes, { prefix: '/api/admin' });
+await app.register(membershipRoutes, { prefix: '/api/membership' });
 
 try {
   await app.listen({ port: config.port, host: '0.0.0.0' });
