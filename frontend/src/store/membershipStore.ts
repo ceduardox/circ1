@@ -37,6 +37,7 @@ interface MembershipState {
   requestPayment: (planId?: string) => Promise<PaymentInfo | null>;
   requestMonthlyPayment: () => Promise<PaymentInfo | null>;
   checkPayment: (paymentId: string) => Promise<PaymentInfo>;
+  fetchPendingPayment: () => Promise<PaymentInfo | null>;
   reset: () => void;
 }
 
@@ -99,6 +100,15 @@ export const useMembershipStore = create<MembershipState>((set, get) => ({
       return data.payment as PaymentInfo;
     } finally {
       set({ checkingPayment: false });
+    }
+  },
+
+  fetchPendingPayment: async () => {
+    try {
+      const { data } = await membershipApi.pendingPayment();
+      return (data.payment as PaymentInfo | null) ?? null;
+    } catch {
+      return null;
     }
   },
 

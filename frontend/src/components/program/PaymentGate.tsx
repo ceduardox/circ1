@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ButtonPrimary } from '@/components/ui';
-import { Crown, Zap, Rocket, Shield, Infinity as InfinityIcon, ChevronRight, Loader2, ExternalLink, CheckCircle2, RefreshCw, Store, Globe2, Repeat2 } from 'lucide-react';
+import { Crown, Zap, Rocket, Shield, Infinity as InfinityIcon, ChevronRight, Loader2, ExternalLink, CheckCircle2, RefreshCw, Store, Globe2, Repeat2, Clock, X } from 'lucide-react';
 import { PaymentInfo } from '@/store/membershipStore';
 import { usePaymentFlow } from './usePaymentFlow';
+import { useMembershipStore } from '@/store/membershipStore';
 
 interface PaymentGateProps {
   onRequestPayment: (planId?: string) => Promise<PaymentInfo | null>;
@@ -36,7 +37,9 @@ const franchiseStats = [
 export function PaymentGate({ onRequestPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5 }: PaymentGateProps) {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pendingPay, setPendingPay] = useState<PaymentInfo & { remainingMin?: number; expiresAt?: string } | null>(null);
   const { payment, paid, start, checkNow } = usePaymentFlow();
+  const { fetchPendingPayment } = useMembershipStore();
 
   const isMonthly = variant === 'monthly';
 
@@ -53,6 +56,13 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
     return () => clearInterval(t);
   }, []);
 
+  // Consulta si hay un pago pendiente vigente para poder reanudarlo en vez de bloquear.
+  useEffect(() => {
+    fetchPendingPayment().then(p => {
+      if (p) setPendingPay(p);
+    });
+  }, [fetchPendingPayment, variant]);
+
   const handleRequest = async () => {
     // Abrir la pestaña sincrónicamente en el gesto del usuario (antes del await)
     // para que el navegador no la bloquee como popup.
@@ -63,6 +73,15 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
       setErrorMsg(e?.response?.data?.error || 'No se pudo iniciar el pago. Inténtalo de nuevo.');
     }
   };
+
+  const resumePending = () => {
+    if (!pendingPay?.invoiceUrl) return;
+    const win = window.open(pendingPay.invoiceUrl, '_blank', 'noopener,noreferrer');
+    if (!win) window.location.href = pendingPay.invoiceUrl;
+    setPendingPay(null);
+  };
+
+  const dismissPending = () => setPendingPay(null);
 
   const price = isMonthly ? '$50' : `$${selectedPlan.price}`;
   const priceLabel = isMonthly ? '/ mes' : 'USD';
@@ -242,6 +261,41 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                 {errorMsg && (
                   <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 text-center">
                     {errorMsg}
+                  </div>
+                )}
+                {pendingPay && !payment && (
+                  <div className="relative p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                    <button
+                      onClick={dismissPending}
+                      className="absolute top-2.5 right-2.5 p-1 rounded-lg text-amber-400 hover:text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                      aria-label="Cerrar"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                        <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
+                          Tienes un pago pendiente
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                          {pendingPay.remainingMin != null && pendingPay.remainingMin > 0
+                            ? `Puedes reanudarlo en los próximos ${pendingPay.remainingMin} min, o esperar a que expire para iniciar uno nuevo.`
+                            : 'Puedes reanudarlo o iniciar uno nuevo.'}
+                        </p>
+                        {pendingPay.invoiceUrl && (
+                          <button
+                            onClick={resumePending}
+                            className="mt-2.5 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Reanudar mi pago
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
                 <ButtonPrimary

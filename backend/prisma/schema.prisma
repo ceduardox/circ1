@@ -132,6 +132,7 @@ model MembershipPayment {
   status      PaymentStatus @default(PENDING)
   method      String?
   reference   String?
+  expiresAt   DateTime?     @map("expires_at")
   createdAt   DateTime      @default(now()) @map("created_at")
   processedAt DateTime?     @map("processed_at")
   processedBy String?       @map("processed_by")

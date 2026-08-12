@@ -53,11 +53,11 @@ export function MobileHeader() {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-dark-700">
-            <Link to="/dashboard" className="flex items-center" onClick={closeMenu}>
+            <Link to="/dashboard" className="flex items-center min-w-0 flex-1" onClick={closeMenu}>
               <img
                 src="/images/logo.png"
                 alt="Círculo 1"
-                className="h-8 w-auto max-w-[10rem] object-contain"
+                className="h-9 w-auto max-w-full object-contain"
               />
             </Link>
             <button
@@ -159,11 +159,11 @@ export function MobileHeader() {
       {/* Top Bar */}
       <header className="md:hidden sticky top-0 z-30 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
         <div className="flex items-center justify-between px-4 py-3">
-          <Link to="/dashboard" className="flex items-center">
+          <Link to="/dashboard" className="flex items-center min-w-0 flex-1">
             <img
               src="/images/logo.png"
               alt="Círculo 1"
-              className="h-8 w-auto max-w-[10rem] object-contain dark:brightness-200 dark:opacity-90"
+              className="h-9 w-auto max-w-full object-contain dark:brightness-200 dark:opacity-90"
             />
           </Link>
           <button

@@ -52,6 +52,34 @@ function defaultPlans() {
 const GRACE_DAYS = 3;
 const MEMBERSHIP_DAYS = 30;
 
+// Tiempo máximo que un pago queda "pendiente" antes de poder reintentar.
+// Si el usuario pide el pago y no lo completa, expira y puede intentarlo de nuevo.
+const PAYMENT_TTL_MINUTES = 30;
+
+// Encuentra el pago pendiente vigente del usuario (no expirado).
+// Si había uno expirado, lo marca como expirado en la BD para no bloquear.
+async function getActivePendingPayment(userId: string) {
+  const pending = await prisma.membershipPayment.findFirst({
+    where: { userId, status: 'PENDING' },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!pending) return null;
+
+  const expiresAt = pending.expiresAt ?? new Date(pending.createdAt.getTime() + PAYMENT_TTL_MINUTES * 60 * 1000);
+  const now = new Date();
+
+  if (expiresAt <= now) {
+    // Expirado: se marca como tal y se libera el reintento.
+    await prisma.membershipPayment.update({
+      where: { id: pending.id },
+      data: { status: 'REJECTED', npStatus: pending.npStatus ?? 'expired', reference: pending.reference ?? 'expirado' },
+    });
+    return null;
+  }
+
+  return { payment: pending, expiresAt };
+}
+
 // Estado efectivo: ACTIVE mientras dure, GRACE en los 3 días tras vencer (aún accede), EXPIRED después.
 function effectiveMembership(user: {
   membershipStatus: string;
@@ -124,10 +152,13 @@ export async function membershipRoutes(app: FastifyInstance) {
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
     if (user.membershipStatus === 'ACTIVE') return reply.code(400).send({ error: 'Tu membresía ya está activa' });
 
-    const existingPending = await prisma.membershipPayment.findFirst({
-      where: { userId, status: 'PENDING' },
-    });
-    if (existingPending) return reply.code(400).send({ error: 'Ya tienes un pago pendiente de aprobación' });
+    const activePending = await getActivePendingPayment(userId);
+    if (activePending) {
+      const remainingMin = Math.ceil((activePending.expiresAt.getTime() - Date.now()) / 60000);
+      return reply.code(400).send({
+        error: `Ya tienes un pago pendiente de aprobación. Podrás volver a intentarlo en ${remainingMin} min.`,
+      });
+    }
 
     const plan = settings.plans.find((p: any) => p.id === body.planId) || settings.plans[0];
     if (!plan) return reply.code(400).send({ error: 'No hay planes disponibles' });
@@ -142,6 +173,7 @@ export async function membershipRoutes(app: FastifyInstance) {
         reference: body.reference,
         planId: plan.id,
         planName: plan.name,
+        expiresAt: new Date(Date.now() + PAYMENT_TTL_MINUTES * 60 * 1000),
       },
     });
 
@@ -194,10 +226,13 @@ export async function membershipRoutes(app: FastifyInstance) {
     if (eff.status === 'ACTIVE') return reply.code(400).send({ error: 'Tu membresía aún está vigente' });
     if (eff.status === 'INACTIVE') return reply.code(400).send({ error: 'Debes activar primero tu membresía' });
 
-    const existingPending = await prisma.membershipPayment.findFirst({
-      where: { userId, status: 'PENDING' },
-    });
-    if (existingPending) return reply.code(400).send({ error: 'Ya tienes un pago pendiente de aprobación' });
+    const activePending = await getActivePendingPayment(userId);
+    if (activePending) {
+      const remainingMin = Math.ceil((activePending.expiresAt.getTime() - Date.now()) / 60000);
+      return reply.code(400).send({
+        error: `Ya tienes un pago pendiente de aprobación. Podrás volver a intentarlo en ${remainingMin} min.`,
+      });
+    }
 
     const payment = await prisma.membershipPayment.create({
       data: {
@@ -207,6 +242,7 @@ export async function membershipRoutes(app: FastifyInstance) {
         status: 'PENDING',
         method: body.method,
         reference: body.reference,
+        expiresAt: new Date(Date.now() + PAYMENT_TTL_MINUTES * 60 * 1000),
       },
     });
 
@@ -291,6 +327,39 @@ export async function membershipRoutes(app: FastifyInstance) {
   });
 
   // ─── Estado de un pago (para polling del frontend) ───
+  app.get('/payments/pending', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+
+    const pending = await prisma.membershipPayment.findFirst({
+      where: { userId, status: 'PENDING' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!pending) return { payment: null };
+
+    const expiresAt = pending.expiresAt ?? new Date(pending.createdAt.getTime() + PAYMENT_TTL_MINUTES * 60 * 1000);
+    const remainingMs = expiresAt.getTime() - Date.now();
+    if (remainingMs <= 0) {
+      await prisma.membershipPayment.update({
+        where: { id: pending.id },
+        data: { status: 'REJECTED', npStatus: pending.npStatus ?? 'expired', reference: pending.reference ?? 'expirado' },
+      });
+      return { payment: null };
+    }
+
+    return {
+      payment: {
+        id: pending.id,
+        status: pending.status,
+        npStatus: pending.npStatus,
+        invoiceUrl: pending.npInvoiceUrl,
+        amount: pending.amount,
+        type: pending.type,
+        expiresAt: expiresAt.toISOString(),
+        remainingMin: Math.ceil(remainingMs / 60000),
+      },
+    };
+  });
+
   app.get('/payments/:id/status', { preHandler: authMiddleware }, async (request, reply) => {
     const userId = (request.user as JWTPayload).sub;
     const { id } = request.params as { id: string };
