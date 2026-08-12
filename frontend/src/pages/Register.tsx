@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { ButtonPrimary, Input, Label, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { CountrySelect } from '@/components/ui/CountrySelect';
 import { useAuthStore } from '@/store/authStore';
-import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, UserPlus, FileText, CheckCircle2 } from 'lucide-react';
+import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, UserPlus, FileText, CheckCircle2, Calendar, Sparkles, ArrowRight, AtSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 const registerSchema = z.object({
@@ -73,12 +73,21 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-900 px-4 py-12">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-gray-50 to-purple-50 dark:from-dark-900 dark:via-dark-900 dark:to-dark-900 px-4 py-12 overflow-hidden">
+      {/* Decoración de fondo */}
+      <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-primary-400/20 blur-3xl" />
+      <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-purple-400/20 blur-3xl" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-primary-300/10 blur-3xl" />
+
+      <Card className="relative w-full max-w-md shadow-2xl shadow-primary-900/10 border-0 animate-card-entrance">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary-500 via-purple-500 to-primary-600 rounded-t-2xl" />
         <CardContent className="p-8">
           <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mx-auto mb-4">
-              <UserPlus className="w-6 h-6 text-white" />
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-purple-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-600/30 animate-icon-float">
+              <UserPlus className="w-7 h-7 text-white" />
+              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 flex items-center justify-center animate-badge-pop">
+                <Sparkles className="w-3 h-3 text-emerald-950" />
+              </div>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Crear Cuenta</h1>
             <div className="mt-2 h-1 w-12 mx-auto rounded-full bg-gradient-to-r from-primary-600 to-purple-500" />
@@ -102,12 +111,18 @@ export function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="firstName">Nombre</Label>
-                <Input id="firstName" placeholder="Juan" {...register('firstName')} />
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input id="firstName" placeholder="Juan" className="pl-10" {...register('firstName')} />
+                </div>
                 {errors.firstName && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.firstName.message}</p>}
               </div>
               <div>
                 <Label htmlFor="lastName">Apellido</Label>
-                <Input id="lastName" placeholder="Pérez" {...register('lastName')} />
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input id="lastName" placeholder="Pérez" className="pl-10" {...register('lastName')} />
+                </div>
                 {errors.lastName && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.lastName.message}</p>}
               </div>
             </div>
@@ -124,7 +139,7 @@ export function RegisterPage() {
             <div>
               <Label htmlFor="username">Usuario</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input id="username" placeholder="juanperez" className="pl-10" {...register('username')} />
               </div>
               {errors.username && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.username.message}</p>}
@@ -160,17 +175,21 @@ export function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="age">Edad</Label>
-                <Input
-                  id="age"
-                  type="number"
-                  inputMode="numeric"
-                  enterKeyHint="next"
-                  min={13}
-                  max={120}
-                  step={1}
-                  placeholder="25"
-                  {...register('age', { valueAsNumber: true })}
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="age"
+                    type="number"
+                    inputMode="numeric"
+                    enterKeyHint="next"
+                    min={13}
+                    max={120}
+                    step={1}
+                    placeholder="25"
+                    className="pl-10"
+                    {...register('age', { valueAsNumber: true })}
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="country">País</Label>
@@ -182,15 +201,15 @@ export function RegisterPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-2">
+            <label className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700/50 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors">
               <input
                 type="checkbox"
                 id="terms"
                 checked={acceptedTerms}
                 onChange={e => setAcceptedTerms(e.target.checked)}
-                className="mt-1 accent-primary-600 w-4 h-4 flex-shrink-0"
+                className="mt-0.5 accent-primary-600 w-4 h-4 flex-shrink-0"
               />
-              <label htmlFor="terms" className="text-sm text-gray-600 dark:text-dark-300">
+              <span className="text-sm text-gray-600 dark:text-dark-300">
                 Acepto los{' '}
                 <button type="button" onClick={() => setTermsOpen(true)} className="text-primary-600 dark:text-primary-400 hover:underline font-medium">
                   Términos y Condiciones
@@ -199,11 +218,16 @@ export function RegisterPage() {
                 <button type="button" onClick={() => setTermsOpen(true)} className="text-primary-600 dark:text-primary-400 hover:underline font-medium">
                   Política de Privacidad
                 </button>
-              </label>
-            </div>
+              </span>
+            </label>
 
-            <ButtonPrimary type="submit" className="w-full" disabled={authLoading}>
-              {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Crear Cuenta'}
+            <ButtonPrimary type="submit" className="w-full py-3 btn-auth-gradient" disabled={authLoading}>
+              {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                <>
+                  Crear Cuenta
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </ButtonPrimary>
           </form>
 

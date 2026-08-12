@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitBranch } from 'lucide-react';
+import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitBranch, Sparkles, UserPlus2, Users2, BadgePercent, Crown } from 'lucide-react';
 import { membershipApi } from '@/services/api';
 import { useMembershipStore } from '@/store/membershipStore';
 import { NetworkTree, TreeMember } from '@/components/program/NetworkTree';
@@ -80,9 +80,9 @@ export function NetworkPage() {
   };
 
   const statCards = [
-    { label: 'Total en tu red', value: network.count.total, icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
-    { label: 'Nivel 1 (directos)', value: network.count.level1, icon: Share2, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Nivel 2 (indirectos)', value: network.count.level2, icon: Shield, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Total en tu red', value: network.count.total, icon: Users, gradient: 'from-primary-500 to-primary-700' },
+    { label: 'Nivel 1 (directos)', value: network.count.level1, icon: Share2, gradient: 'from-blue-500 to-cyan-500' },
+    { label: 'Nivel 2 (indirectos)', value: network.count.level2, icon: Shield, gradient: 'from-purple-500 to-fuchsia-500' },
   ];
 
   // Análisis de actividad de la red
@@ -163,43 +163,83 @@ export function NetworkPage() {
       />
 
       {/* Link de referido */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-5 text-white shadow-lg shadow-primary-600/20">
-        <div className="flex items-center gap-2 text-primary-100 text-sm font-medium mb-3">
-          <LinkIcon className="w-4 h-4" />
-          Tu link de referido
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-purple-800 rounded-2xl p-6 text-white shadow-xl shadow-primary-600/25">
+        {/* Decoración de fondo */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute -bottom-14 -right-6 w-44 h-44 rounded-full bg-purple-400/20 blur-3xl" />
+        <div className="absolute top-0 right-8 w-24 h-24 opacity-10">
+          <Crown className="w-full h-full" />
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Encabezado */}
+        <div className="relative flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-white/15 border border-white/20 backdrop-blur-sm">
+              <LinkIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold">Tu link de referido</p>
+              <p className="text-primary-100 text-xs">Comparte y gana en tu red</p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-400/20 border border-emerald-300/30 text-emerald-100 text-[11px] font-bold">
+            <Sparkles className="w-3.5 h-3.5" />
+            Pasivo activo
+          </div>
+        </div>
+
+        {/* Link + copiar */}
+        <div className="relative flex items-center gap-2">
           <code className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-sm truncate">
             {status?.referralLink || 'Generando...'}
           </code>
           <button
             onClick={copyLink}
-            className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white text-primary-700 text-sm font-semibold hover:bg-primary-50 transition-colors"
+            className={`flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              copied ? 'bg-emerald-400 text-emerald-950' : 'bg-white text-primary-700 hover:bg-primary-50'
+            }`}
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copiado' : 'Copiar'}
           </button>
         </div>
-        <p className="text-primary-200 text-xs mt-3">
+
+        <p className="relative text-primary-100 text-xs mt-3 flex items-center gap-1.5">
+          <BadgePercent className="w-3.5 h-3.5 shrink-0" />
           Gana {status?.settings?.level1Percent || 25}% por cada miembro que se una con tu link y un {status?.settings?.level2Percent || 5}% adicional en su nivel 2.
         </p>
-        <div className="mt-4 space-y-3">
-          {(status?.settings?.plans && status.settings.plans.length > 0 ? status.settings.plans : [{ id: 'estandar', name: 'Membresía', price: status?.settings?.membershipPrice || 500 }]).map(pl => {
+
+        {/* Comisiones por plan */}
+        <div className="relative mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(status?.settings?.plans && status.settings.plans.length > 0 ? status.settings.plans : [{ id: 'estandar', name: 'Membresía', price: status?.settings?.membershipPrice || 500 }]).map((pl, idx) => {
             const l1 = (pl.price * (status?.settings?.level1Percent || 25)) / 100;
             const l2 = (pl.price * (status?.settings?.level2Percent || 5)) / 100;
             return (
-              <div key={pl.id} className="bg-white/10 border border-white/20 rounded-xl p-3.5">
-                <p className="text-primary-100 text-xs font-medium mb-1">Plan {pl.name} · ${pl.price}</p>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  <p className="text-lg font-bold">
-                    {fmt(l1)} <span className="text-xs font-normal text-primary-200">directo</span>
-                  </p>
-                  <p className="text-lg font-bold">
-                    {fmt(l2)} <span className="text-xs font-normal text-primary-200">nivel 2</span>
-                  </p>
-                  <p className="text-primary-200 text-[11px]">
-                    ({status?.settings?.level1Percent || 25}% + {status?.settings?.level2Percent || 5}%)
-                  </p>
+              <div key={pl.id} className="bg-white/10 border border-white/15 rounded-xl p-4 backdrop-blur-sm hover:bg-white/15 transition-colors">
+                <div className={`flex items-center justify-between mb-2 ${idx === 0 ? '' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg ${idx === 1 ? 'bg-amber-400/25 text-amber-200' : 'bg-white/15'}`}>
+                      {idx === 1 ? <Crown className="w-4 h-4" /> : <Users2 className="w-4 h-4" />}
+                    </div>
+                    <p className="text-primary-100 text-xs font-bold uppercase tracking-wide">Plan {pl.name}</p>
+                  </div>
+                  {idx === 1 && (
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-amber-950">
+                      ÉLITE
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-xs text-primary-200">
+                  <span className="inline-flex items-center gap-1.5">
+                    <UserPlus2 className="w-3.5 h-3.5" /> Directo
+                  </span>
+                  <span className="text-lg font-bold text-white">{fmt(l1)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-primary-200 mt-1.5">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users2 className="w-3.5 h-3.5" /> Nivel 2
+                  </span>
+                  <span className="text-lg font-bold text-white">{fmt(l2)}</span>
                 </div>
               </div>
             );
@@ -212,13 +252,19 @@ export function NetworkPage() {
         {statCards.map((stat, i) => {
           const Icon = stat.icon;
           return (
-            <div key={i} className={`${stat.bg} dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4`}>
-              <div className={`p-3 rounded-xl ${stat.bg}`}>
-                <Icon className={`w-5 h-5 ${stat.color}`} />
+            <div
+              key={i}
+              className="relative overflow-hidden group bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+            >
+              <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${stat.gradient} opacity-10 group-hover:opacity-20 blur-xl transition-opacity`} />
+              <div className={`relative p-3 rounded-xl bg-gradient-to-br ${stat.gradient} text-white shadow-lg shadow-primary-600/20`}>
+                <Icon className="w-5 h-5" />
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-dark-400">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-dark-100">{stat.value}</p>
+              <div className="relative">
+                <p className="text-xs font-medium text-gray-500 dark:text-dark-400 uppercase tracking-wide">{stat.label}</p>
+                <p className={`text-3xl font-black bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent`}>
+                  {stat.value}
+                </p>
               </div>
             </div>
           );
