@@ -128,10 +128,24 @@ export function ProgramPage() {
                       <ChevronRight className="w-4 h-4" />
                     </Link>
                   ) : (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 text-gray-400 text-sm font-medium cursor-not-allowed">
-                      <Lock className="w-4 h-4" />
-                      Completa el día anterior
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 text-gray-400 text-sm font-medium cursor-not-allowed">
+                        <Lock className="w-4 h-4" />
+                        Completa el día anterior
+                      </span>
+                      {(() => {
+                        const prev = days.find(d => d.dayNumber === day.dayNumber - 1);
+                        if (prev && prev.totalRequired > 0) {
+                          const missing = Math.max(0, prev.totalRequired - prev.completedRequired);
+                          if (missing > 0) return (
+                            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full">
+                              Te faltan {missing} de {prev.totalRequired} tareas del Día {prev.dayNumber}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                   )}
                 </div>
               </div>

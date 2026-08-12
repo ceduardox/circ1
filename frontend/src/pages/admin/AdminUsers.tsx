@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
+import { adminBusinessApi } from '@/services/api';
 import { Card, CardContent } from '@/components/ui';
 import { ButtonGhost, Input, Label, ButtonPrimary } from '@/components/ui';
-import { ChevronLeft, ChevronRight, Search, User, Download, Plus, ChevronDown, Mail, MapPin, Calendar, Shield, Pencil } from 'lucide-react';
+import { CountrySelect } from '@/components/ui/CountrySelect';
+import { ChevronLeft, ChevronRight, Search, User, Download, Plus, ChevronDown, Mail, MapPin, Calendar, Shield, Pencil, Wallet, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui';
 import { toast } from 'sonner';
@@ -31,6 +33,9 @@ export function AdminUsersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [balanceUser, setBalanceUser] = useState<any>(null);
+  const [balanceLogs, setBalanceLogs] = useState<any[]>([]);
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearchDebounced(search), 300);
@@ -57,6 +62,20 @@ export function AdminUsersPage() {
     a.download = `usuarios-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const openBalanceLog = async (u: any) => {
+    setBalanceUser(u);
+    setBalanceLoading(true);
+    try {
+      const { data } = await adminBusinessApi.balanceLog(u.id);
+      setBalanceLogs(data.logs || []);
+    } catch {
+      setBalanceLogs([]);
+      toast.error('Error al cargar el historial');
+    } finally {
+      setBalanceLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -262,11 +281,11 @@ export function AdminUsersPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="age">Edad</Label>
-                    <Input id="age" type="number" placeholder="25" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                    <Input id="age" type="number" inputMode="numeric" enterKeyHint="next" min={13} max={120} step={1} placeholder="25" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="country">País</Label>
-                    <Input id="country" placeholder="México" value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} />
+                    <CountrySelect id="country" value={form.country} onChange={v => setForm({ ...form, country: v })} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -351,13 +370,22 @@ export function AdminUsersPage() {
                       <td className="px-6 py-4 text-gray-700 font-medium">{u.completedCount}</td>
                       <td className="px-6 py-4 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => openEditDialog(u)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                          title="Editar usuario"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openBalanceLog(u)}
+                            className="p-2 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                            title="Ver historial de balance"
+                          >
+                            <Wallet className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openEditDialog(u)}
+                            className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                            title="Editar usuario"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -423,11 +451,11 @@ export function AdminUsersPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="edit-age">Edad</Label>
-                <Input id="edit-age" type="number" placeholder="25" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                <Input id="edit-age" type="number" inputMode="numeric" enterKeyHint="next" min={13} max={120} step={1} placeholder="25" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="edit-country">País</Label>
-                <Input id="edit-country" placeholder="México" value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} />
+                <CountrySelect id="edit-country" value={form.country} onChange={v => setForm({ ...form, country: v })} />
               </div>
             </div>
             <div className="space-y-1.5">
@@ -446,6 +474,66 @@ export function AdminUsersPage() {
               </ButtonPrimary>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Historial de balance */}
+      <Dialog open={!!balanceUser} onOpenChange={open => !open && setBalanceUser(null)}>
+        <DialogContent className="max-w-lg dark:bg-dark-800 dark:border-dark-600">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 dark:text-dark-100">
+              <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              Historial de balance
+            </DialogTitle>
+            {balanceUser && (
+              <DialogDescription>
+                {balanceUser.firstName} {balanceUser.lastName} (@{balanceUser.username}) · Balance actual:{' '}
+                <span className="font-bold text-gray-900 dark:text-dark-100">
+                  ${(balanceUser.balance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </span>
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            {balanceLoading ? (
+              <div className="flex items-center justify-center py-8 text-gray-400">
+                <Loader2 className="w-5 h-5 animate-spin" />
+              </div>
+            ) : balanceLogs.length === 0 ? (
+              <div className="text-center py-8 text-sm text-gray-400 dark:text-dark-500">
+                Sin movimientos registrados aún.
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-dark-700">
+                {balanceLogs.map((l: any) => (
+                  <div key={l.id} className="py-3 flex items-center gap-3">
+                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                      l.type === 'credit'
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                    }`}>
+                      {l.type === 'credit' ? '+' : '−'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-dark-100 truncate">{l.note || (l.type === 'credit' ? 'Crédito' : 'Débito')}</p>
+                      <p className="text-xs text-gray-400 dark:text-dark-500">
+                        {new Date(l.createdAt).toLocaleString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-bold ${l.type === 'credit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {l.type === 'credit' ? '+' : '−'}${Math.abs(l.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-[10px] text-gray-400">balance: ${l.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <ButtonGhost onClick={() => setBalanceUser(null)}>Cerrar</ButtonGhost>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

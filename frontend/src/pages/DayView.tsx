@@ -147,16 +147,16 @@ export function DayViewPage() {
 
         {/* Slider Navigation */}
         {totalContents > 1 && (
-          <div className="flex items-center justify-between gap-4 mt-4 pt-1">
+          <div className="grid grid-cols-2 gap-3 mt-4 pt-1 sm:flex sm:items-center sm:justify-between sm:gap-4">
             <button
               onClick={goPrev}
               disabled={currentStep === 0}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="min-w-0 flex items-center justify-center gap-2 px-3 py-2.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed sm:px-5"
             >
               <ChevronLeft className="w-4 h-4" />
               Anterior
             </button>
-            <div className="flex items-center gap-2">
+            <div className="order-3 col-span-2 flex min-w-0 items-center justify-center gap-2 overflow-hidden sm:order-none sm:col-auto">
               {contents.map((_: any, i: number) => (
                 <div
                   key={i}
@@ -171,7 +171,7 @@ export function DayViewPage() {
             <button
               onClick={goNext}
               disabled={currentStep === totalContents - 1 || !canGoNext}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary-500/20"
+              className="min-w-0 flex items-center justify-center gap-2 px-3 py-2.5 rounded-full bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary-500/20 sm:px-5"
             >
               Siguiente
               <ChevronRight className="w-4 h-4" />

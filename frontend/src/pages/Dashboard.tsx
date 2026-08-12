@@ -196,26 +196,42 @@ export function DashboardPage() {
       {currentDay && (
         <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white">
-                  Día {currentDay.dayNumber}: {currentDay.title}
-                </h2>
-                <p className="text-primary-100 text-sm mt-1">
-                  {completedCount}/{totalItems} completado
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-white">
+                    Día {currentDay.dayNumber}: {currentDay.title}
+                  </h2>
+                  <p className="text-primary-100 text-sm mt-1">
+                    {completedCount}/{totalItems} completado
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white">{dayProgress}%</div>
+                  <p className="text-primary-100 text-[11px] mt-0.5">
+                    {totalItems - completedCount > 0
+                      ? `Te faltan ${totalItems - completedCount} ${totalItems - completedCount === 1 ? 'tarea' : 'tareas'}`
+                      : '¡Día completado!'}
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-white">{dayProgress}%</div>
-              </div>
-            </div>
             <div className="mt-3">
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-white/20 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-white rounded-full transition-all"
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    dayProgress >= 100
+                      ? 'bg-emerald-300 animate-pulse-soft'
+                      : 'bg-gradient-to-r from-yellow-300 via-white to-white shadow-[0_0_12px_rgba(255,255,255,0.6)]'
+                  }`}
                   style={{ width: `${dayProgress}%` }}
                 />
               </div>
+              <p className="text-primary-100 text-[11px] mt-2">
+                {dayProgress >= 100
+                  ? '🎉 ¡Completaste el día! Desbloqueaste el siguiente.'
+                  : dayProgress >= 70
+                  ? '¡Ya casi! Termina las tareas restantes para desbloquear el siguiente día.'
+                  : 'Completa todas las tareas del día para desbloquear el siguiente.'}
+              </p>
             </div>
           </div>
 

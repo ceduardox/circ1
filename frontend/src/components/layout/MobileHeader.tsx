@@ -25,6 +25,7 @@ export function MobileHeader() {
     { path: '/admin/users', label: 'Usuarios', icon: Users },
     { path: '/admin/analytics', label: 'Analytics', icon: BarChart },
     { path: '/admin/commissions', label: 'Comisiones', icon: Zap },
+    { path: '/admin/withdrawals', label: 'Retiros', icon: Wallet },
     { path: '/admin/network', label: 'Red Global', icon: Network },
   ];
 
@@ -67,7 +68,7 @@ export function MobileHeader() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-hide">
             {navItems.map(item => {
               const Icon = item.icon;
               const active = location.pathname === item.path;

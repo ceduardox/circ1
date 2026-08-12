@@ -6,10 +6,21 @@ import { Input, Label } from '@/components/ui/Input';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 
+const SAVED_IDENTIFIER_KEY = 'circulo1_saved_identifier';
+
+function loadSavedIdentifier(): string {
+  try {
+    return localStorage.getItem(SAVED_IDENTIFIER_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
 export function LoginPage() {
-  const [identifier, setIdentifier] = useState('');
+  const [identifier, setIdentifier] = useState(loadSavedIdentifier);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(loadSavedIdentifier() !== '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuthStore();
@@ -21,6 +32,10 @@ export function LoginPage() {
     setError('');
     try {
       await login(identifier, password);
+      try {
+        if (remember) localStorage.setItem(SAVED_IDENTIFIER_KEY, identifier.trim());
+        else localStorage.removeItem(SAVED_IDENTIFIER_KEY);
+      } catch { /* ignore */ }
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Credenciales inválidas');
@@ -97,7 +112,16 @@ export function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-dark-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={e => setRemember(e.target.checked)}
+                    className="accent-primary-600 w-4 h-4"
+                  />
+                  Guardar cuenta
+                </label>
                 <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                   ¿Olvidaste tu contraseña?
                 </Link>

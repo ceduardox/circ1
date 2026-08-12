@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useLocation } from 'react-router-dom';
 import { Bell, Search, X, Crown, Clock } from 'lucide-react';
 import { SearchBar } from './SearchBar';
+import { NotificationBell } from './NotificationBell';
 
 const pageLabels: Record<string, string> = {
   '/dashboard': 'Mi Día',
@@ -13,6 +14,8 @@ const pageLabels: Record<string, string> = {
   '/admin/days': 'Gestionar Días',
   '/admin/users': 'Gestionar Usuarios',
   '/admin/analytics': 'Analytics',
+  '/admin/commissions': 'Comisiones y Pagos',
+  '/admin/withdrawals': 'Retiros',
 };
 
 export function DesktopHeader() {
@@ -20,6 +23,12 @@ export function DesktopHeader() {
   const { status } = useMembershipStore();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setTick(tick => tick + 1), 60 * 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const currentTitle = pageLabels[location.pathname] || 'Círculo 1';
   const isAdmin = user?.role === 'ADMIN';
@@ -66,10 +75,12 @@ export function DesktopHeader() {
             <Search className="w-5 h-5" />
           </button>
         )}
-        <button className="p-2 rounded-xl text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+        {!isAdmin && <NotificationBell />}
+        {isAdmin && (
+          <button className="p-2 rounded-xl text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors relative">
+            <Bell className="w-5 h-5" />
+          </button>
+        )}
         <div className="w-px h-8 bg-gray-200 dark:bg-dark-600"></div>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">

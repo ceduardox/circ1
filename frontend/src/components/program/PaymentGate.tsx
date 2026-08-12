@@ -5,9 +5,12 @@ import { PaymentInfo } from '@/store/membershipStore';
 import { usePaymentFlow } from './usePaymentFlow';
 
 interface PaymentGateProps {
-  onRequestPayment: () => Promise<PaymentInfo | null>;
+  onRequestPayment: (planId?: string) => Promise<PaymentInfo | null>;
   requesting?: boolean;
   variant?: 'membership' | 'monthly';
+  plans?: { id: string; name: string; price: number }[];
+  level1Percent?: number;
+  level2Percent?: number;
 }
 
 const phrases = [
@@ -24,12 +27,20 @@ const benefits = [
   { icon: <Shield className="w-5 h-5 text-blue-400" />, title: 'Red de Afiliados', desc: 'Gana comisiones invitando a tu red' },
 ];
 
-export function PaymentGate({ onRequestPayment, requesting, variant = 'membership' }: PaymentGateProps) {
+export function PaymentGate({ onRequestPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5 }: PaymentGateProps) {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { payment, paid, start, checkNow } = usePaymentFlow();
 
   const isMonthly = variant === 'monthly';
+
+  const planList = plans && plans.length > 0 ? plans : [{ id: 'estandar', name: 'Estándar', price: 500 }];
+  const [selectedPlanId, setSelectedPlanId] = useState<string>(planList[0].id);
+  const selectedPlan = planList.find(p => p.id === selectedPlanId) || planList[0];
+
+  useEffect(() => {
+    setPhraseIdx(0);
+  }, [variant]);
 
   useEffect(() => {
     const t = setInterval(() => setPhraseIdx(i => (i + 1) % phrases.length), 4000);
@@ -41,13 +52,13 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
     // para que el navegador no la bloquee como popup.
     const win = window.open('', '_blank');
     try {
-      await start(onRequestPayment, win);
+      await start(() => onRequestPayment(isMonthly ? undefined : selectedPlan.id), win);
     } catch (e: any) {
       setErrorMsg(e?.response?.data?.error || 'No se pudo iniciar el pago. Inténtalo de nuevo.');
     }
   };
 
-  const price = isMonthly ? '$50' : '$500';
+  const price = isMonthly ? '$50' : `$${selectedPlan.price}`;
   const priceLabel = isMonthly ? '/ mes' : 'USD';
   const subLabel = isMonthly
     ? 'Mantenimiento mensual de tu membresía'
@@ -89,6 +100,49 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                 </p>
               </div>
             </div>
+
+            {/* Beneficios */}
+            {!isMonthly && planList.length > 1 && (
+              <div className="mb-8">
+                <p className="text-sm font-semibold text-gray-700 dark:text-dark-200 mb-3">Elige tu plan</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {planList.map(pl => {
+                    const isTop = pl.price === Math.max(...planList.map(p => p.price));
+                    const earn = (pl.price * level1Percent) / 100;
+                    const earn2 = (pl.price * level2Percent) / 100;
+                    return (
+                      <button
+                        key={pl.id}
+                        type="button"
+                        onClick={() => setSelectedPlanId(pl.id)}
+                        className={`relative rounded-2xl border p-4 text-left transition-all ${
+                          selectedPlan.id === pl.id
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-md shadow-primary-500/10'
+                            : 'border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 hover:border-primary-300 dark:hover:border-primary-700'
+                        } ${isTop && selectedPlan.id !== pl.id ? 'border-amber-300 dark:border-amber-700' : ''}`}
+                      >
+                        {isTop && (
+                          <span className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold shadow">
+                            MÁS GANANCIAS
+                          </span>
+                        )}
+                        <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">{pl.name}</p>
+                        <p className="text-2xl font-black text-gray-900 dark:text-dark-100 mt-1">
+                          ${pl.price} <span className="text-xs font-medium text-gray-400">USD</span>
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-dark-400 mt-1.5">
+                          Ganas <span className="font-bold text-emerald-600 dark:text-emerald-400">{earn.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span> por referido
+                          <span className="text-gray-400"> · {earn2.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} nivel 2</span>
+                        </p>
+                        {selectedPlan.id === pl.id && (
+                          <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mt-1">✓ Seleccionado</p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Benefits */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">

@@ -91,8 +91,31 @@ export function ReflectionForm({ dayId, reflectionType, title, prompt, placehold
             {saved && <span className="text-green-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Guardado</span>}
           </div>
         </div>
-        <ButtonPrimary type="submit" disabled={saving || content.length < minChars} className="w-full">
-          {saving ? <Loader2 className="w-4 h-4" /> : saved ? 'Guardado ✓' : 'Guardar'}
+        <ButtonPrimary
+          type="submit"
+          disabled={saving || content.length < minChars}
+          className={`w-full min-h-12 py-3 px-6 text-sm font-bold text-white rounded-xl transition-all duration-200 sm:w-auto sm:min-w-[190px] sm:mx-auto sm:flex ${
+            saved
+              ? 'bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25'
+              : 'bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 shadow-lg shadow-primary-500/30 hover:-translate-y-0.5'
+          }`}
+        >
+          {saving ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Guardando...
+            </>
+          ) : saved ? (
+            <>
+              <CheckCircle className="w-5 h-5" />
+              Guardado
+            </>
+          ) : (
+            <>
+              <Save className="w-5 h-5" />
+              Guardar respuesta
+            </>
+          )}
         </ButtonPrimary>
       </form>
     </div>

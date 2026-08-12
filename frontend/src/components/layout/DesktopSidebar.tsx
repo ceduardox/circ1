@@ -22,6 +22,7 @@ export function DesktopSidebar() {
     { path: '/admin/users', label: 'Usuarios', icon: Users },
     { path: '/admin/analytics', label: 'Analytics', icon: BarChart },
     { path: '/admin/commissions', label: 'Comisiones', icon: Zap },
+    { path: '/admin/withdrawals', label: 'Retiros', icon: Wallet },
     { path: '/admin/network', label: 'Red Global', icon: Network },
   ];
 
@@ -47,7 +48,7 @@ export function DesktopSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto scrollbar-hide">
           {navItems.map(item => {
             const Icon = item.icon;
             const active = location.pathname === item.path;
@@ -55,7 +56,7 @@ export function DesktopSidebar() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group ${
+                className={`sidebar-link flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
                   active
                     ? 'sidebar-link-active text-white font-semibold'
                     : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300 hover:translate-x-1'
@@ -75,8 +76,8 @@ export function DesktopSidebar() {
           })}
 
           {user?.role === 'ADMIN' && (
-            <div className="pt-4">
-              <p className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-dark-500 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="pt-3">
+              <p className="px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-dark-500 uppercase tracking-wider flex items-center gap-1.5">
                 <span className="w-1 h-3 rounded-full bg-primary-500" /> Administración
               </p>
               {adminItems.map(item => {
@@ -86,7 +87,7 @@ export function DesktopSidebar() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group ${
+                    className={`sidebar-link flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
                       active
                         ? 'sidebar-link-active text-white font-semibold'
                         : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300 hover:translate-x-1'

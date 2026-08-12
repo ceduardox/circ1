@@ -49,6 +49,14 @@ body {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  .chat-pattern-bg {
+    background-color: #f7f7f8;
+    background-image: url('/images/chat-pattern.png');
+    background-repeat: repeat;
+  }
+  .dark .chat-pattern-bg {
+    background-color: rgba(15, 23, 42, 0.35);
+  }
 }
 
 @keyframes slide-down {
@@ -138,6 +146,79 @@ body {
 .animate-shimmer {
   background-size: 200% 100%;
   animation: shimmer 2.5s linear infinite;
+}
+
+/* ─── Landing ───────────────────────────────────────────── */
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.15); }
+  66% { transform: translate(-25px, 25px) scale(0.9); }
+}
+
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes aurora {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-blob {
+  animation: blob 9s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-gradient-text {
+  background-size: 200% auto;
+  animation: gradient-pan 6s ease infinite;
+}
+
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+
+.animate-aurora {
+  background-size: 200% 200%;
+  animation: aurora 14s ease infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 24s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .animate-gradient-text,
+  .animate-marquee,
+  .animate-aurora,
+  .animate-glow-pulse,
+  .animate-spin-slow,
+  .animate-float,
+  .animate-pulse-soft {
+    animation: none !important;
+  }
 }
 
 /* ─── Sidebar ───────────────────────────────────────────── */

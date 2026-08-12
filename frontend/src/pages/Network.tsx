@@ -11,6 +11,8 @@ const statusStyles: Record<string, { label: string; classes: string }> = {
   REVOKED: { label: 'Revocado', classes: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
 };
 
+const fmt = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+
 export function NetworkPage() {
   const { status, fetchStatus } = useMembershipStore();
   const [network, setNetwork] = useState<any>({ level1: [], level2: [], count: { level1: 0, level2: 0, total: 0 } });
@@ -66,24 +68,30 @@ export function NetworkPage() {
             Nivel {level}
           </p>
         </div>
+        {member.earned > 0 && (
+          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full">
+            Ganaste {fmt(member.earned)}
+          </span>
+        )}
         <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${st.classes}`}>{st.label}</span>
       </div>
     );
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
 
   const statCards = [
     { label: 'Total en tu red', value: network.count.total, icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
     { label: 'Nivel 1 (directos)', value: network.count.level1, icon: Share2, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Nivel 2 (indirectos)', value: network.count.level2, icon: Shield, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
+
+  // Análisis de actividad de la red
+  const allMembers = [...(network.level1 || []), ...(network.level2 || [])];
+  const activeCount = allMembers.filter(m => m.membershipStatus === 'ACTIVE').length;
+  const inactiveCount = allMembers.length - activeCount;
+  const activePct = allMembers.length > 0 ? Math.round((activeCount / allMembers.length) * 100) : 0;
+  const lostPerInactive = (status?.settings?.level1Percent || 25) / 100 * (status?.settings?.membershipPrice || 500);
+  const totalLost = inactiveCount * lostPerInactive;
+
 
   // Árbol: yo en la raíz, nivel 1 como hijos, nivel 2 como nietos
   const treeRoots: TreeMember[] = useMemo(() => {
@@ -110,6 +118,14 @@ export function NetworkPage() {
     }));
     return l1;
   }, [network]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   const viewToggle = (
     <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-dark-700">
@@ -163,8 +179,30 @@ export function NetworkPage() {
           </button>
         </div>
         <p className="text-primary-200 text-xs mt-3">
-          Gana {status?.settings?.level1Percent || 25}% por cada miembro que se una con tu link y un 5% adicional en su nivel 2.
+          Gana {status?.settings?.level1Percent || 25}% por cada miembro que se una con tu link y un {status?.settings?.level2Percent || 5}% adicional en su nivel 2.
         </p>
+        <div className="mt-4 space-y-3">
+          {(status?.settings?.plans && status.settings.plans.length > 0 ? status.settings.plans : [{ id: 'estandar', name: 'Membresía', price: status?.settings?.membershipPrice || 500 }]).map(pl => {
+            const l1 = (pl.price * (status?.settings?.level1Percent || 25)) / 100;
+            const l2 = (pl.price * (status?.settings?.level2Percent || 5)) / 100;
+            return (
+              <div key={pl.id} className="bg-white/10 border border-white/20 rounded-xl p-3.5">
+                <p className="text-primary-100 text-xs font-medium mb-1">Plan {pl.name} · ${pl.price}</p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <p className="text-lg font-bold">
+                    {fmt(l1)} <span className="text-xs font-normal text-primary-200">directo</span>
+                  </p>
+                  <p className="text-lg font-bold">
+                    {fmt(l2)} <span className="text-xs font-normal text-primary-200">nivel 2</span>
+                  </p>
+                  <p className="text-primary-200 text-[11px]">
+                    ({status?.settings?.level1Percent || 25}% + {status?.settings?.level2Percent || 5}%)
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Stats */}
@@ -184,6 +222,30 @@ export function NetworkPage() {
           );
         })}
       </div>
+
+      {/* Análisis de actividad de la red */}
+      {allMembers.length > 0 && (
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 dark:text-dark-100 mb-4">Salud de tu red</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-4">
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Activos (al día)</p>
+              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1">{activeCount} ({activePct}%)</p>
+            </div>
+            <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Inactivos</p>
+              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1">{inactiveCount}</p>
+            </div>
+            <div className="rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+              <p className="text-xs text-red-700 dark:text-red-400 font-medium">Pierdes por inactivos</p>
+              <p className="text-2xl font-bold text-red-700 dark:text-red-400 mt-1">{fmt(totalLost)}</p>
+              <p className="text-[11px] text-red-600 dark:text-red-300 mt-0.5">
+                {inactiveCount} × {fmt(lostPerInactive)} (comisión de nivel 1)
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Vista árbol */}
       {view === 'tree' && (

@@ -1,86 +1,114 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import countries from 'world-countries';
-import { Search, Check } from 'lucide-react';
+import { Check, ChevronDown, Globe2, Search } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
+import 'flag-icons/css/flag-icons.min.css';
 
 interface CountrySelectProps {
   value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  id?: string;
 }
 
 const sorted = countries
-  .map(c => ({ name: c.name.common, code: c.cca2, flag: c.flag }))
+  .map(country => ({ name: country.name.common, code: country.cca2 }))
   .sort((a, b) => a.name.localeCompare(b.name));
 
-export function CountrySelect({ value, onChange, placeholder = 'Selecciona tu país', id }: CountrySelectProps & { id?: string }) {
+export function CountrySelect({ value, onChange, placeholder = 'Selecciona tu país', id }: CountrySelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
-
-  const selected = sorted.find(c => c.name === value || c.code === value);
+  const selected = sorted.find(country => country.name === value || country.code === value);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return sorted.slice(0, 60);
-    return sorted.filter(c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)).slice(0, 60);
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    if (!normalizedQuery) return sorted;
+    return sorted.filter(country =>
+      country.name.toLocaleLowerCase().includes(normalizedQuery)
+      || country.code.toLocaleLowerCase().includes(normalizedQuery)
+    );
   }, [query]);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) setQuery('');
+  };
+
+  const handleSelect = (countryName: string) => {
+    onChange(countryName);
+    handleOpenChange(false);
+  };
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
         type="button"
         id={id}
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 transition-all text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 hover:border-primary-300"
+        onClick={() => handleOpenChange(true)}
+        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 transition-all text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 hover:border-primary-300"
       >
-        <span className="text-xl leading-none">{selected?.flag || '🌐'}</span>
+        {selected ? (
+          <span
+            className={`fi fi-${selected.code.toLowerCase()} shrink-0 rounded-sm shadow-sm`}
+            style={{ width: '1.5rem', height: '1rem', backgroundSize: 'cover' }}
+            aria-hidden="true"
+          />
+        ) : (
+          <Globe2 className="w-5 h-5 text-primary-500 shrink-0" />
+        )}
         <span className={`flex-1 text-left truncate ${selected ? 'text-gray-900 dark:text-dark-100' : 'text-gray-400'}`}>
           {selected?.name || placeholder}
         </span>
-        <span className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▾</span>
+        <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
       </button>
 
-      {open && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1.5 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-xl shadow-lg animate-fade-in max-h-72 flex flex-col">
-          <div className="p-2 border-b border-gray-100 dark:border-dark-700 flex items-center gap-2">
-            <Search className="w-4 h-4 text-gray-400 shrink-0 ml-1" />
-            <input
-              autoFocus
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Buscar país..."
-              className="w-full bg-transparent text-sm text-gray-900 dark:text-dark-100 focus:outline-none"
-            />
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md max-h-[85dvh] p-0 gap-0 overflow-hidden dark:bg-dark-800 dark:border-dark-600">
+          <DialogHeader className="px-5 pt-5 pb-4 border-b border-gray-100 dark:border-dark-700 text-left">
+            <DialogTitle className="dark:text-dark-100">Selecciona tu país</DialogTitle>
+          </DialogHeader>
+
+          <div className="p-3 border-b border-gray-100 dark:border-dark-700">
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 focus-within:ring-2 focus-within:ring-primary-500">
+              <Search className="w-4 h-4 text-gray-400 shrink-0" />
+              <input
+                autoFocus
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+                placeholder="Buscar país..."
+                className="w-full bg-transparent text-sm text-gray-900 dark:text-dark-100 placeholder-gray-400 focus:outline-none"
+              />
+            </div>
           </div>
-          <div className="overflow-y-auto flex-1">
-            {filtered.map(c => (
+
+          <div className="overflow-y-auto overscroll-contain flex-1 max-h-[60dvh] py-1">
+            {filtered.map(country => (
               <button
-                key={c.code}
+                key={country.code}
                 type="button"
-                onClick={() => { onChange(c.name); setOpen(false); setQuery(''); }}
-                className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-dark-700 text-left ${
-                  selected?.code === c.code ? 'bg-primary-50/60 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium' : 'text-gray-700 dark:text-dark-200'
+                onClick={() => handleSelect(country.name)}
+                className={`w-full flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-dark-700 text-left ${
+                  selected?.code === country.code
+                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-dark-200'
                 }`}
               >
-                <span className="text-lg leading-none">{c.flag}</span>
-                <span className="flex-1 truncate">{c.name}</span>
-                {selected?.code === c.code && <Check className="w-4 h-4 text-primary-600 shrink-0" />}
+                <span
+                  className={`fi fi-${country.code.toLowerCase()} shrink-0 rounded-sm shadow-sm`}
+                  style={{ width: '1.5rem', height: '1rem', backgroundSize: 'cover' }}
+                  aria-hidden="true"
+                />
+                <span className="flex-1">{country.name}</span>
+                <span className="text-xs text-gray-400 uppercase">{country.code}</span>
+                {selected?.code === country.code && <Check className="w-4 h-4 text-primary-600 shrink-0" />}
               </button>
             ))}
             {filtered.length === 0 && (
-              <p className="px-4 py-3 text-sm text-gray-400">Sin resultados para "{query}"</p>
+              <p className="px-5 py-8 text-center text-sm text-gray-400">No se encontraron países.</p>
             )}
           </div>
-        </div>
-      )}
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

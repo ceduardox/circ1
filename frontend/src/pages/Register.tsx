@@ -3,10 +3,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ButtonPrimary, Input, Label, Card, CardContent } from '@/components/ui';
+import { ButtonPrimary, Input, Label, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { CountrySelect } from '@/components/ui/CountrySelect';
 import { useAuthStore } from '@/store/authStore';
-import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, UserPlus, FileText, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const registerSchema = z.object({
@@ -31,6 +31,8 @@ export function RegisterPage() {
   const { register: registerUser, isLoading: authLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const referralCode = useMemo(() => {
     const ref = searchParams.get('ref');
@@ -47,6 +49,10 @@ export function RegisterPage() {
 
   const onSubmit = async (data: RegisterFormData) => {
     setError('');
+    if (!acceptedTerms) {
+      setError('Debes aceptar los Términos y Condiciones para continuar.');
+      return;
+    }
     try {
       await registerUser({
         email: data.email,
@@ -58,7 +64,7 @@ export function RegisterPage() {
         country: countryValue,
         referralCode: referralCode || undefined,
       });
-      toast.success('¡Cuenta creada! Bienvenido a Círculo 1');
+      toast.success('¡Cuenta creada! Elige tu plan y empieza a ganar por referidos');
       navigate('/dashboard');
     } catch (e: any) {
       setError(e.response?.data?.error || 'Error al registrar');
@@ -153,7 +159,17 @@ export function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="age">Edad</Label>
-                <Input id="age" type="number" placeholder="25" {...register('age', { valueAsNumber: true })} />
+                <Input
+                  id="age"
+                  type="number"
+                  inputMode="numeric"
+                  enterKeyHint="next"
+                  min={13}
+                  max={120}
+                  step={1}
+                  placeholder="25"
+                  {...register('age', { valueAsNumber: true })}
+                />
               </div>
               <div>
                 <Label htmlFor="country">País</Label>
@@ -163,6 +179,26 @@ export function RegisterPage() {
                   onChange={v => setCountryValue(v)}
                 />
               </div>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={acceptedTerms}
+                onChange={e => setAcceptedTerms(e.target.checked)}
+                className="mt-1 accent-primary-600 w-4 h-4 flex-shrink-0"
+              />
+              <label htmlFor="terms" className="text-sm text-gray-600 dark:text-dark-300">
+                Acepto los{' '}
+                <button type="button" onClick={() => setTermsOpen(true)} className="text-primary-600 dark:text-primary-400 hover:underline font-medium">
+                  Términos y Condiciones
+                </button>{' '}
+                y la{' '}
+                <button type="button" onClick={() => setTermsOpen(true)} className="text-primary-600 dark:text-primary-400 hover:underline font-medium">
+                  Política de Privacidad
+                </button>
+              </label>
             </div>
 
             <ButtonPrimary type="submit" className="w-full" disabled={authLoading}>
@@ -175,6 +211,70 @@ export function RegisterPage() {
           </p>
         </CardContent>
       </Card>
+
+      <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
+        <DialogContent className="max-h-[85dvh] flex flex-col gap-0 overflow-hidden dark:bg-dark-800 dark:border-dark-600">
+          <DialogHeader className="px-5 pt-5 pb-4 border-b border-gray-100 dark:border-dark-700">
+            <DialogTitle className="flex items-center gap-2 dark:text-dark-100">
+              <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              Términos y Condiciones
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-5 py-4 text-sm text-gray-600 dark:text-dark-300 space-y-4 leading-relaxed">
+            <p>
+              Al crear tu cuenta en <strong>Círculo 1</strong> aceptas participar en un programa de
+              neuroentrenamiento y desarrollo de habilidades de venta. El acceso al contenido se otorga
+              tras el pago de la membresía correspondiente.
+            </p>
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">Comisiones y retiros</h4>
+              <p>
+                Las comisiones por referidos se acreditan solo si tu membresía está al día. Los retiros
+                de fondos se procesan manualmente y pueden incluir un fee por la pasarela de pago
+                (entre 4% y 6%), el cual se descuenta del monto solicitado.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">Responsabilidad</h4>
+              <p>
+                Eres responsable de la veracidad de tus datos y de tus cuentas de pago (wallets o cuentas
+                bancarias). No nos hacemos responsables por fondos enviados a una dirección incorrecta
+                proporcionada por ti.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">Privacidad</h4>
+              <p>
+                Tus datos personales se usan únicamente para gestionar tu cuenta, pagos y red de referidos.
+                No se comparten con terceros sin tu consentimiento, salvo requerimiento legal.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">Políticas</h4>
+              <p>
+                Círculo 1 se reserva el derecho de suspender cuentas que incumplan estas condiciones o que
+                usen prácticas fraudulentas en la red de referidos.
+              </p>
+            </div>
+          </div>
+          <div className="px-5 py-4 border-t border-gray-100 dark:border-dark-700 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setTermsOpen(false)}
+              className="text-sm text-gray-500 dark:text-dark-300 hover:text-gray-700 dark:hover:text-dark-100 px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-700"
+            >
+              Cerrar
+            </button>
+            <ButtonPrimary
+              type="button"
+              onClick={() => { setAcceptedTerms(true); setTermsOpen(false); }}
+              className="px-4"
+            >
+              <CheckCircle2 className="w-4 h-4" /> Aceptar
+            </ButtonPrimary>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

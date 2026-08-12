@@ -15,6 +15,7 @@ interface MembershipStatus {
     monthlyFee: number;
     level1Percent: number;
     level2Percent: number;
+    plans?: { id: string; name: string; price: number }[];
   };
 }
 
@@ -33,7 +34,7 @@ interface MembershipState {
   requestingPayment: boolean;
   checkingPayment: boolean;
   fetchStatus: () => Promise<void>;
-  requestPayment: () => Promise<PaymentInfo | null>;
+  requestPayment: (planId?: string) => Promise<PaymentInfo | null>;
   requestMonthlyPayment: () => Promise<PaymentInfo | null>;
   checkPayment: (paymentId: string) => Promise<PaymentInfo>;
   reset: () => void;
@@ -55,10 +56,10 @@ export const useMembershipStore = create<MembershipState>((set, get) => ({
     }
   },
 
-  requestPayment: async () => {
+  requestPayment: async (planId?: string) => {
     set({ requestingPayment: true });
     try {
-      const { data } = await membershipApi.requestPayment({ method: 'nowpayments' });
+      const { data } = await membershipApi.requestPayment({ method: 'nowpayments', planId });
       await get().fetchStatus();
       return {
         id: data.payment.id,

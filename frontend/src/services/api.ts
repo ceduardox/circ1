@@ -102,20 +102,44 @@ export const membershipApi = {
   network: () => api.get('/membership/network'),
   withdrawals: () => api.get('/membership/withdrawals'),
   requestWithdrawal: (data: any) => api.post('/membership/withdrawals', data),
+  payoutAccounts: () => api.get('/membership/payout-accounts'),
+  savePayoutAccount: (data: any) => api.post('/membership/payout-accounts', data),
+  deletePayoutAccount: (id: string) => api.delete(`/membership/payout-accounts/${id}`),
+  notifications: () => api.get('/membership/notifications'),
+  markNotificationsRead: () => api.post('/membership/notifications/read'),
+};
+
+export const chatApi = {
+  messages: (params?: any) => api.get('/chat/messages', { params }),
+  send: (data: any) => api.post('/chat/messages', data),
+  uploadImage: (file: File) => {
+    const form = new FormData();
+    form.append('image', file);
+    return api.post('/chat/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  users: () => api.get('/chat/users'),
+  deleteMessage: (id: string) => api.delete(`/chat/messages/${id}`),
+  restoreMessage: (id: string) => api.post(`/chat/messages/${id}/restore`),
+  setBlocked: (id: string, blocked: boolean) => api.put(`/chat/users/${id}/block`, { blocked }),
+  audit: () => api.get('/chat/audit'),
 };
 
 export const adminBusinessApi = {
   settings: () => api.get('/admin/business/settings'),
   updateSettings: (data: any) => api.put('/admin/business/settings', data),
   payments: () => api.get('/admin/business/payments'),
+  retained: () => api.get('/admin/business/retained'),
   approvePayment: (id: string) => api.post(`/admin/business/payments/${id}/approve`),
   rejectPayment: (id: string) => api.post(`/admin/business/payments/${id}/reject`),
   deactivatePayment: (id: string) => api.post(`/admin/business/payments/${id}/deactivate`),
   verifyPayment: (id: string) => api.post(`/admin/business/payments/${id}/verify`),
   network: () => api.get('/admin/business/network'),
   withdrawals: () => api.get('/admin/business/withdrawals'),
-  approveWithdrawal: (id: string) => api.post(`/admin/business/withdrawals/${id}/approve`),
+  approveWithdrawal: (id: string, data?: any) => api.post(`/admin/business/withdrawals/${id}/approve`, data),
   rejectWithdrawal: (id: string) => api.post(`/admin/business/withdrawals/${id}/reject`),
+  balanceLog: (userId: string) => api.get(`/admin/business/balance-log/${userId}`),
 };
 
 export const adminApi = {
@@ -133,4 +157,6 @@ export const adminApi = {
   reorderContents: (dayId: string, contentIds: string[]) =>
     api.put(`/admin/program/days/${dayId}/reorder`, { contentIds }),
   analytics: () => api.get('/admin/analytics/overview'),
+  stuckUsers: (days?: number) => api.get('/admin/business/stuck-users', { params: { days } }),
+  funnel: () => api.get('/admin/business/funnel'),
 };

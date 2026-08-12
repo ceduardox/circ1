@@ -24,7 +24,7 @@ export function MembershipGate({ children }: MembershipGateProps) {
   if (!user) return null;
   if (user.role === 'ADMIN') return <>{children}</>;
 
-  if (loadingStatus) {
+  if (loadingStatus && !status) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center text-gray-400">
         <Loader2 className="w-6 h-6 animate-spin" />
@@ -34,9 +34,9 @@ export function MembershipGate({ children }: MembershipGateProps) {
 
   const memberStatus = status?.status;
 
-  // Sin membresía (nunca activó): paywall de membresía $500
+  // Sin membresía (nunca activó): paywall de membresía
   if (!memberStatus || memberStatus === 'INACTIVE' || memberStatus === 'REVOKED') {
-    return <PaymentGate onRequestPayment={requestPayment} requesting={requestingPayment} variant="membership" />;
+    return <PaymentGate onRequestPayment={requestPayment} requesting={requestingPayment} variant="membership" plans={status?.settings?.plans} level1Percent={status?.settings?.level1Percent} level2Percent={status?.settings?.level2Percent} />;
   }
 
   // Expirado: bloqueado, solo pantalla de renovación $50

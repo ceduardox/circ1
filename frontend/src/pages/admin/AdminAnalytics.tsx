@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
+import { adminApi } from '@/services/api';
 import { Card, CardContent, CardHeader } from '@/components/ui';
 import { ButtonGhost, Input } from '@/components/ui';
-import { ChevronLeft, Users, BookOpen, BarChart, TrendingUp, Calendar, Clock, Target, Award } from 'lucide-react';
+import { ChevronLeft, Users, BookOpen, BarChart, TrendingUp, Calendar, Clock, Target, Award, AlertTriangle, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -14,11 +15,16 @@ export function AdminAnalyticsPage() {
   const navigate = useNavigate();
   const [completionByDay, setCompletionByDay] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [funnel, setFunnel] = useState<any>(null);
+  const [stuck, setStuck] = useState<any[]>([]);
+  const [stuckDays, setStuckDays] = useState(3);
 
   useEffect(() => {
     if (user?.role === 'ADMIN') {
       fetchStats();
       loadAnalytics();
+      loadFunnel();
+      loadStuck(3);
     }
   }, [fetchStats, user]);
 
@@ -36,6 +42,21 @@ export function AdminAnalyticsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadFunnel = async () => {
+    try {
+      const { data } = await adminApi.funnel();
+      setFunnel(data);
+    } catch { /* silencioso */ }
+  };
+
+  const loadStuck = async (days: number) => {
+    try {
+      const { data } = await adminApi.stuckUsers(days);
+      setStuck(data.stuck || []);
+      setStuckDays(days);
+    } catch { /* silencioso */ }
   };
 
   if (!user || user.role !== 'ADMIN') {
@@ -148,6 +169,89 @@ export function AdminAnalyticsPage() {
           );
         })}
       </div>
+
+      {/* Embudo de usuarios */}
+      {funnel && (
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Filter className="w-5 h-5" /> Embudo de usuarios
+            </h2>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-2xl bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 p-4">
+                <p className="text-xs text-gray-500 mb-1">Registrados</p>
+                <p className="text-3xl font-bold text-gray-900">{funnel.funnel.registered}</p>
+              </div>
+              <div className="rounded-2xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 p-4">
+                <p className="text-xs text-primary-600 mb-1">Con membresía activa</p>
+                <p className="text-3xl font-bold text-primary-700">{funnel.funnel.withMembership}</p>
+                <p className="text-xs text-primary-600 mt-1">{funnel.rates.conversionToMembership}% de conversión</p>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-4">
+                <p className="text-xs text-emerald-600 mb-1">Activos hoy</p>
+                <p className="text-3xl font-bold text-emerald-700">{funnel.funnel.activeToday}</p>
+                <p className="text-xs text-emerald-600 mt-1">{funnel.rates.retentionToday}% de los con membresía</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Usuarios atascados */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" /> Usuarios atascados
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Sin completar tareas hace</span>
+              {[1, 3, 7].map(d => (
+                <button
+                  key={d}
+                  onClick={() => loadStuck(d)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    stuckDays === d
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-300 hover:bg-gray-200 dark:hover:bg-dark-600'
+                  }`}
+                >
+                  {d} {d === 1 ? 'día' : 'días'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {stuck.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Target className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+              <p>No hay usuarios atascados. Todos los activos están al día.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {stuck.map((u: any) => (
+                <div key={u.id} className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-medium text-amber-700">{u.firstName?.[0]}{u.lastName?.[0]}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{u.firstName} {u.lastName}</p>
+                      <p className="text-sm text-gray-500 truncate">@{u.username} · {u.email}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 rounded-full shrink-0">
+                    Inactivo {stuckDays} {stuckDays === 1 ? 'día' : 'días'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Completion by Day Chart */}
       <Card>

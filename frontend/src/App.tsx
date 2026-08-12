@@ -10,6 +10,7 @@ import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
 import { DesktopHeader } from '@/components/layout/DesktopHeader';
 import { LoginPage } from '@/pages/Login';
 import { RegisterPage } from '@/pages/Register';
+import { LandingPage } from '@/pages/Landing';
 import { DashboardPage } from '@/pages/Dashboard';
 import { DayViewPage } from '@/pages/DayView';
 import { ProfilePage } from '@/pages/Profile';
@@ -24,6 +25,8 @@ import { AdminUsersPage } from '@/pages/admin/AdminUsers';
 import { AdminAnalyticsPage } from '@/pages/admin/AdminAnalytics';
 import { AdminCommissionsPage } from '@/pages/admin/AdminCommissions';
 import { AdminNetworkPage } from '@/pages/admin/AdminNetwork';
+import { AdminWithdrawalsPage } from '@/pages/admin/AdminWithdrawals';
+import { FloatingChat } from '@/components/chat/FloatingChat';
 
 function App() {
   const { fetchMe, isAuthenticated } = useAuthStore();
@@ -39,7 +42,7 @@ function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-gray-100 dark:bg-dark-900">
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
@@ -74,10 +77,12 @@ function App() {
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
               <Route path="/admin/commissions" element={<AdminCommissionsPage />} />
+              <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
               <Route path="/admin/network" element={<AdminNetworkPage />} />
             </Route>
           </Route>
         </Routes>
+        <FloatingChat />
         <Toaster position="top-right" />
       </div>
     </BrowserRouter>

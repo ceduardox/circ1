@@ -4,7 +4,8 @@ import { programApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-import { User, Mail, AtSign, Calendar, MapPin, Lock, Eye, EyeOff, Save, Trophy, Flame, Target, Camera, Loader2 } from 'lucide-react';
+import { CountrySelect } from '@/components/ui/CountrySelect';
+import { User, Mail, AtSign, Calendar, Lock, Eye, EyeOff, Save, Trophy, Flame, Target, Camera, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ProfilePage() {
@@ -188,6 +189,11 @@ export function ProfilePage() {
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     type="number"
+                    inputMode="numeric"
+                    enterKeyHint="next"
+                    min={13}
+                    max={120}
+                    step={1}
                     value={form.age}
                     onChange={(e) => setForm({ ...form, age: e.target.value })}
                     className="pl-10"
@@ -196,14 +202,10 @@ export function ProfilePage() {
               </div>
               <div className="space-y-1.5">
                 <Label>País</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    value={form.country}
-                    onChange={(e) => setForm({ ...form, country: e.target.value })}
-                    className="pl-10"
-                  />
-                </div>
+                <CountrySelect
+                  value={form.country}
+                  onChange={(v) => setForm({ ...form, country: v })}
+                />
               </div>
             </div>
 
