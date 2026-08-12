@@ -13,6 +13,10 @@ interface User {
   country?: string;
   avatarUrl?: string | null;
   role: 'USER' | 'ADMIN';
+  pushEnabled?: boolean;
+  pushChat?: boolean;
+  pushCommissions?: boolean;
+  pushPayments?: boolean;
 }
 
 interface AuthState {
@@ -26,6 +30,7 @@ interface AuthState {
   fetchMe: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
   updateAvatar: (file: File) => Promise<void>;
+  updatePushPreferences: (data: Partial<Pick<User, 'pushEnabled' | 'pushChat' | 'pushCommissions' | 'pushPayments'>>) => Promise<void>;
   setAccessToken: (token: string) => void;
 }
 
@@ -91,6 +96,11 @@ export const useAuthStore = create<AuthState>()(
       updateAvatar: async (file) => {
         const { data: res } = await authApi.uploadAvatar(file);
         set({ user: { ...get().user, avatarUrl: res.user.avatarUrl } as any });
+      },
+
+      updatePushPreferences: async (data) => {
+        await authApi.updatePushPreferences(data);
+        set({ user: { ...get().user, ...data } as any });
       },
     }),
     { name: 'auth-storage', partialize: (s) => ({ user: s.user, accessToken: s.accessToken, isAuthenticated: s.isAuthenticated }) }

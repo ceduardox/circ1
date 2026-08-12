@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../utils/prisma.js';
 import { hashPassword, verifyPassword, generateReferralCode } from '../utils/auth.js';
-import { registerSchema, loginSchema, updateProfileSchema } from '../utils/schemas.js';
+import { registerSchema, loginSchema, updateProfileSchema, pushPrefsSchema } from '../utils/schemas.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { randomUUID } from 'crypto';
 import { writeFile, mkdir } from 'fs/promises';
@@ -33,6 +33,21 @@ export async function authRoutes(app: FastifyInstance) {
     if (body.referralCode) {
       const referrer = await prisma.user.findUnique({ where: { referralCode: body.referralCode } });
       if (referrer) referrerId = referrer.id;
+    }
+
+    // Sin código (o código inválido): el nuevo usuario entra debajo del admin
+    // (raíz de la red). Así toda la red cuelga del admin.
+    if (!referrerId) {
+      const admin = await prisma.user.findFirst({ where: { role: 'ADMIN' }, orderBy: { createdAt: 'asc' } });
+      if (admin) {
+        referrerId = admin.id;
+        if (!admin.referralCode) {
+          await prisma.user.update({
+            where: { id: admin.id },
+            data: { referralCode: generateReferralCode(admin.username) },
+          });
+        }
+      }
     }
 
     const user = await prisma.user.create({
@@ -79,7 +94,7 @@ export async function authRoutes(app: FastifyInstance) {
       maxAge: 7 * 24 * 60 * 60 * 1000, path: '/',
     });
 
-    return { user: { id: user.id, email: user.email, username: user.username, firstName: user.firstName, lastName: user.lastName, role: user.role, avatarUrl: user.avatarUrl }, accessToken };
+    return { user: { id: user.id, email: user.email, username: user.username, firstName: user.firstName, lastName: user.lastName, role: user.role, avatarUrl: user.avatarUrl, pushEnabled: user.pushEnabled, pushChat: user.pushChat, pushCommissions: user.pushCommissions, pushPayments: user.pushPayments }, accessToken };
   });
 
   app.post('/refresh', async (request, reply) => {
@@ -139,6 +154,20 @@ export async function authRoutes(app: FastifyInstance) {
     });
 
     return { user: updated };
+  });
+
+  // Preferencias de notificaciones push por canal.
+  app.put('/push-preferences', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const body = pushPrefsSchema.parse(request.body);
+    const data: any = {};
+    if (typeof body.pushEnabled === 'boolean') data.pushEnabled = body.pushEnabled;
+    if (typeof body.pushChat === 'boolean') data.pushChat = body.pushChat;
+    if (typeof body.pushCommissions === 'boolean') data.pushCommissions = body.pushCommissions;
+    if (typeof body.pushPayments === 'boolean') data.pushPayments = body.pushPayments;
+
+    await prisma.user.update({ where: { id: userId }, data });
+    return { success: true };
   });
 
   // Subida de foto de perfil (multipart)

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Crown, Zap } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap } from 'lucide-react';
 
 export function DesktopSidebar() {
   const { user, logout } = useAuthStore();
@@ -30,20 +30,14 @@ export function DesktopSidebar() {
     <aside className="hidden md:flex md:flex-col fixed left-0 top-0 h-screen w-60 bg-white dark:bg-dark-800 border-r border-gray-200 dark:border-dark-700 z-40 shadow-lg">
       <div className="flex flex-col h-full">
         {/* Logo */}
-        <div className="relative p-5 border-b border-gray-100 dark:border-dark-700 bg-gradient-to-br from-primary-50/60 via-white to-purple-50/60 dark:from-dark-800 dark:via-dark-800 dark:to-dark-800">
+        <div className="relative p-4 border-b border-gray-100 dark:border-dark-700 bg-gradient-to-br from-primary-50/60 via-white to-purple-50/60 dark:from-dark-800 dark:via-dark-800 dark:to-dark-800">
           <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 animate-gradient-x" />
-          <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-purple-700 flex items-center justify-center overflow-hidden shadow-lg shadow-primary-500/30 group-hover:scale-105 transition-transform duration-300">
-              <img src="/images/logo.png" alt="Círculo 1" className="w-full h-full object-cover" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white dark:border-dark-800 animate-pulse" />
-            </div>
-            <div>
-              <p className="font-bold text-sm text-gray-900 dark:text-dark-100 flex items-center gap-1.5">
-                Círculo 1
-                <Crown className="w-3.5 h-3.5 text-amber-500" />
-              </p>
-              <p className="text-[11px] text-gray-500 dark:text-dark-400">Mente Fuerte · Ventas</p>
-            </div>
+          <Link to="/dashboard" className="flex items-center group">
+            <img
+              src="/images/logo.png"
+              alt="Círculo 1"
+              className="h-10 w-auto max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+            />
           </Link>
         </div>
 

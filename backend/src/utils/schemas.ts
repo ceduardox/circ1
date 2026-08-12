@@ -38,6 +38,13 @@ export const completeContentSchema = z.object({
   answers: z.any().optional(),
 });
 
+export const pushPrefsSchema = z.object({
+  pushEnabled: z.boolean().optional(),
+  pushChat: z.boolean().optional(),
+  pushCommissions: z.boolean().optional(),
+  pushPayments: z.boolean().optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

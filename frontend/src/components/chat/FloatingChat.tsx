@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageCircle, X, Send, ChevronDown, Search, Check, Trash2, Ban, CheckCircle2, Smile, Maximize2, Minimize2, ChevronLeft, ImagePlus, XCircle, ZoomIn, ZoomOut, ShieldCheck, ChevronRight, Bell, BellRing } from 'lucide-react';
 import { chatApi } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
+import { useMembershipStore } from '@/store/membershipStore';
 import { countryFlag } from '@/lib/utils';
-import { hasPushPermission, requestPushPermission } from '@/lib/onesignal';
+import { requestPushPermission } from '@/lib/onesignal';
 import { toast } from 'sonner';
 import 'flag-icons/css/flag-icons.min.css';
 
@@ -277,7 +278,10 @@ function ZoomableImage({ src, onClose }: { src: string; onClose: () => void }) {
 }
 
 export function FloatingChat() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, updatePushPreferences } = useAuthStore();
+  const membershipStatus = useMembershipStore(s => s.status);
+  const fetchStatus = useMembershipStore(s => s.fetchStatus);
+  const pushEnabled = !!user?.pushEnabled;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [draft, setDraft] = useState('');
@@ -299,8 +303,6 @@ export function FloatingChat() {
   const [mentionOpen, setMentionOpen] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const [auditData, setAuditData] = useState<any[]>([]);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushChecking, setPushChecking] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const openRef = useRef(false);
@@ -422,28 +424,27 @@ export function FloatingChat() {
     } catch { /* silencioso */ }
   };
 
-  // Detecta si el navegador ya tiene el permiso de push concedido.
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const ok = await hasPushPermission();
-      if (active) {
-        setPushEnabled(ok);
-        setPushChecking(false);
-      }
-    })();
-    return () => { active = false; };
-  }, []);
-
   const enablePush = async () => {
     const ok = await requestPushPermission();
-    setPushEnabled(ok);
     if (ok) {
+      await updatePushPreferences({ pushEnabled: true });
       toast.success('Notificaciones activadas. Te avisaremos de las menciones en el chat.');
     } else {
       toast.error('Permiso denegado. Activa las notificaciones desde el navegador para recibir menciones.');
     }
   };
+
+  const disablePush = async () => {
+    await updatePushPreferences({ pushEnabled: false });
+    toast.success('Notificaciones desactivadas');
+  };
+
+  // Carga el estado de membresía del usuario (para ocultar el chat a no-pagados).
+  useEffect(() => {
+    if (isAuthenticated && user?.role !== 'ADMIN' && !membershipStatus) {
+      fetchStatus();
+    }
+  }, [isAuthenticated, user?.role, membershipStatus, fetchStatus]);
 
   // Polling: cada 5s cuando el chat está abierto (carga normal), y también
   // cuando está cerrado para contar mensajes nuevos en el badge.
@@ -573,6 +574,13 @@ export function FloatingChat() {
 
   if (!isAuthenticated) return null;
 
+  // Solo usuarios ADMIN o con membresía activa/en gracia ven el chat.
+  const memberStatus = membershipStatus?.status;
+  const canChat = user?.role === 'ADMIN'
+    || memberStatus === 'ACTIVE'
+    || memberStatus === 'GRACE';
+  if (!canChat) return null;
+
   return (
     <div className={`fixed z-50 flex flex-col items-end gap-3 ${expanded ? 'inset-0' : 'bottom-5 right-5'}`}>
       {open && (
@@ -595,17 +603,14 @@ export function FloatingChat() {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              {!pushChecking && (
-                <button
-                  onClick={enablePush}
-                  disabled={pushEnabled}
-                  className="p-1.5 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-70 disabled:cursor-default"
-                  aria-label="Activar notificaciones del chat"
-                  title={pushEnabled ? 'Notificaciones activadas' : 'Activar notificaciones de menciones'}
-                >
-                  {pushEnabled ? <BellRing className="w-4 h-4 text-emerald-200" /> : <Bell className="w-4 h-4" />}
-                </button>
-              )}
+              <button
+                onClick={pushEnabled ? disablePush : enablePush}
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Activar o desactivar notificaciones del chat"
+                title={pushEnabled ? 'Desactivar notificaciones' : 'Activar notificaciones de menciones'}
+              >
+                {pushEnabled ? <BellRing className="w-4 h-4 text-emerald-200" /> : <Bell className="w-4 h-4" />}
+              </button>
               {isAdmin && (
                 <button
                   onClick={() => { loadAudit(); setShowAudit(true); }}
@@ -909,7 +914,7 @@ export function FloatingChat() {
                 onPaste={handlePaste}
                 onBlur={() => setTimeout(() => setMentionOpen(false), 150)}
                 placeholder={impUser ? `Enviando como ${impUser.firstName || impUser.username}...` : 'Escribe un mensaje...'}
-                className="flex-1 h-10 px-3 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="flex-1 min-w-0 h-10 px-3 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <input
                 ref={fileInputRef}
@@ -924,13 +929,13 @@ export function FloatingChat() {
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-dark-300 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
+                className="w-10 h-10 shrink-0 rounded-xl bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-dark-300 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
                 aria-label="Adjuntar imagen"
                 title="Adjuntar imagen (o pega con Ctrl+V)"
               >
                 <ImagePlus className="w-5 h-5" />
               </button>
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   onClick={() => setEmojiOpen(!emojiOpen)}
                   className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-dark-300 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
@@ -960,7 +965,7 @@ export function FloatingChat() {
               <button
                 onClick={send}
                 disabled={(!draft.trim() && !pendingImage) || sending || uploadingImage}
-                className="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 disabled:opacity-40 transition-colors"
+                className="w-10 h-10 shrink-0 rounded-xl bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 disabled:opacity-40 transition-colors"
                 aria-label="Enviar"
               >
                 {sending || uploadingImage ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}

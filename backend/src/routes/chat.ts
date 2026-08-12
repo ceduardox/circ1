@@ -178,7 +178,7 @@ export async function chatRoutes(app: FastifyInstance) {
         if (mentions.length > 0) {
           const mentioned = await prisma.user.findMany({
             where: { username: { in: mentions }, id: { not: senderId } },
-            select: { id: true },
+            select: { id: true, pushEnabled: true, pushChat: true },
           });
           if (mentioned.length > 0) {
             const shownName = created.asUser?.firstName || created.sender?.firstName || created.sender?.username || 'Alguien';
@@ -191,12 +191,15 @@ export async function chatRoutes(app: FastifyInstance) {
               })),
             });
 
-            // Web push (OneSignal) a los mencionados, aunque el chat esté cerrado.
-            await sendWebPush({
-              externalUserIds: mentioned.map(u => u.id),
-              title: `${shownName} te mencionó en el chat`,
-              message: `"${finalMessage.slice(0, 120)}"`,
-            });
+            // Web push (OneSignal) a los mencionados que lo tienen activo, aunque el chat esté cerrado.
+            const pushTargets = mentioned.filter(u => u.pushEnabled && u.pushChat).map(u => u.id);
+            if (pushTargets.length > 0) {
+              await sendWebPush({
+                externalUserIds: pushTargets,
+                title: `${shownName} te mencionó en el chat`,
+                message: `"${finalMessage.slice(0, 120)}"`,
+              });
+            }
           }
         }
       } catch {

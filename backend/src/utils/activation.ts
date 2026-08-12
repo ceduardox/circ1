@@ -1,5 +1,6 @@
 import { prisma } from './prisma.js';
 import { isEligibleForCommissions } from './membershipStatus.js';
+import { sendWebPush } from './onesignal.js';
 
 const defaults = {
   MEMBERSHIP_PRICE: 500,
@@ -15,6 +16,19 @@ async function notify(userId: string, title: string, message: string) {
     await prisma.notification.create({ data: { userId, title, message } });
   } catch {
     // no romper la activación si falla la notificación
+  }
+}
+
+// Notificación + web push, respetando las preferencias del usuario.
+async function notifyWithPush(userId: string, title: string, message: string, pref: 'pushCommissions' | 'pushPayments' | 'pushChat') {
+  await notify(userId, title, message);
+  try {
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { pushEnabled: true, [pref]: true } as any });
+    if (u?.pushEnabled && u[pref]) {
+      await sendWebPush({ externalUserIds: [userId], title, message });
+    }
+  } catch {
+    // no romper si falla el push
   }
 }
 
@@ -91,10 +105,11 @@ export async function activateMembership(paymentId: string, processedBy: string)
         await tx.balanceLog.create({
           data: { userId: referrer.id, type: 'credit', amount, balance: updated?.balance ?? 0, note: `Comisión nivel 1 por ${buyerName}` },
         });
-        await notify(
+        await notifyWithPush(
           referrer.id,
           'Comisión por referido',
-          `${buyerName} activó su membresía y ganaste ${fmtUSD(amount)} (nivel 1).`
+          `${buyerName} activó su membresía y ganaste ${fmtUSD(amount)} (nivel 1).`,
+          'pushCommissions'
         );
       }
     }
@@ -125,20 +140,22 @@ export async function activateMembership(paymentId: string, processedBy: string)
           await tx.balanceLog.create({
             data: { userId: grandReferrer.id, type: 'credit', amount: amount2, balance: updated2?.balance ?? 0, note: `Comisión nivel 2 por ${buyerName}` },
           });
-          await notify(
+          await notifyWithPush(
             grandReferrer.id,
             'Comisión de tu red',
-            `${buyerName} de tu red activó su membresía y ganaste ${fmtUSD(amount2)} (nivel 2).`
+            `${buyerName} de tu red activó su membresía y ganaste ${fmtUSD(amount2)} (nivel 2).`,
+            'pushCommissions'
           );
         }
       }
     }
 
     if (source) {
-      await notify(
+      await notifyWithPush(
         source.id,
         'Membresía activa',
-        'Tu membresía está activa. ¡Bienvenido a Círculo 1! Ya puedes acceder a tu programa.'
+        'Tu membresía está activa. ¡Bienvenido a Círculo 1! Ya puedes acceder a tu programa.',
+        'pushPayments'
       );
     }
   });

@@ -21,6 +21,7 @@ async function main() {
       firstName: 'Admin',
       lastName: 'Circulo',
       role: UserRole.ADMIN,
+      referralCode: 'ADMIN1',
     },
   });
   console.log('✅ Usuario Administrador creado (admin@circulo1.com / admin123)');

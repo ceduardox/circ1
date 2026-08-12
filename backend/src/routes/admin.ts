@@ -7,6 +7,7 @@ import { activateMembership } from '../utils/activation.js';
 import { getPaymentStatus } from '../utils/nowpayments.js';
 import { config } from '../config/index.js';
 import { generateReferralCode } from '../utils/auth.js';
+import { sendWebPush } from '../utils/onesignal.js';
 
 const createDaySchema = z.object({
   dayNumber: z.number().int().positive(),
@@ -603,6 +604,29 @@ export async function adminRoutes(app: FastifyInstance) {
         note: `Retiro aprobado${feePercent > 0 ? ` con fee ${feePercent}%` : ''}`,
       },
     });
+
+    // Notificación en app + web push si el usuario lo tiene activo.
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: withdrawal.userId,
+          title: 'Retiro aprobado',
+          message: feePercent > 0
+            ? `Tu retiro de ${withdrawal.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} fue aprobado (comisión ${feePercent}%).`
+            : `Tu retiro de ${withdrawal.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} fue aprobado.`,
+        },
+      });
+      const pref = await prisma.user.findUnique({ where: { id: withdrawal.userId }, select: { pushEnabled: true, pushPayments: true } });
+      if (pref?.pushEnabled && pref.pushPayments) {
+        await sendWebPush({
+          externalUserIds: [withdrawal.userId],
+          title: 'Retiro aprobado',
+          message: `Tu retiro de ${withdrawal.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} fue aprobado.`,
+        });
+      }
+    } catch {
+      // no romper la aprobación si falla la notificación
+    }
 
     return { success: true };
   });
