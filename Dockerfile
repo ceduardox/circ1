@@ -8,6 +8,7 @@ RUN npm run build
 
 # ─── Backend build ───
 FROM node:20-alpine AS backend-build
+RUN apk add --no-cache openssl
 WORKDIR /app/backend
 COPY backend/package.json backend/package-lock.json ./
 RUN npm ci --include=dev
@@ -18,6 +19,7 @@ RUN npm run build
 
 # ─── Producción: backend sirve el frontend ───
 FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV=production
 
