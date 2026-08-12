@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, BarChart3, Brain, CalendarDays, Check, ChevronDown,
-  Compass, Flame, Menu, Network, Play, ShieldCheck, Sparkles, Star, Target,
+  Compass, Flame, Menu, Network, ShieldCheck, Sparkles, Star, Target,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -29,8 +29,7 @@ export function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-[#17172a]/10 bg-[#f7f0e4]/90 backdrop-blur-xl">
         <nav className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12" aria-label="Navegación principal">
           <Link to="/" className="flex items-center gap-3" aria-label="Círculo 1, inicio">
-            <span className="flex h-11 w-11 items-center justify-center bg-[#090d2b] text-lg font-black text-white">C1</span>
-            <span><strong className="block text-base leading-none sm:text-lg">Círculo 1</strong><span className="mt-1 block text-[8px] font-semibold uppercase tracking-[.3em]">Neuroentrenamiento</span></span>
+            <img src="/images/logo.png" alt="Círculo 1" className="h-10 w-auto" />
           </Link>
 
           <div className="hidden items-center gap-9 text-sm font-semibold lg:flex">
@@ -64,7 +63,6 @@ export function LandingPage() {
               <p className="mt-7 max-w-lg text-base font-medium leading-7 text-[#343444]">Entrena claridad, disciplina y ejecución con un sistema diseñado para convertir intención en progreso real.</p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
                 <Link to={primaryPath} className="inline-flex items-center justify-center gap-3 rounded-xl bg-[#ff5149] px-7 py-4 text-sm font-bold text-white shadow-xl shadow-[#ff5149]/20 transition hover:-translate-y-0.5 hover:bg-[#f13f3b]">{primaryLabel}<ArrowRight className="h-4 w-4" /></Link>
-                <a href="#programa" className="inline-flex items-center justify-center gap-3 px-4 py-3 text-sm font-bold text-[#392099]"><span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#392099]"><Play className="ml-0.5 h-4 w-4" /></span>Descubrir el método</a>
               </div>
             </div>
 
@@ -121,7 +119,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-[#17172a]/20 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1340px] flex-col items-center justify-between gap-4 text-center text-xs text-[#62616a] sm:flex-row"><div className="flex items-center gap-2 font-bold text-[#0a0d29]"><span className="flex h-8 w-8 items-center justify-center bg-[#090d2b] text-[10px] text-white">C1</span>Círculo 1</div><p>Neuroentrenamiento para crecer desde adentro hacia afuera.</p>{!isAuthenticated && <Link to="/login" className="font-semibold hover:text-[#392099]">Acceso para miembros</Link>}</div></footer>
+      <footer className="border-t border-[#17172a]/20 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1340px] flex-col items-center justify-between gap-4 text-center text-xs text-[#62616a] sm:flex-row"><div className="flex items-center gap-2 font-bold text-[#0a0d29]"><span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#090d2b]"><img src="/images/favicon.png" alt="Círculo 1" className="w-full h-full object-cover" /></span>Círculo 1</div><p>Neuroentrenamiento para crecer desde adentro hacia afuera.</p>{!isAuthenticated && <Link to="/login" className="font-semibold hover:text-[#392099]">Acceso para miembros</Link>}</div></footer>
     </div>
   );
 }

@@ -53,8 +53,8 @@ export function MobileHeader() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-dark-700">
             <Link to="/dashboard" className="flex items-center gap-2" onClick={closeMenu}>
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">C1</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center overflow-hidden">
+                <img src="/images/logo.png" alt="Círculo 1" className="w-full h-full object-cover" />
               </div>
               <span className="font-semibold text-gray-900 dark:text-dark-100">Círculo 1</span>
             </Link>
@@ -158,8 +158,8 @@ export function MobileHeader() {
       <header className="md:hidden sticky top-0 z-30 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
         <div className="flex items-center justify-between px-4 py-3">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">C1</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center overflow-hidden">
+              <img src="/images/logo.png" alt="Círculo 1" className="w-full h-full object-cover" />
             </div>
             <span className="font-semibold text-gray-900 dark:text-dark-100">Círculo 1</span>
           </Link>

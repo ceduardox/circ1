@@ -33,8 +33,8 @@ export function DesktopSidebar() {
         <div className="relative p-5 border-b border-gray-100 dark:border-dark-700 bg-gradient-to-br from-primary-50/60 via-white to-purple-50/60 dark:from-dark-800 dark:via-dark-800 dark:to-dark-800">
           <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 animate-gradient-x" />
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-purple-700 flex items-center justify-center shadow-lg shadow-primary-500/30 group-hover:scale-105 transition-transform duration-300">
-              <span className="text-white font-bold text-sm">C1</span>
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-purple-700 flex items-center justify-center overflow-hidden shadow-lg shadow-primary-500/30 group-hover:scale-105 transition-transform duration-300">
+              <img src="/images/logo.png" alt="Círculo 1" className="w-full h-full object-cover" />
               <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white dark:border-dark-800 animate-pulse" />
             </div>
             <div>

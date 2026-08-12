@@ -260,11 +260,32 @@ export function RegisterPage() {
               </p>
             </div>
             <div>
+              <h4 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">Sin reembolsos</h4>
+              <p>
+                Al pagar tu membresía aceptas que <strong>no hay devoluciones ni reembolsos</strong> una vez
+                realizada la compra, salvo que la ley de tu jurisdicción lo exija o en caso de error
+                acreditado en la activación. El acceso al contenido y a tu cuenta se otorga de forma
+                inmediata al confirmarse el pago, por lo que la membresía se considera consumida desde
+                ese momento.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">Sin garantía de resultados</h4>
+              <p>
+                Círculo 1 es un programa de <strong>neuroentrenamiento y desarrollo de habilidades</strong>.
+                Los resultados económicos, de ventas o de crecimiento personal <strong>dependen del
+                esfuerzo de cada persona</strong>: su dedicación, constancia y ejecución son los únicos
+                factores que determinan lo que cada usuario logra. No garantizamos ganancias, ingresos
+                mínimos ni el éxito de ninguna persona o red de referidos. Cualquier cifra mostrada es
+                ilustrativa y no constituye una promesa de retorno.
+              </p>
+            </div>
+            <div>
               <h4 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">Responsabilidad</h4>
               <p>
                 Eres responsable de la veracidad de tus datos y de tus cuentas de pago (wallets o cuentas
                 bancarias). No nos hacemos responsables por fondos enviados a una dirección incorrecta
-                proporcionada por ti.
+                proporcionada por ti, ni por la pérdida de acceso por el mal uso de tus credenciales.
               </p>
             </div>
             <div>
