@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { config } from '../config/index.js';
 import { createInvoice, getPaymentStatus, verifyWebhookSignature } from '../utils/nowpayments.js';
 import { activateMembership } from '../utils/activation.js';
+import { validateWithdrawalInput } from '../utils/withdrawals.js';
 
 const defaults = {
   MEMBERSHIP_PRICE: 500,
@@ -21,12 +22,31 @@ async function getSettings() {
   for (const r of rows) {
     try { map[r.key] = JSON.parse(r.value as any); } catch { map[r.key] = r.value; }
   }
+
+  let plans = defaultPlans();
+  if (map.PLANS) {
+    try {
+      const parsed = JSON.parse(map.PLANS);
+      if (Array.isArray(parsed) && parsed.length) plans = parsed;
+    } catch { /* usar default */ }
+  } else if (map.MEMBERSHIP_PRICE && Number(map.MEMBERSHIP_PRICE) !== 500) {
+    plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE) }];
+  }
+
   return {
     membershipPrice: Number(map.MEMBERSHIP_PRICE ?? defaults.MEMBERSHIP_PRICE),
     monthlyFee: Number(map.MONTHLY_FEE ?? defaults.MONTHLY_FEE),
     level1Percent: Number(map.LEVEL1_PERCENT ?? defaults.LEVEL1_PERCENT),
     level2Percent: Number(map.LEVEL2_PERCENT ?? defaults.LEVEL2_PERCENT),
+    plans,
   };
+}
+
+function defaultPlans() {
+  return [
+    { id: 'estandar', name: 'Estándar', price: 500 },
+    { id: 'elite', name: 'Élite', price: 1000 },
+  ];
 }
 
 const GRACE_DAYS = 3;
@@ -88,10 +108,11 @@ export async function membershipRoutes(app: FastifyInstance) {
     };
   });
 
-  // ─── Solicitar pago de membresía ($500, vía NowPayments) ───
+  // ─── Solicitar pago de membresía (plan elegido, vía NowPayments) ───
   const requestPaymentSchema = z.object({
     method: z.string().optional(),
     reference: z.string().optional(),
+    planId: z.string().optional(),
   });
 
   app.post('/membership/payment/request', { preHandler: authMiddleware }, async (request, reply) => {
@@ -108,14 +129,19 @@ export async function membershipRoutes(app: FastifyInstance) {
     });
     if (existingPending) return reply.code(400).send({ error: 'Ya tienes un pago pendiente de aprobación' });
 
+    const plan = settings.plans.find((p: any) => p.id === body.planId) || settings.plans[0];
+    if (!plan) return reply.code(400).send({ error: 'No hay planes disponibles' });
+
     const payment = await prisma.membershipPayment.create({
       data: {
         userId,
-        amount: settings.membershipPrice,
+        amount: plan.price,
         type: 'MEMBERSHIP',
         status: 'PENDING',
         method: body.method,
         reference: body.reference,
+        planId: plan.id,
+        planName: plan.name,
       },
     });
 
@@ -290,7 +316,15 @@ export async function membershipRoutes(app: FastifyInstance) {
     const userId = (request.user as JWTPayload).sub;
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { balance: true } });
     const commissions = await prisma.commission.findMany({
-      where: { userId },
+      where: { userId, status: 'PAID' },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        sourceUser: { select: { firstName: true, lastName: true, username: true } },
+        payment: { select: { amount: true, createdAt: true, processedAt: true } },
+      },
+    });
+    const retained = await prisma.commission.findMany({
+      where: { userId, status: 'RETENTED' },
       orderBy: { createdAt: 'desc' },
       include: {
         sourceUser: { select: { firstName: true, lastName: true, username: true } },
@@ -298,9 +332,10 @@ export async function membershipRoutes(app: FastifyInstance) {
       },
     });
 
-    const totalEarned = await prisma.commission.aggregate({ where: { userId }, _sum: { amount: true } });
+    const totalEarned = await prisma.commission.aggregate({ where: { userId, status: 'PAID' }, _sum: { amount: true } });
+    const retainedTotal = await prisma.commission.aggregate({ where: { userId, status: 'RETENTED' }, _sum: { amount: true } });
     const pending = await prisma.commission.aggregate({
-      where: { userId, payment: { status: 'PENDING' } },
+      where: { userId, status: 'PAID', payment: { status: 'PENDING' } },
       _sum: { amount: true },
     });
 
@@ -308,7 +343,9 @@ export async function membershipRoutes(app: FastifyInstance) {
       balance: user?.balance ?? 0,
       totalEarned: totalEarned._sum.amount ?? 0,
       pendingApproval: pending._sum.amount ?? 0,
+      retainedTotal: retainedTotal._sum.amount ?? 0,
       commissions,
+      retained,
     };
   });
 
@@ -343,19 +380,51 @@ export async function membershipRoutes(app: FastifyInstance) {
       parentId: u.referrerId,
     }));
 
+    // Comisiones ganadas por el usuario, agrupadas por el referido que pagó (sourceUserId).
+    const earnedBySource = await prisma.commission.groupBy({
+      by: ['sourceUserId'],
+      where: { userId, status: 'PAID' },
+      _sum: { amount: true },
+    });
+    const earnedMap: Record<string, number> = {};
+    for (const e of earnedBySource) {
+      earnedMap[e.sourceUserId] = Math.round((e._sum.amount ?? 0) * 100) / 100;
+    }
+
+    const withEarned = (list: any[]) => list.map(u => ({ ...u, earned: earnedMap[u.id] || 0 }));
+
     return {
       count: { level1: direct.length, level2: indirect.length, total: direct.length + indirect.length },
-      level1: direct,
-      level2: indirectWithParent,
+      level1: withEarned(direct),
+      level2: withEarned(indirectWithParent),
       directIds: directJustUsernames,
     };
+  });
+
+  // ─── Notificaciones ───
+  app.get('/notifications', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    const notifications = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    });
+    const unread = await prisma.notification.count({ where: { userId, read: false } });
+    return { notifications, unread };
+  });
+
+  app.post('/notifications/read', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    await prisma.notification.updateMany({ where: { userId, read: false }, data: { read: true } });
+    return { ok: true };
   });
 
   // ─── Solicitudes de retiro ───
   const withdrawalSchema = z.object({
     amount: z.number().positive(),
-    method: z.string().max(100).optional(),
+    method: z.enum(['USDT_BEP20', 'MATIC_POLYGON', 'BANK_US']),
     account: z.string().max(200).optional(),
+    details: z.any().optional(),
   });
 
   app.post('/withdrawals', { preHandler: authMiddleware }, async (request, reply) => {
@@ -370,8 +439,17 @@ export async function membershipRoutes(app: FastifyInstance) {
 
     if (body.amount > user.balance) return reply.code(400).send({ error: 'No tienes suficiente saldo disponible' });
 
+    const invalid = validateWithdrawalInput(body.method, body.account, body.details);
+    if (invalid) return reply.code(400).send({ error: invalid });
+
     const withdrawal = await prisma.withdrawal.create({
-      data: { userId, amount: body.amount, method: body.method, account: body.account },
+      data: {
+        userId,
+        amount: body.amount,
+        method: body.method,
+        account: body.method === 'BANK_US' ? undefined : body.account,
+        details: body.method === 'BANK_US' ? body.details : undefined,
+      },
     });
 
     return { withdrawal };
@@ -384,5 +462,50 @@ export async function membershipRoutes(app: FastifyInstance) {
       orderBy: { createdAt: 'desc' },
     });
     return { withdrawals };
+  });
+
+  // ─── Cuentas guardadas (wallets / banco) ───
+  const payoutAccountSchema = z.object({
+    method: z.enum(['USDT_BEP20', 'MATIC_POLYGON', 'BANK_US']),
+    label: z.string().max(60).optional(),
+    address: z.string().max(200).optional(),
+    details: z.any().optional(),
+  });
+
+  app.get('/payout-accounts', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    const accounts = await prisma.payoutAccount.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return { accounts };
+  });
+
+  app.post('/payout-accounts', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const body = payoutAccountSchema.parse(request.body);
+
+    const invalid = validateWithdrawalInput(body.method, body.address, body.details);
+    if (invalid) return reply.code(400).send({ error: invalid });
+
+    const account = await prisma.payoutAccount.create({
+      data: {
+        userId,
+        method: body.method,
+        label: body.label?.trim() || null,
+        address: body.method === 'BANK_US' ? undefined : body.address,
+        details: body.method === 'BANK_US' ? body.details : undefined,
+      },
+    });
+    return { account };
+  });
+
+  app.delete('/payout-accounts/:id', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const { id } = request.params as { id: string };
+    const account = await prisma.payoutAccount.findFirst({ where: { id, userId } });
+    if (!account) return reply.code(404).send({ error: 'Cuenta no encontrada' });
+    await prisma.payoutAccount.delete({ where: { id } });
+    return { ok: true };
   });
 }

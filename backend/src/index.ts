@@ -14,6 +14,7 @@ import { authRoutes } from './routes/auth.js';
 import { programRoutes } from './routes/program.js';
 import { adminRoutes } from './routes/admin.js';
 import { membershipRoutes } from './routes/membership.js';
+import { chatRoutes } from './routes/chat.js';
 import { ZodError } from 'zod';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -62,6 +63,7 @@ await app.register(jwt, {
 await app.register(rateLimit, {
   max: config.rateLimit.max,
   timeWindow: config.rateLimit.timeWindow,
+  allowList: ['127.0.0.1', '::1'],
   keyGenerator: (request) => {
     return request.headers['x-forwarded-for'] as string || request.ip || 'unknown';
   },
@@ -81,6 +83,7 @@ await app.register(authRoutes, { prefix: '/api/auth' });
 await app.register(programRoutes, { prefix: '/api/program' });
 await app.register(adminRoutes, { prefix: '/api/admin' });
 await app.register(membershipRoutes, { prefix: '/api/membership' });
+await app.register(chatRoutes, { prefix: '/api/chat' });
 
 try {
   await app.listen({ port: config.port, host: '0.0.0.0' });

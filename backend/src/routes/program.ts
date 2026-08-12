@@ -12,28 +12,65 @@ interface JWTPayload {
 interface DayParams { dayNumber: string; }
 interface ContentParams { dayNumber: string; contentId: string; }
 
+// Devuelve el día más alto que el usuario puede acceder.
+// Regla: el día 1 siempre está desbloqueado. El día N+1 se desbloquea SOLO si se
+// completaron TODAS las tareas obligatorias del día N (y así secuencialmente).
+async function getMaxUnlockedDay(userId: string): Promise<number> {
+  const days = await prisma.programDay.findMany({
+    where: { isActive: true },
+    orderBy: { dayNumber: 'asc' },
+    select: { dayNumber: true, contents: { where: { isRequired: true }, select: { id: true } } },
+  });
+  if (days.length === 0) return 0;
+
+  const completed = await prisma.userProgress.findMany({
+    where: { userId, status: 'COMPLETED' },
+    select: { contentId: true },
+  });
+  const completedSet = new Set(completed.map(p => p.contentId));
+
+  let maxUnlocked = 1;
+  for (const day of days) {
+    if (day.dayNumber > maxUnlocked) break;
+    const requiredIds = day.contents.map(c => c.id);
+    // Solo desbloquea el siguiente si el día tiene obligatorias y todas están completas.
+    if (requiredIds.length > 0 && requiredIds.every(id => completedSet.has(id))) {
+      maxUnlocked = Math.max(maxUnlocked, day.dayNumber + 1);
+    }
+  }
+  return maxUnlocked;
+}
+
 export async function programRoutes(app: FastifyInstance) {
   app.get('/current-day', { preHandler: authMiddleware }, async (request) => {
     const userId = (request.user as JWTPayload).sub;
 
-    const latestProgress = await prisma.userProgress.findFirst({
-      where: { userId },
-      orderBy: { day: { dayNumber: 'desc' } },
-      include: { day: true, content: true },
-    });
+    const maxUnlockedDay = await getMaxUnlockedDay(userId);
 
-    let currentDay = await prisma.programDay.findFirst({
+    const allDays = await prisma.programDay.findMany({
       where: { isActive: true },
       orderBy: { dayNumber: 'asc' },
       include: { contents: { orderBy: { orderIndex: 'asc' } } },
     });
 
-    if (latestProgress) {
-      const nextDay = await prisma.programDay.findFirst({
-        where: { dayNumber: latestProgress.day.dayNumber + 1, isActive: true },
-        include: { contents: { orderBy: { orderIndex: 'asc' } } },
-      });
-      if (nextDay) currentDay = nextDay;
+    // Día actual = primer día desbloqueado que aún no tiene todas sus obligatorias completas.
+    const progressByDay = await prisma.userProgress.findMany({
+      where: { userId },
+      include: { content: true },
+    });
+
+    let currentDay: (typeof allDays)[0] | null = null;
+    for (const day of allDays) {
+      if (day.dayNumber > maxUnlockedDay) break;
+      const dayProgress = progressByDay.filter(p => p.dayId === day.id);
+      const requiredDone = day.contents.filter(c => c.isRequired).every(c =>
+        dayProgress.some(p => p.contentId === c.id && p.status === 'COMPLETED')
+      );
+      if (!requiredDone) { currentDay = day; break; }
+    }
+    // Si todos los desbloqueados ya están completos, el actual es el último desbloqueado.
+    if (!currentDay) {
+      currentDay = allDays.find(d => d.dayNumber <= maxUnlockedDay) || null;
     }
 
     if (!currentDay) return { day: null, progress: [], canUnlockNext: false, completedRequired: 0, totalRequired: 0 };
@@ -60,15 +97,9 @@ export async function programRoutes(app: FastifyInstance) {
     });
     if (!day) return reply.code(404).send({ error: 'Día no encontrado' });
 
-    const latestProgress = await prisma.userProgress.findFirst({
-      where: { userId },
-      orderBy: { day: { dayNumber: 'desc' } },
-      include: { day: true },
-    });
-
-    const maxUnlockedDay = latestProgress?.day?.dayNumber ?? 1;
+    const maxUnlockedDay = await getMaxUnlockedDay(userId);
     if (dayNumber > maxUnlockedDay) {
-      return reply.code(403).send({ error: 'Día bloqueado. Completa el día anterior.' });
+      return reply.code(403).send({ error: 'Día bloqueado. Completa todas las tareas obligatorias del día anterior.' });
     }
 
     const progress = await prisma.userProgress.findMany({
@@ -96,6 +127,47 @@ export async function programRoutes(app: FastifyInstance) {
       update: { status: 'COMPLETED', answers, completedAt: new Date() },
       create: { userId, dayId: content.dayId, contentId, status: 'COMPLETED', answers, completedAt: new Date() },
     });
+
+    // Si con esta tarea se completan todas las obligatorias del día, notificar que el siguiente día se desbloqueó.
+    try {
+      const required = await prisma.dayContent.findMany({
+        where: { dayId: content.dayId, isRequired: true },
+        select: { id: true },
+      });
+      const completedInDay = await prisma.userProgress.findMany({
+        where: { userId, dayId: content.dayId, status: 'COMPLETED' },
+        select: { contentId: true },
+      });
+      const doneSet = new Set(completedInDay.map(p => p.contentId));
+      const dayDone = required.length > 0 && required.every(r => doneSet.has(r.id));
+
+      if (dayDone) {
+        const nextDay = await prisma.programDay.findFirst({
+          where: { dayNumber: content.day.dayNumber + 1, isActive: true },
+        });
+        if (nextDay) {
+          await prisma.notification.create({
+            data: {
+              userId,
+              type: 'achievement',
+              title: 'Día desbloqueado',
+              message: `Completaste el Día ${content.day.dayNumber}. ¡El Día ${nextDay.dayNumber} ya está disponible!`,
+            },
+          });
+        } else {
+          await prisma.notification.create({
+            data: {
+              userId,
+              type: 'achievement',
+              title: 'Programa completado',
+              message: `Completaste el Día ${content.day.dayNumber}, ¡el último del programa! Felicitaciones.`,
+            },
+          });
+        }
+      }
+    } catch {
+      // No romper el flujo si falla la notificación.
+    }
 
     return { progress };
   });
@@ -279,12 +351,7 @@ export async function programRoutes(app: FastifyInstance) {
       select: { dayId: true, contentId: true, status: true },
     });
 
-    const latestProgress = await prisma.userProgress.findFirst({
-      where: { userId },
-      orderBy: { day: { dayNumber: 'desc' } },
-      include: { day: true },
-    });
-    const maxUnlockedDay = latestProgress?.day?.dayNumber ?? 1;
+    const maxUnlockedDay = await getMaxUnlockedDay(userId);
 
     const daysWithProgress = days.map(day => {
       const dayProgress = allProgress.filter(p => p.dayId === day.id);

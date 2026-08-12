@@ -58,6 +58,11 @@ enum WithdrawalStatus {
   REJECTED
 }
 
+enum CommissionStatus {
+  PAID
+  RETENTED
+}
+
 model User {
   id                   String           @id @default(uuid())
   email                String           @unique
@@ -74,6 +79,7 @@ model User {
   membershipPaidAt     DateTime?        @map("membership_paid_at")
   membershipExpiresAt  DateTime?        @map("membership_expires_at")
   balance              Float            @default(0)
+  chatBlocked          Boolean          @default(false) @map("chat_blocked")
   referralCode         String?          @unique @map("referral_code")
   referrerId           String?          @map("referrer_id")
   createdAt            DateTime         @default(now()) @map("created_at")
@@ -81,20 +87,42 @@ model User {
 
   progress        UserProgress[]
   reflections     UserReflection[]
+  notifications   Notification[]
+  balanceLogs     BalanceLog[]
   payments        MembershipPayment[]
   commissions     Commission[]          @relation("CommissionReceiver")
   earnedFrom      Commission[]          @relation("CommissionSource")
   withdrawals     Withdrawal[]
+  payoutAccounts  PayoutAccount[]
   referrer        User?                 @relation("Referrals", fields: [referrerId], references: [id])
   referrals       User[]                @relation("Referrals")
+  chatMessages    ChatMessage[]         @relation("ChatMessageSender")
+  impersonatedIn  ChatMessage[]         @relation("ChatMessageAsUser")
 
   @@map("users")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  asUserId  String?  @map("as_user_id")
+  message   String
+  imageUrl  String?  @map("image_url")
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sender    User     @relation("ChatMessageSender", fields: [userId], references: [id], onDelete: Cascade)
+  asUser    User?    @relation("ChatMessageAsUser", fields: [asUserId], references: [id], onDelete: SetNull)
+
+  @@map("chat_messages")
 }
 
 model MembershipPayment {
   id          String        @id @default(uuid())
   userId      String        @map("user_id")
   amount      Float
+  planId      String?       @map("plan_id")
+  planName    String?       @map("plan_name")
   type        PaymentType   @default(MEMBERSHIP)
   status      PaymentStatus @default(PENDING)
   method      String?
@@ -116,14 +144,15 @@ model MembershipPayment {
 }
 
 model Commission {
-  id           String   @id @default(uuid())
-  paymentId    String   @map("payment_id")
-  userId       String   @map("user_id")
-  sourceUserId String   @map("source_user_id")
+  id           String            @id @default(uuid())
+  paymentId    String            @map("payment_id")
+  userId       String            @map("user_id")
+  sourceUserId String            @map("source_user_id")
   level        Int
   percent      Float
   amount       Float
-  createdAt    DateTime @default(now()) @map("created_at")
+  status       CommissionStatus  @default(PAID)
+  createdAt    DateTime          @default(now()) @map("created_at")
 
   payment      MembershipPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
   user         User              @relation("CommissionReceiver", fields: [userId], references: [id], onDelete: Cascade)
@@ -136,8 +165,10 @@ model Withdrawal {
   id          String           @id @default(uuid())
   userId      String           @map("user_id")
   amount      Float
+  feePercent  Float            @default(0) @map("fee_percent")
   method      String?
   account     String?
+  details     Json?
   status      WithdrawalStatus @default(PENDING)
   createdAt   DateTime         @default(now()) @map("created_at")
   processedAt DateTime?        @map("processed_at")
@@ -146,6 +177,48 @@ model Withdrawal {
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("withdrawals")
+}
+
+model PayoutAccount {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  method    String
+  label     String?
+  address   String?
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payout_accounts")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   @default("info")
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model BalanceLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   @default("credit")
+  amount    Float
+  balance   Float
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("balance_logs")
 }
 
 model ProgramDay {

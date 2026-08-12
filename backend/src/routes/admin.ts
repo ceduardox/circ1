@@ -6,6 +6,7 @@ import { ContentType } from '@prisma/client';
 import { activateMembership } from '../utils/activation.js';
 import { getPaymentStatus } from '../utils/nowpayments.js';
 import { config } from '../config/index.js';
+import { generateReferralCode } from '../utils/auth.js';
 
 const createDaySchema = z.object({
   dayNumber: z.number().int().positive(),
@@ -119,7 +120,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' },
-        select: { id: true, email: true, username: true, firstName: true, lastName: true, country: true, role: true, createdAt: true },
+        select: { id: true, email: true, username: true, firstName: true, lastName: true, country: true, role: true, createdAt: true, balance: true },
       }),
       prisma.user.count({ where }),
     ]);
@@ -155,6 +156,7 @@ export async function adminRoutes(app: FastifyInstance) {
         age: body.age, 
         country: body.country,
         role: body.role,
+        referralCode: generateReferralCode(body.username),
       },
       select: { id: true, email: true, username: true, firstName: true, lastName: true, country: true, role: true, createdAt: true },
     });
@@ -290,6 +292,50 @@ export async function adminRoutes(app: FastifyInstance) {
     return { completionByDay, recentUsers };
   });
 
+  // ─── Usuarios atascados (membresía activa pero sin completar tareas hace N días) ───
+  app.get('/business/stuck-users', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const days = Number((request.query as any).days ?? 3);
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const activeUsers = await prisma.user.findMany({
+      where: { membershipStatus: 'ACTIVE', role: 'USER' },
+      select: { id: true, firstName: true, lastName: true, username: true, email: true, createdAt: true },
+    });
+
+    const userIds = activeUsers.map(u => u.id);
+    const recentProgress = await prisma.userProgress.findMany({
+      where: { userId: { in: userIds }, completedAt: { gte: since } },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    const activeSet = new Set(recentProgress.map(p => p.userId));
+
+    const stuck = activeUsers
+      .filter(u => !activeSet.has(u.id))
+      .map(u => ({ ...u, lastActivity: null }))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return { stuck, since, days };
+  });
+
+  // ─── Embudo: registrados → con membresía → activos → activos hoy ───
+  app.get('/business/funnel', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const totalUsers = await prisma.user.count({ where: { role: 'USER' } });
+    const withMembership = await prisma.user.count({ where: { role: 'USER', membershipStatus: 'ACTIVE' } });
+    const activeToday = (await prisma.userProgress.findMany({
+      where: { completedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+      select: { userId: true },
+      distinct: ['userId'],
+    })).length;
+    return {
+      funnel: { registered: totalUsers, withMembership, activeToday },
+      rates: {
+        conversionToMembership: totalUsers > 0 ? Math.round((withMembership / totalUsers) * 100) : 0,
+        retentionToday: withMembership > 0 ? Math.round((activeToday / withMembership) * 100) : 0,
+      },
+    };
+  });
+
   // ══════════════════════════════════════════════════════
   // NEGOCIO: pagos, comisiones, red y retiros
   // ══════════════════════════════════════════════════════
@@ -299,6 +345,7 @@ export async function adminRoutes(app: FastifyInstance) {
     monthlyFee: number;
     level1Percent: number;
     level2Percent: number;
+    plans: { id: string; name: string; price: number }[];
   }
 
   async function getSettings(): Promise<SettingsResult> {
@@ -307,11 +354,26 @@ export async function adminRoutes(app: FastifyInstance) {
     for (const r of rows) {
       try { map[r.key] = JSON.parse(r.value as any); } catch { map[r.key] = r.value; }
     }
+
+    let plans = [
+      { id: 'estandar', name: 'Estándar', price: 500 },
+      { id: 'elite', name: 'Élite', price: 1000 },
+    ];
+    if (map.PLANS) {
+      try {
+        const parsed = JSON.parse(map.PLANS);
+        if (Array.isArray(parsed) && parsed.length) plans = parsed;
+      } catch { /* usar default */ }
+    } else if (map.MEMBERSHIP_PRICE && Number(map.MEMBERSHIP_PRICE) !== 500) {
+      plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE) }];
+    }
+
     return {
       membershipPrice: Number(map.MEMBERSHIP_PRICE ?? 500),
       monthlyFee: Number(map.MONTHLY_FEE ?? 50),
       level1Percent: Number(map.LEVEL1_PERCENT ?? 25),
       level2Percent: Number(map.LEVEL2_PERCENT ?? 5),
+      plans,
     };
   }
 
@@ -321,6 +383,11 @@ export async function adminRoutes(app: FastifyInstance) {
     monthlyFee: z.number().positive().optional(),
     level1Percent: z.number().min(0).max(100).optional(),
     level2Percent: z.number().min(0).max(100).optional(),
+    plans: z.array(z.object({
+      id: z.string(),
+      name: z.string().min(1),
+      price: z.number().positive(),
+    })).optional(),
   });
 
   app.get('/business/settings', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
@@ -350,6 +417,20 @@ export async function adminRoutes(app: FastifyInstance) {
       },
     });
     return { payments };
+  });
+
+  // Comisiones retenidas por el sistema (referrer no estaba al día): el admin ve el total y el detalle.
+  app.get('/business/retained', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const retained = await prisma.commission.findMany({
+      where: { status: 'RETENTED' },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { firstName: true, lastName: true, username: true } },
+        sourceUser: { select: { firstName: true, lastName: true, username: true } },
+      },
+    });
+    const total = retained.reduce((sum, c) => sum + c.amount, 0);
+    return { total, retained };
   });
 
   // Verificación manual: reconsulta el estado en NowPayments y, si está confirmado, activa.
@@ -431,6 +512,7 @@ export async function adminRoutes(app: FastifyInstance) {
       // Revierte las comisiones que este pago generó.
       const commissions = await tx.commission.findMany({ where: { paymentId: id } });
       for (const c of commissions) {
+        if (c.status === 'RETENTED') continue;
         await tx.user.update({
           where: { id: c.userId },
           data: { balance: { decrement: c.amount } },
@@ -485,6 +567,11 @@ export async function adminRoutes(app: FastifyInstance) {
   app.post('/business/withdrawals/:id/approve', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
     const { id } = request.params as WithdrawalParams;
     const adminUser = (request as any).user as JWTPayload;
+    const body = (request.body as any) || {};
+    const feePercent = body.feePercent == null ? 0 : Number(body.feePercent);
+    if (!Number.isFinite(feePercent) || feePercent < 0 || feePercent > 100) {
+      return reply.code(400).send({ error: 'El fee de retiro debe estar entre 0 y 100%' });
+    }
     const withdrawal = await prisma.withdrawal.findUnique({ where: { id } });
     if (!withdrawal) return reply.code(404).send({ error: 'Retiro no encontrado' });
     if (withdrawal.status !== 'PENDING') return reply.code(400).send({ error: 'Este retiro ya fue procesado' });
@@ -502,9 +589,20 @@ export async function adminRoutes(app: FastifyInstance) {
       prisma.user.update({ where: { id: withdrawal.userId }, data: { balance: { decrement: withdrawal.amount } } }),
       prisma.withdrawal.update({
         where: { id },
-        data: { status: 'APPROVED', processedAt: new Date(), processedBy: adminUser.sub },
+        data: { status: 'APPROVED', feePercent, processedAt: new Date(), processedBy: adminUser.sub },
       }),
     ]);
+
+    const afterDebit = await prisma.user.findUnique({ where: { id: withdrawal.userId }, select: { balance: true } });
+    await prisma.balanceLog.create({
+      data: {
+        userId: withdrawal.userId,
+        type: 'debit',
+        amount: withdrawal.amount,
+        balance: afterDebit?.balance ?? 0,
+        note: `Retiro aprobado${feePercent > 0 ? ` con fee ${feePercent}%` : ''}`,
+      },
+    });
 
     return { success: true };
   });
@@ -520,5 +618,21 @@ export async function adminRoutes(app: FastifyInstance) {
       data: { status: 'REJECTED', processedAt: new Date(), processedBy: adminUser.sub },
     });
     return { success: true };
+  });
+
+  // Historial de balance de un usuario
+  app.get('/business/balance-log/:userId', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const { userId } = request.params as { userId: string };
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, firstName: true, lastName: true, username: true, balance: true },
+    });
+    if (!user) return { error: 'Usuario no encontrado' };
+    const logs = await prisma.balanceLog.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return { user, logs };
   });
 }
