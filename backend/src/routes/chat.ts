@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
+import { sendWebPush } from '../utils/onesignal.js';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { writeFile, mkdir } from 'fs/promises';
@@ -188,6 +189,13 @@ export async function chatRoutes(app: FastifyInstance) {
                 title: 'Te mencionaron en el chat',
                 message: `${shownName} te mencionó: "${finalMessage.slice(0, 120)}"`,
               })),
+            });
+
+            // Web push (OneSignal) a los mencionados, aunque el chat esté cerrado.
+            await sendWebPush({
+              externalUserIds: mentioned.map(u => u.id),
+              title: `${shownName} te mencionó en el chat`,
+              message: `"${finalMessage.slice(0, 120)}"`,
             });
           }
         }

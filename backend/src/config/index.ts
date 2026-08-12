@@ -27,4 +27,10 @@ export const config = {
     baseUrl: process.env.NOWPAYMENTS_BASE_URL || 'https://api.nowpayments.io',
     sandbox: process.env.NOWPAYMENTS_SANDBOX === 'true',
   },
+
+  onesignal: {
+    appId: process.env.ONESIGNAL_APP_ID || '',
+    apiKey: process.env.ONESIGNAL_API_KEY || '',
+    webUrl: process.env.FRONTEND_URL || process.env.ONESIGNAL_WEB_URL || 'http://localhost:3000',
+  },
 };

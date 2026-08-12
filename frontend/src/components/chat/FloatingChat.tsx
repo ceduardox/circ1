@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MessageCircle, X, Send, ChevronDown, Search, Check, Trash2, Ban, CheckCircle2, Smile, Maximize2, Minimize2, ChevronLeft, ImagePlus, XCircle, ZoomIn, ZoomOut, ShieldCheck, ChevronRight } from 'lucide-react';
+import { MessageCircle, X, Send, ChevronDown, Search, Check, Trash2, Ban, CheckCircle2, Smile, Maximize2, Minimize2, ChevronLeft, ImagePlus, XCircle, ZoomIn, ZoomOut, ShieldCheck, ChevronRight, Bell, BellRing } from 'lucide-react';
 import { chatApi } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 import { countryFlag } from '@/lib/utils';
+import { hasPushPermission, requestPushPermission } from '@/lib/onesignal';
 import { toast } from 'sonner';
 import 'flag-icons/css/flag-icons.min.css';
 
@@ -298,6 +299,8 @@ export function FloatingChat() {
   const [mentionOpen, setMentionOpen] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const [auditData, setAuditData] = useState<any[]>([]);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushChecking, setPushChecking] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const openRef = useRef(false);
@@ -417,6 +420,29 @@ export function FloatingChat() {
       const { data } = await chatApi.audit();
       setAuditData(data.messages || []);
     } catch { /* silencioso */ }
+  };
+
+  // Detecta si el navegador ya tiene el permiso de push concedido.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const ok = await hasPushPermission();
+      if (active) {
+        setPushEnabled(ok);
+        setPushChecking(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  const enablePush = async () => {
+    const ok = await requestPushPermission();
+    setPushEnabled(ok);
+    if (ok) {
+      toast.success('Notificaciones activadas. Te avisaremos de las menciones en el chat.');
+    } else {
+      toast.error('Permiso denegado. Activa las notificaciones desde el navegador para recibir menciones.');
+    }
   };
 
   // Polling: cada 5s cuando el chat está abierto (carga normal), y también
@@ -569,6 +595,17 @@ export function FloatingChat() {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {!pushChecking && (
+                <button
+                  onClick={enablePush}
+                  disabled={pushEnabled}
+                  className="p-1.5 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-70 disabled:cursor-default"
+                  aria-label="Activar notificaciones del chat"
+                  title={pushEnabled ? 'Notificaciones activadas' : 'Activar notificaciones de menciones'}
+                >
+                  {pushEnabled ? <BellRing className="w-4 h-4 text-emerald-200" /> : <Bell className="w-4 h-4" />}
+                </button>
+              )}
               {isAdmin && (
                 <button
                   onClick={() => { loadAudit(); setShowAudit(true); }}

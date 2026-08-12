@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi, configureAuthTokenHandlers } from '../services/api';
+import { syncPushUser } from '../lib/onesignal';
 
 interface User {
   id: string;
@@ -45,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data } = await authApi.login({ identifier, password });
           set({ user: data.user, accessToken: data.accessToken, isAuthenticated: true, isLoading: false });
+          syncPushUser(data.user.id);
         } catch (e) {
           set({ isLoading: false });
           throw e;
@@ -56,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data: res } = await authApi.register(data);
           set({ user: res.user, accessToken: res.accessToken, isAuthenticated: true, isLoading: false });
+          syncPushUser(res.user.id);
         } catch (e) {
           set({ isLoading: false });
           throw e;
@@ -64,6 +67,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try { await authApi.logout(); } catch {}
+        syncPushUser(null);
         set({ user: null, accessToken: null, isAuthenticated: false });
       },
 
@@ -73,6 +77,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data } = await authApi.me();
           set({ user: data.user, isAuthenticated: true });
+          syncPushUser(data.user.id);
         } catch {
           set({ user: null, accessToken: null, isAuthenticated: false });
         }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="description" content="Neuroentrenamiento para crecer desde adentro hacia afuera." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Círculo 1" />
@@ -25,6 +26,18 @@
           document.documentElement.classList.remove('dark');
         }
       })();
+    </script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "3cb5f8f5-b0a1-4c16-91a7-8f83567808a9",
+          allowLocalhostAsSecureOrigin: true,
+          serviceWorkerParam: { scope: "/" },
+          serviceWorkerPath: "OneSignalSDK.sw.js",
+        });
+      });
     </script>
   </head>
   <body>
