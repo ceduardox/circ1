@@ -352,6 +352,7 @@ export async function adminRoutes(app: FastifyInstance) {
     level1Percent: number;
     level2Percent: number;
     paymentCurrency: string;
+    registerOpen: boolean;
     plans: { id: string; name: string; price: number }[];
   }
 
@@ -381,6 +382,7 @@ export async function adminRoutes(app: FastifyInstance) {
       level1Percent: Number(map.LEVEL1_PERCENT ?? 25),
       level2Percent: Number(map.LEVEL2_PERCENT ?? 5),
       paymentCurrency: map.PAYMENT_CURRENCY || 'usdtbsc',
+      registerOpen: map.REGISTER_OPEN === undefined ? true : map.REGISTER_OPEN !== false,
       plans,
     };
   }
@@ -392,6 +394,7 @@ export async function adminRoutes(app: FastifyInstance) {
     level1Percent: z.number().min(0).max(100).optional(),
     level2Percent: z.number().min(0).max(100).optional(),
     paymentCurrency: z.string().optional(),
+    registerOpen: z.boolean().optional(),
     plans: z.array(z.object({
       id: z.string(),
       name: z.string().min(1),
@@ -405,12 +408,15 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.put('/business/settings', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
     const body = settingsSchema.parse(request.body);
-    const entries = Object.entries(body);
+    const entries = Object.entries(body) as [string, any][];
+    // Mapea el nombre del campo a la key usada en la BD (REGISTER_OPEN en mayúsculas).
+    const keyMap: Record<string, string> = { registerOpen: 'REGISTER_OPEN' };
     for (const [key, value] of entries) {
+      const dbKey = keyMap[key] || key;
       await prisma.adminSetting.upsert({
-        where: { key },
+        where: { key: dbKey },
         update: { value: JSON.stringify(value) },
-        create: { key, value: JSON.stringify(value) },
+        create: { key: dbKey, value: JSON.stringify(value) },
       });
     }
     return getSettings();

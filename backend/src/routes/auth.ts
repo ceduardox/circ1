@@ -28,16 +28,30 @@ export async function authRoutes(app: FastifyInstance) {
 
     const passwordHash = await hashPassword(body.password);
 
-    // Resolve referrer if a referral code was provided
-    let referrerId: string | null = null;
-    if (body.referralCode) {
-      const referrer = await prisma.user.findUnique({ where: { referralCode: body.referralCode } });
-      if (referrer) referrerId = referrer.id;
+    // Setting: ¿está abierto el registro normal (sin código)?
+    const setting = await prisma.adminSetting.findUnique({ where: { key: 'REGISTER_OPEN' } });
+    let registerOpen = true;
+    if (setting) {
+      try { registerOpen = JSON.parse(setting.value as any) !== false; } catch { registerOpen = true; }
     }
 
-    // Sin código (o código inválido): el nuevo usuario entra debajo del admin
-    // (raíz de la red). Así toda la red cuelga del admin.
-    if (!referrerId) {
+    // Resolve referrer if a referral code was provided
+    let referrer: { id: string; referralPlans: any } | null = null;
+    if (body.referralCode) {
+      const found = await prisma.user.findUnique({ where: { referralCode: body.referralCode } });
+      if (found) referrer = { id: found.id, referralPlans: found.referralPlans as any };
+    }
+
+    // Si el registro está cerrado, solo se permite con un código de referido válido.
+    if (!registerOpen && !referrer) {
+      return reply.code(403).send({ error: 'El registro está cerrado. Necesitas un link de invitación.' });
+    }
+
+    let referrerId: string | null = null;
+    if (referrer) {
+      referrerId = referrer.id;
+    } else {
+      // Sin código: el nuevo usuario entra debajo del admin (raíz de la red).
       const admin = await prisma.user.findFirst({ where: { role: 'ADMIN' }, orderBy: { createdAt: 'asc' } });
       if (admin) {
         referrerId = admin.id;
@@ -48,6 +62,15 @@ export async function authRoutes(app: FastifyInstance) {
           });
         }
       }
+    }
+
+    // Planes que verá este usuario: los que el referidor eligió, o ambos por defecto.
+    // Ej: ["estandar", "elite"] = ambos · ["estandar"] = solo 500 · ["elite"] = solo 1000
+    const allPlanIds = ['estandar', 'elite'];
+    let referralPlans: string[] = allPlanIds;
+    if (referrer?.referralPlans && Array.isArray(referrer.referralPlans)) {
+      const valid = (referrer.referralPlans as string[]).filter(p => allPlanIds.includes(p));
+      if (valid.length > 0) referralPlans = valid;
     }
 
     const user = await prisma.user.create({
@@ -61,6 +84,7 @@ export async function authRoutes(app: FastifyInstance) {
         country: body.country,
         referralCode: generateReferralCode(body.username),
         referrerId,
+        referralPlans,
       },
       select: { id: true, email: true, username: true, firstName: true, lastName: true, role: true },
     });
@@ -74,6 +98,33 @@ export async function authRoutes(app: FastifyInstance) {
     });
 
     return { user, accessToken };
+  });
+
+  // Estado público para la página de registro: ¿está abierto el registro normal?
+  app.get('/register-status', async () => {
+    const setting = await prisma.adminSetting.findUnique({ where: { key: 'REGISTER_OPEN' } });
+    let registerOpen = true;
+    if (setting) {
+      try { registerOpen = JSON.parse(setting.value as any) !== false; } catch { registerOpen = true; }
+    }
+    return { registerOpen };
+  });
+
+  // Qué plan(es) ven tus referidos al registrarse con tu link.
+  app.put('/referral-plans', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const body = (request.body ?? {}) as { plans?: string[] };
+    const allPlanIds = ['estandar', 'elite'];
+    const plans = Array.isArray(body.plans)
+      ? body.plans.filter(p => allPlanIds.includes(p))
+      : allPlanIds;
+    const safe = plans.length > 0 ? plans : allPlanIds;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { referralPlans: safe },
+    });
+    return { plans: safe };
   });
 
   app.post('/login', async (request, reply) => {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitBranch, Sparkles, UserPlus2, Users2, BadgePercent, Crown } from 'lucide-react';
-import { membershipApi } from '@/services/api';
+import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitBranch, Sparkles, UserPlus2, Users2, BadgePercent, Crown, Loader2 } from 'lucide-react';
+import { membershipApi, authApi } from '@/services/api';
 import { useMembershipStore } from '@/store/membershipStore';
 import { NetworkTree, TreeMember } from '@/components/program/NetworkTree';
 import { PageHeader } from '@/components/ui';
@@ -20,6 +20,38 @@ export function NetworkPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [view, setView] = useState<'list' | 'tree'>('list');
+  const [selectedPlans, setSelectedPlans] = useState<string[]>(['estandar', 'elite']);
+  const [savingPlans, setSavingPlans] = useState(false);
+
+  // Sincroniza la selección con lo que el servidor dice que verán tus referidos.
+  useEffect(() => {
+    if (status?.referralPlans?.length) setSelectedPlans(status.referralPlans);
+  }, [status?.referralPlans]);
+
+  const savePlans = async (plans: string[]) => {
+    setSavingPlans(true);
+    try {
+      const { data } = await authApi.updateReferralPlans(plans);
+      setSelectedPlans(data.plans);
+      toast.success('Plan de referidos actualizado');
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'No se pudo actualizar');
+    } finally {
+      setSavingPlans(false);
+    }
+  };
+
+  const togglePlan = (planId: string) => {
+    const next = selectedPlans.includes(planId)
+      ? selectedPlans.filter(p => p !== planId)
+      : [...selectedPlans, planId];
+    if (next.length === 0) {
+      toast.error('Debes dejar al menos un plan');
+      return;
+    }
+    setSelectedPlans(next);
+    void savePlans(next);
+  };
 
   useEffect(() => {
     load();
@@ -208,6 +240,46 @@ export function NetworkPage() {
           <BadgePercent className="w-3.5 h-3.5 shrink-0" />
           Gana {status?.settings?.level1Percent || 25}% por cada miembro que se una con tu link y un {status?.settings?.level2Percent || 5}% adicional en su nivel 2.
         </p>
+
+        {/* Qué plan(es) verán tus referidos al registrarse con tu link */}
+        <div className="relative mt-4 bg-white/10 border border-white/15 rounded-xl p-4 backdrop-blur-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-primary-100 mb-3 flex items-center gap-1.5">
+            <Crown className="w-4 h-4 shrink-0" />
+            Plan que ven tus referidos
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[
+              { id: 'estandar', label: 'Solo $500', desc: 'Plan Estándar' },
+              { id: 'elite', label: 'Solo $1000', desc: 'Plan Élite' },
+              { id: 'both', label: 'Ambos planes', desc: '$500 y $1000' },
+            ].map(opt => {
+              const active = opt.id === 'both'
+                ? selectedPlans.includes('estandar') && selectedPlans.includes('elite')
+                : selectedPlans.includes(opt.id) && selectedPlans.length === 1;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => {
+                    if (opt.id === 'both') void savePlans(['estandar', 'elite']);
+                    else void savePlans([opt.id]);
+                  }}
+                  disabled={savingPlans}
+                  className={`rounded-xl px-3 py-3 text-left transition-all border ${
+                    active
+                      ? 'bg-white text-primary-700 border-white shadow'
+                      : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
+                  }`}
+                >
+                  <p className={`text-sm font-bold ${active ? 'text-primary-700' : 'text-white'}`}>{opt.label}</p>
+                  <p className={`text-[11px] mt-0.5 ${active ? 'text-primary-500' : 'text-primary-100'}`}>{opt.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-primary-100 text-[11px] mt-3">
+            Cuando alguien se registra con tu link, solo verá el plan (o planes) que elijas aquí.
+          </p>
+        </div>
 
         {/* Comisiones por plan */}
         <div className="relative mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">

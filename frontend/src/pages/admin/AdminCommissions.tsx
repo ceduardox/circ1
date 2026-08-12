@@ -12,7 +12,7 @@ const statusPayment: Record<string, { label: string; classes: string }> = {
 
 export function AdminCommissionsPage() {
   const [settings, setSettings] = useState<any>({
-    membershipPrice: 500, monthlyFee: 50, level1Percent: 25, level2Percent: 5,
+    membershipPrice: 500, monthlyFee: 50, level1Percent: 25, level2Percent: 5, registerOpen: true,
     plans: [
       { id: 'estandar', name: 'Estándar', price: 500 },
       { id: 'elite', name: 'Élite', price: 1000 },
@@ -155,6 +155,28 @@ export function AdminCommissionsPage() {
               <Input id="l2" type="number" value={settings.level2Percent} min={0} max={100}
                 onChange={e => setSettings({ ...settings, level2Percent: Number(e.target.value) })} />
             </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-gray-200 dark:border-dark-600 p-4 bg-gray-50 dark:bg-dark-700/40">
+            <div>
+              <Label>Registro por fuera (login)</Label>
+              <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5">
+                Si está apagado, solo se pueden registrar con un link de invitación.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !settings.registerOpen;
+                setSettings({ ...settings, registerOpen: next });
+              }}
+              className={`relative w-14 h-8 rounded-full transition-colors shrink-0 ${
+                settings.registerOpen === false ? 'bg-gray-300 dark:bg-dark-600' : 'bg-emerald-500'
+              }`}
+              aria-pressed={settings.registerOpen !== false}
+            >
+              <span className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all ${settings.registerOpen === false ? 'left-1' : 'left-7'}`} />
+            </button>
           </div>
 
           <div className="mt-6">

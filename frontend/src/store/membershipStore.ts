@@ -10,6 +10,7 @@ interface MembershipStatus {
   referralCode?: string | null;
   referralLink?: string | null;
   referrerId?: string | null;
+  referralPlans?: string[];
   settings: {
     membershipPrice: number;
     monthlyFee: number;

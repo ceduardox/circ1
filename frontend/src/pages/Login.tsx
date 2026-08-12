@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import { authApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -25,6 +26,11 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const { login } = useAuthStore();
   const navigate = useNavigate();
+  const [registerOpen, setRegisterOpen] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    authApi.registerStatus().then(({ data }) => setRegisterOpen(data.registerOpen)).catch(() => setRegisterOpen(true));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,12 +161,14 @@ export function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center mt-6 text-sm text-gray-500 dark:text-dark-400">
-          ¿No tienes cuenta?{' '}
-          <Link to="/register" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold">
-            Regístrate aquí
-          </Link>
-        </p>
+        {registerOpen !== false && (
+          <p className="text-center mt-6 text-sm text-gray-500 dark:text-dark-400">
+            ¿No tienes cuenta?{' '}
+            <Link to="/register" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold">
+              Regístrate aquí
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );

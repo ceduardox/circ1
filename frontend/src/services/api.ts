@@ -71,6 +71,8 @@ export const authApi = {
   me: () => api.get('/auth/me'),
   updateProfile: (data: any) => api.put('/auth/me', data),
   updatePushPreferences: (data: any) => api.put('/auth/push-preferences', data),
+  registerStatus: () => api.get('/auth/register-status'),
+  updateReferralPlans: (plans: string[]) => api.put('/auth/referral-plans', { plans }),
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);

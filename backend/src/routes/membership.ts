@@ -16,7 +16,7 @@ const defaults = {
 
 interface JWTPayload { sub: string; email: string; role: string; type?: string; }
 
-async function getSettings() {
+async function getSettings(userPlans?: string[]) {
   const rows = await prisma.adminSetting.findMany();
   const map: Record<string, any> = {};
   for (const r of rows) {
@@ -31,6 +31,13 @@ async function getSettings() {
     } catch { /* usar default */ }
   } else if (map.MEMBERSHIP_PRICE && Number(map.MEMBERSHIP_PRICE) !== 500) {
     plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE) }];
+  }
+
+  // Filtra los planes según los que el referidor asignó a este usuario.
+  // userPlans ej: ["estandar","elite"] = ambos · ["estandar"] = solo 500 · ["elite"] = solo 1000
+  if (Array.isArray(userPlans) && userPlans.length > 0) {
+    plans = plans.filter((p: any) => userPlans.includes(p.id));
+    if (plans.length === 0) plans = defaultPlans();
   }
 
   return {
@@ -116,12 +123,13 @@ export async function membershipRoutes(app: FastifyInstance) {
         balance: true,
         referralCode: true,
         referrerId: true,
+        referralPlans: true,
       },
     });
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
 
     const webBase = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const settings = await getSettings();
+    const settings = await getSettings((user.referralPlans as string[] | null) ?? undefined);
     const eff = effectiveMembership(user);
 
     return {
@@ -133,6 +141,7 @@ export async function membershipRoutes(app: FastifyInstance) {
       referralCode: user.referralCode,
       referralLink: user.referralCode ? `${webBase}/register?ref=${user.referralCode}` : null,
       referrerId: user.referrerId,
+      referralPlans: (user.referralPlans as string[] | null) ?? ['estandar', 'elite'],
       settings,
     };
   });

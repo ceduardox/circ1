@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +6,8 @@ import { z } from 'zod';
 import { ButtonPrimary, Input, Label, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { CountrySelect } from '@/components/ui/CountrySelect';
 import { useAuthStore } from '@/store/authStore';
-import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, UserPlus, FileText, CheckCircle2, Calendar, Sparkles, ArrowRight, AtSign } from 'lucide-react';
+import { authApi } from '@/services/api';
+import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, UserPlus, FileText, CheckCircle2, Calendar, Sparkles, ArrowRight, AtSign, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 const registerSchema = z.object({
@@ -38,6 +39,15 @@ export function RegisterPage() {
     const ref = searchParams.get('ref');
     return ref ? ref.trim() : null;
   }, [searchParams]);
+
+  // ¿El registro normal está abierto? (admin puede cerrarlo)
+  const [registerOpen, setRegisterOpen] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    authApi.registerStatus().then(({ data }) => setRegisterOpen(data.registerOpen)).catch(() => setRegisterOpen(true));
+  }, []);
+
+  const registerBlocked = registerOpen === false && !referralCode;
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -107,7 +117,26 @@ export function RegisterPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {registerBlocked ? (
+            <div className="text-center py-6">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+                <KeyRound className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-dark-100">El registro está cerrado</h2>
+              <p className="text-sm text-gray-500 dark:text-dark-400 mt-2 leading-6">
+                Por ahora solo puedes unirte a través de un <span className="font-semibold text-amber-600 dark:text-amber-400">link de invitación</span> de un miembro de la comunidad.
+              </p>
+              <Link
+                to="/login"
+                className="mt-6 inline-flex items-center justify-center w-full gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 text-white text-sm font-bold hover:opacity-90 transition-opacity"
+              >
+                Ir a iniciar sesión
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          ) : (
+            <>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="firstName">Nombre</Label>
@@ -234,6 +263,8 @@ export function RegisterPage() {
           <p className="text-center text-sm text-gray-500 dark:text-dark-400 mt-6">
             ¿Ya tienes cuenta? <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:underline font-medium">Inicia sesión</Link>
           </p>
+            </>
+          )}
         </CardContent>
       </Card>
 
