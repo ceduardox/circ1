@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
-import { useLocation } from 'react-router-dom';
-import { Bell, Search, X, Crown, Clock } from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
+import { Bell, Search, Crown, Clock } from 'lucide-react';
 import { SearchBar } from './SearchBar';
-import { NotificationBell } from './NotificationBell';
 
 const pageLabels: Record<string, string> = {
   '/dashboard': 'Mi Día',
@@ -75,12 +74,14 @@ export function DesktopHeader() {
             <Search className="w-5 h-5" />
           </button>
         )}
-        {!isAdmin && <NotificationBell />}
-        {isAdmin && (
-          <button className="p-2 rounded-xl text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors relative">
-            <Bell className="w-5 h-5" />
-          </button>
-        )}
+        <Link
+          to="/notifications"
+          className="p-2 rounded-xl text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+          aria-label="Notificaciones push"
+          title="Notificaciones"
+        >
+          <Bell className="w-5 h-5" />
+        </Link>
         <div className="w-px h-8 bg-gray-200 dark:bg-dark-600"></div>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">

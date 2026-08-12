@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell } from 'lucide-react';
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
@@ -17,6 +17,7 @@ export function MobileHeader() {
     { path: '/network', label: 'Mi Red', icon: Network },
     { path: '/earnings', label: 'Ganancias', icon: Wallet },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown },
+    { path: '/notifications', label: 'Notificaciones', icon: Bell },
     { path: '/profile', label: 'Perfil', icon: User },
   ];
 
@@ -167,18 +168,28 @@ export function MobileHeader() {
               className="h-9 w-auto max-w-full object-contain dark:brightness-200 dark:opacity-90"
             />
           </Link>
-          <button
-            onClick={() => setOpen(!open)}
-            aria-label="Abrir menú"
-            className="relative px-4 py-2 rounded-lg bg-gradient-to-r from-primary-600 to-primary-700 text-white font-medium text-sm shadow-md shadow-primary-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary-500/40 hover:translate-y-[-1px] active:scale-[0.98] active:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-          >
-            <span className="flex items-center gap-2 transition-all duration-300 ease-out" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)' }}>
-              <Menu className="w-5 h-5" />
-            </span>
-            <span className="absolute inset-0 flex items-center justify-center transition-all duration-300 ease-out opacity-0 pointer-events-none" style={{ transform: open ? 'rotate(0)' : 'rotate(-180deg)' }}>
-              <X className="w-5 h-5" />
-            </span>
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <Link
+              to="/notifications"
+              className="p-2 rounded-xl text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+              aria-label="Notificaciones push"
+              title="Notificaciones"
+            >
+              <Bell className="w-5 h-5" />
+            </Link>
+            <button
+              onClick={() => setOpen(!open)}
+              aria-label="Abrir menú"
+              className="relative px-4 py-2 rounded-lg bg-gradient-to-r from-primary-600 to-primary-700 text-white font-medium text-sm shadow-md shadow-primary-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary-500/40 hover:translate-y-[-1px] active:scale-[0.98] active:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            >
+              <span className="flex items-center gap-2 transition-all duration-300 ease-out" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)' }}>
+                <Menu className="w-5 h-5" />
+              </span>
+              <span className="absolute inset-0 flex items-center justify-center transition-all duration-300 ease-out opacity-0 pointer-events-none" style={{ transform: open ? 'rotate(0)' : 'rotate(-180deg)' }}>
+                <X className="w-5 h-5" />
+              </span>
+            </button>
+          </div>
         </div>
       </header>
     </>

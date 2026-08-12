@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { programApi, adminApi } from '@/services/api';
+import { useVipProStore } from '@/store/vipProStore';
 import {
   Home, Flame, Trophy, Lock, CheckCircle, Play, ChevronRight, Users, BookOpen, Target,
-  Clock, BarChart, Footprints, CalendarCheck, Crown, PenLine, Brain, Shield, Heart, Snowflake
+  Clock, BarChart, Footprints, CalendarCheck, Crown, PenLine, Brain, Shield, Heart, Snowflake, Rocket
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,9 +31,11 @@ export function DashboardPage() {
   const [unlockedCount, setUnlockedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [freezing, setFreezing] = useState(false);
+  const { modules, fetchModules } = useVipProStore();
 
   useEffect(() => {
     loadDashboard();
+    fetchModules();
   }, []);
 
   const loadDashboard = async () => {
@@ -191,6 +194,53 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* VIP Pro */}
+      {user?.role !== 'ADMIN' && (
+        <Link
+          to="/vip-pro"
+          className="block group"
+        >
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-700 via-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-600/25 p-5 transition-all group-hover:shadow-xl group-hover:shadow-purple-600/30 group-hover:-translate-y-0.5 animate-pulse-soft">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 animate-gradient-x" />
+            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+                  <Rocket className="w-5 h-5 text-amber-300" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold leading-tight flex items-center gap-1.5">
+                    <Crown className="w-4 h-4 text-amber-300" />
+                    VIP Pro
+                  </p>
+                  <p className="text-xs text-purple-100 mt-0.5">
+                    {modules.length > 0
+                      ? `${modules.filter(m => m.completed).length}/${modules.length} pasos · Vende en TikTok Shop`
+                      : 'Vende en TikTok Shop'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-2xl font-black text-amber-300">
+                  {modules.length > 0 ? Math.round((modules.filter(m => m.completed).length / modules.length) * 100) : 0}%
+                </div>
+                <ChevronRight className="w-5 h-5 text-purple-200 ml-auto transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
+            {modules.length > 0 && (
+              <div className="relative mt-4">
+                <div className="h-2 bg-white/15 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full transition-all duration-500"
+                    style={{ width: `${(modules.filter(m => m.completed).length / modules.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </Link>
+      )}
 
       {/* Día Actual */}
       {currentDay && (

@@ -106,10 +106,15 @@ async function getActivePendingPayment(userId: string) {
 }
 
 // Estado efectivo: ACTIVE mientras dure, GRACE en los 3 días tras vencer (aún accede), EXPIRED después.
+// Los admins SIEMPRE cuentan como ACTIVE (licencia activa).
 function effectiveMembership(user: {
   membershipStatus: string;
   membershipExpiresAt: Date | null;
+  role?: string;
 }): { status: string; expiresAt: Date | null; graceEndsAt: Date | null } {
+  if (user.role === 'ADMIN') {
+    return { status: 'ACTIVE', expiresAt: null, graceEndsAt: null };
+  }
   if (user.membershipStatus !== 'ACTIVE' || !user.membershipExpiresAt) {
     return { status: user.membershipStatus, expiresAt: user.membershipExpiresAt, graceEndsAt: null };
   }
@@ -141,6 +146,7 @@ export async function membershipRoutes(app: FastifyInstance) {
         referralCode: true,
         referrerId: true,
         referralPlans: true,
+        role: true,
       },
     });
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });

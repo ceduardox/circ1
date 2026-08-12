@@ -4,15 +4,19 @@ export const MEMBERSHIP_DAYS = 30;
 export type MemberLike = {
   membershipStatus: string;
   membershipExpiresAt: Date | null;
+  role?: string;
 };
 
 // Estado efectivo: ACTIVE mientras dura, GRACE en los 3 días tras vencer (aún está al día),
-// EXPIRED después.
+// EXPIRED después. Los admins SIEMPRE cuentan como ACTIVE (licencia activa).
 export function effectiveMembership(user: MemberLike): {
   status: string;
   expiresAt: Date | null;
   graceEndsAt: Date | null;
 } {
+  if (user.role === 'ADMIN') {
+    return { status: 'ACTIVE', expiresAt: null, graceEndsAt: null };
+  }
   if (user.membershipStatus !== 'ACTIVE' || !user.membershipExpiresAt) {
     return { status: user.membershipStatus, expiresAt: user.membershipExpiresAt, graceEndsAt: null };
   }
