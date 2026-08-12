@@ -33,4 +33,8 @@ export const config = {
     apiKey: process.env.ONESIGNAL_API_KEY || '',
     webUrl: process.env.FRONTEND_URL || process.env.ONESIGNAL_WEB_URL || 'http://localhost:3000',
   },
+
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || '',
+  },
 };

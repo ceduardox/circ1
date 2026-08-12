@@ -166,4 +166,7 @@ export const adminApi = {
   analytics: () => api.get('/admin/analytics/overview'),
   stuckUsers: (days?: number) => api.get('/admin/business/stuck-users', { params: { days } }),
   funnel: () => api.get('/admin/business/funnel'),
+  transcribe: (url: string) => api.post('/admin/transcribe', { url }),
+  transcriptionStatus: (id: string) => api.get(`/admin/transcribe/${id}`),
+  transcriptions: () => api.get('/admin/transcribe'),
 };

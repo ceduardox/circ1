@@ -1,4 +1,6 @@
 import { FastifyInstance } from 'fastify';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
@@ -8,6 +10,9 @@ import { getPaymentStatus } from '../utils/nowpayments.js';
 import { config } from '../config/index.js';
 import { generateReferralCode } from '../utils/auth.js';
 import { sendWebPush } from '../utils/onesignal.js';
+import { transcribeAudio, downloadAudioToBuffer, downloadVideoToFile, MAX_DURATION_SEC } from '../utils/transcribe.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const createDaySchema = z.object({
   dayNumber: z.number().int().positive(),
@@ -661,5 +666,75 @@ export async function adminRoutes(app: FastifyInstance) {
       take: 100,
     });
     return { user, logs };
+  });
+
+  // ══════════════════════════════════════════════════════
+  // TRANSCRIPCIÓN: link de video (Facebook, etc.) → texto
+  // ══════════════════════════════════════════════════════
+
+  const transcribeSchema = z.object({ url: z.string().url() });
+
+  // Crear job de transcripción (procesa en background, sin bloquear)
+  app.post('/transcribe', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { url } = transcribeSchema.parse(request.body);
+    const isFacebook = /facebook\.com|fb\.watch|fb\.com/.test(url);
+    if (!isFacebook) {
+      return reply.code(400).send({ error: 'Solo se aceptan links de Facebook' });
+    }
+
+    const record = await prisma.transcription.create({
+      data: { url, status: 'PROCESSING' },
+    });
+
+    // Procesar en segundo plano: no esperamos la descarga+whisper (puede tardar).
+    void (async () => {
+      try {
+        // 1) Descargar el video completo a uploads/videos para reproducirlo en la app.
+        const destDir = path.join(__dirname, '..', '..', 'uploads', 'videos');
+        const video = await downloadVideoToFile(url, destDir, `${record.id}.mp4`);
+
+        // 2) Transcribir el audio (en memoria, no toca disco).
+        const audio = await downloadAudioToBuffer(url);
+        if (audio.duration > MAX_DURATION_SEC) {
+          throw new Error(`El video dura más de ${MAX_DURATION_SEC / 60} min. Usa uno más corto.`);
+        }
+        const text = await transcribeAudio(audio.buffer, 'audio.mp3');
+
+        await prisma.transcription.update({
+          where: { id: record.id },
+          data: {
+            status: 'DONE',
+            text,
+            title: video.title || audio.title || null,
+            durationSec: Math.round(video.duration || audio.duration),
+            videoPath: `/uploads/videos/${record.id}.mp4`,
+          },
+        });
+      } catch (err: any) {
+        await prisma.transcription.update({
+          where: { id: record.id },
+          data: { status: 'FAILED', error: err?.message || 'Error desconocido' },
+        });
+      }
+    })();
+
+    return { transcription: { id: record.id, status: record.status } };
+  });
+
+  // Estado y resultado de un job
+  app.get('/transcribe/:id', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const record = await prisma.transcription.findUnique({ where: { id } });
+    if (!record) return reply.code(404).send({ error: 'Transcripción no encontrada' });
+    return { transcription: record };
+  });
+
+  // Listado reciente
+  app.get('/transcribe', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const transcriptions = await prisma.transcription.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    });
+    return { transcriptions };
   });
 }

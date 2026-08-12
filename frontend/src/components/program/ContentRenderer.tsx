@@ -73,7 +73,7 @@ export function ContentRenderer({ content, dayNumber, onCompleted, preview = fal
       );
     }
     case 'VIDEO': {
-      const { url, provider, duration, description } = content.content;
+      const { url, provider, duration, description, author } = content.content;
       return (
         <VideoPlayer
           {...baseProps}
@@ -81,6 +81,7 @@ export function ContentRenderer({ content, dayNumber, onCompleted, preview = fal
           provider={provider}
           duration={duration}
           description={description}
+          author={author}
         />
       );
     }

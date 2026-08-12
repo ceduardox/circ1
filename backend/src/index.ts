@@ -96,6 +96,18 @@ await app.register(fastifyStatic, {
   prefix: '/',
   decorateReply: false,
   wildcard: false,
+  setHeaders(res, filePath) {
+    const name = path.basename(filePath);
+    if (name === 'index.html') {
+      // El HTML nunca se cachea: siempre se pide fresco para detectar builds nuevos.
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else if (filePath.includes(`${path.sep}assets${path.sep}`) || /\.(js|css|svg|woff2?)$/i.test(name)) {
+      // Assets con hash: inmutables, cache largo.
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+    }
+  },
 });
 
 app.setNotFoundHandler((request, reply) => {

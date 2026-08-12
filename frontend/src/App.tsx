@@ -27,10 +27,14 @@ import { AdminAnalyticsPage } from '@/pages/admin/AdminAnalytics';
 import { AdminCommissionsPage } from '@/pages/admin/AdminCommissions';
 import { AdminNetworkPage } from '@/pages/admin/AdminNetwork';
 import { AdminWithdrawalsPage } from '@/pages/admin/AdminWithdrawals';
+import { AdminTranscribePage } from '@/pages/admin/AdminTranscribe';
 import { FloatingChat } from '@/components/chat/FloatingChat';
+import { UpdateBanner } from '@/components/ui/UpdateBanner';
+import { useUpdateDetector } from '@/hooks/useUpdateDetector';
 
 function App() {
   const { fetchMe, isAuthenticated } = useAuthStore();
+  const { updateAvailable, reload } = useUpdateDetector();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -80,12 +84,14 @@ function App() {
               <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
               <Route path="/admin/commissions" element={<AdminCommissionsPage />} />
               <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
+              <Route path="/admin/transcribe" element={<AdminTranscribePage />} />
               <Route path="/admin/network" element={<AdminNetworkPage />} />
             </Route>
           </Route>
         </Routes>
         <FloatingChat />
         <Toaster position="top-right" />
+        {updateAvailable && <UpdateBanner onReload={reload} />}
       </div>
     </BrowserRouter>
     </ThemeProvider>
