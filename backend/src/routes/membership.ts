@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { config } from '../config/index.js';
 import { createInvoice, getPaymentStatus, verifyWebhookSignature } from '../utils/nowpayments.js';
 import { activateMembership } from '../utils/activation.js';
+import { sendWebPush } from '../utils/onesignal.js';
 import { validateWithdrawalInput } from '../utils/withdrawals.js';
 
 const defaults = {
@@ -15,6 +16,22 @@ const defaults = {
 };
 
 interface JWTPayload { sub: string; email: string; role: string; type?: string; }
+
+// Notifica por push a todos los admins cuando ocurre un evento importante (ej. intento de pago).
+async function notifyAdmins(title: string, message: string) {
+  try {
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+    if (admins.length === 0) return;
+    await sendWebPush({
+      externalUserIds: admins.map(a => a.id),
+      title,
+      message,
+      url: '/admin/withdrawals',
+    });
+  } catch (e) {
+    console.error('Error notificando a admins:', e);
+  }
+}
 
 async function getSettings(userPlans?: string[]) {
   const rows = await prisma.adminSetting.findMany();
@@ -187,6 +204,10 @@ export async function membershipRoutes(app: FastifyInstance) {
       },
     });
 
+    // Avisa al admin por push de que alguien intentó pagar la membresía.
+    const buyerName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username;
+    void notifyAdmins('💳 Intento de pago', `${buyerName} inició el pago del plan ${plan.name} (${plan.price} USDT).`);
+
     // Crear invoice en NowPayments para que el usuario pague con cripto.
     // Si la moneda configurada es USDT (bep20/polygon), el monto es EXACTO en USDT
     // (500 USDT / 1000 USDT) y no depende del tipo de cambio.
@@ -259,6 +280,10 @@ export async function membershipRoutes(app: FastifyInstance) {
         expiresAt: new Date(Date.now() + PAYMENT_TTL_MINUTES * 60 * 1000),
       },
     });
+
+    // Avisa al admin por push del intento de pago de la cuota mensual.
+    const buyerName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username;
+    void notifyAdmins('💳 Intento de pago (cuota)', `${buyerName} inició el pago de la cuota mensual (${settings.monthlyFee} USDT).`);
 
     let invoiceUrl: string | null = null;
     if (config.nowpayments.apiKey) {
