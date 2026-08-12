@@ -10,12 +10,14 @@ import fastifyStatic from '@fastify/static';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { config } from './config/index.js';
+import { prisma } from './utils/prisma.js';
 import { authRoutes } from './routes/auth.js';
 import { programRoutes } from './routes/program.js';
 import { adminRoutes } from './routes/admin.js';
 import { membershipRoutes } from './routes/membership.js';
 import { chatRoutes } from './routes/chat.js';
 import { vipProRoutes } from './routes/vipPro.js';
+import { syncDayVideos } from './utils/dayVideos.js';
 import { ZodError } from 'zod';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,6 +47,14 @@ app.setErrorHandler((error, request, reply) => {
 });
 
 await runMigrations();
+
+// Sincroniza los videos de las tareas diarias (idempotente) en cada arranque.
+try {
+  const synced = await syncDayVideos();
+  if (synced > 0) console.log(`🎬 Videos de tareas actualizados: ${synced} días`);
+} catch (e) {
+  console.error('⚠️ No se pudieron sincronizar los videos de las tareas:', e);
+}
 
 await app.register(cors, {
   origin: config.frontendUrl,
