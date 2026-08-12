@@ -18,6 +18,7 @@ import { membershipRoutes } from './routes/membership.js';
 import { chatRoutes } from './routes/chat.js';
 import { vipProRoutes } from './routes/vipPro.js';
 import { syncDayVideos } from './utils/dayVideos.js';
+import { scheduleDailyReminder } from './utils/dailyReminder.js';
 import { ZodError } from 'zod';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -131,6 +132,9 @@ app.setNotFoundHandler((request, reply) => {
 try {
   await app.listen({ port: config.port, host: '0.0.0.0' });
   console.log(`🚀 Backend corriendo en http://localhost:${config.port}`);
+
+  // Recordatorio diario de tarea (8:00 AM).
+  scheduleDailyReminder();
 } catch (err) {
   app.log.error(err);
   process.exit(1);
