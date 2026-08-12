@@ -6,6 +6,7 @@ import { Input, Label } from '@/components/ui/Input';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { CountrySelect } from '@/components/ui/CountrySelect';
 import { User, Mail, AtSign, Calendar, Lock, Eye, EyeOff, Save, Trophy, Flame, Target, Camera, Loader2 } from 'lucide-react';
+import { PageHeader } from '@/components/ui';
 import { toast } from 'sonner';
 
 export function ProfilePage() {
@@ -72,10 +73,11 @@ export function ProfilePage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <div className="pl-4 border-l-4 border-primary-600">
-        <h1 className="text-2xl font-bold text-gray-900">Mi Perfil</h1>
-        <p className="text-gray-500 mt-1">Gestiona tu información personal</p>
-      </div>
+      <PageHeader
+        title="Mi Perfil"
+        subtitle="Gestiona tu información personal"
+        icon={User}
+      />
 
       {/* User Card + Gamification */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">

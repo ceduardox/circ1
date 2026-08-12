@@ -1,27 +1,24 @@
 # Base stage
 FROM node:20-alpine AS base
 WORKDIR /app
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
 
-# Install dependencies
+# Install dependencies (incluye devDependencies para poder compilar TS y Prisma)
 FROM base AS deps
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev
 
 # Generate Prisma
 FROM base AS generate
 COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma/
-RUN pnpm prisma generate
+RUN npx prisma generate
 
 # Build
 FROM base AS build
 COPY --from=generate /app/node_modules ./node_modules
 COPY --from=generate /app/prisma ./prisma/
 COPY . .
-RUN pnpm run build
+RUN npm run build
 
 # Production
 FROM node:20-alpine AS runner

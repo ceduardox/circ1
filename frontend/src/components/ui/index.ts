@@ -8,3 +8,4 @@ export * from './avatar';
 export * from './progress';
 export * from './separator';
 export * from './tooltip';
+export * from './PageHeader';

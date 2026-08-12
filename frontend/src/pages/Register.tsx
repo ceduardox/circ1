@@ -81,6 +81,7 @@ export function RegisterPage() {
               <UserPlus className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Crear Cuenta</h1>
+            <div className="mt-2 h-1 w-12 mx-auto rounded-full bg-gradient-to-r from-primary-600 to-purple-500" />
             <p className="text-gray-500 dark:text-dark-400 mt-2">Únete a la comunidad de neuroentrenamiento</p>
             {referralCode && (
               <p className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-full text-sm text-primary-700 dark:text-primary-400 font-medium">

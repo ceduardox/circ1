@@ -3,6 +3,7 @@ import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitB
 import { membershipApi } from '@/services/api';
 import { useMembershipStore } from '@/store/membershipStore';
 import { NetworkTree, TreeMember } from '@/components/program/NetworkTree';
+import { PageHeader } from '@/components/ui';
 import { toast } from 'sonner';
 
 const statusStyles: Record<string, { label: string; classes: string }> = {
@@ -154,11 +155,12 @@ export function NetworkPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Mi Red</h1>
-        <p className="text-gray-500 dark:text-dark-400 mt-1">Tu red unilevel de referidos</p>
-      </div>
-      {viewToggle}
+      <PageHeader
+        title="Mi Red"
+        subtitle="Tu red unilevel de referidos"
+        icon={Users}
+        action={viewToggle}
+      />
 
       {/* Link de referido */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-5 text-white shadow-lg shadow-primary-600/20">

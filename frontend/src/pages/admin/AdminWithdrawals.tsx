@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Wallet, CheckCircle, XCircle, Loader2, RefreshCw, Search } from 'lucide-react';
 import { adminBusinessApi } from '@/services/api';
-import { Button } from '@/components/ui';
+import { Button, PageHeader } from '@/components/ui';
 import { toast } from 'sonner';
 
 const statusWithdrawal: Record<string, { label: string; classes: string }> = {
@@ -89,15 +89,14 @@ export function AdminWithdrawalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Retiros</h1>
-          <p className="text-gray-500 dark:text-dark-400 mt-1">Solicitudes de retiro de los franquiciados</p>
-        </div>
-        <Button onClick={load} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">
+      <PageHeader
+        title="Retiros"
+        subtitle="Solicitudes de retiro de los franquiciados"
+        icon={Wallet}
+        action={<Button onClick={load} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">
           <RefreshCw className="w-4 h-4" /> Actualizar
-        </Button>
-      </div>
+        </Button>}
+      />
 
       {/* Resumen */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

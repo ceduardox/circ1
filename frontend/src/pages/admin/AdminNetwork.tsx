@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Network as NetworkIcon, Users, Crown, Globe, RefreshCw, ChevronDown, ChevronRight, TrendingUp, ShieldCheck, XCircle, List, GitBranch } from 'lucide-react';
 import { adminBusinessApi } from '@/services/api';
-import { Button } from '@/components/ui';
+import { Button, PageHeader } from '@/components/ui';
 import { NetworkTree, TreeMember } from '@/components/program/NetworkTree';
 import { toast } from 'sonner';
 
@@ -199,18 +199,17 @@ export function AdminNetworkPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Red Global</h1>
-          <p className="text-gray-500 dark:text-dark-400 mt-1">Árbol unilevel de todos los usuarios</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Red Global"
+        subtitle="Árbol unilevel de todos los usuarios"
+        icon={Users}
+        action={<div className="flex items-center gap-3">
           {viewToggle}
           <Button onClick={load} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">
             <RefreshCw className="w-4 h-4" /> Actualizar
           </Button>
-        </div>
-      </div>
+        </div>}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

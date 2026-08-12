@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { programApi } from '@/services/api';
-import { ChevronRight, Lock, CheckCircle, BookOpen, Clock } from 'lucide-react';
+import { ChevronRight, Lock, CheckCircle, BookOpen, Clock, CalendarDays } from 'lucide-react';
+import { PageHeader } from '@/components/ui';
 
 interface DayOverview {
   id: string;
@@ -35,8 +36,11 @@ export function ProgramPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Programa Completo</h1>
-        <p className="text-gray-500 mt-2">7 días de neuroentrenamiento para transformar tu vida</p>
+        <PageHeader
+          title="Programa Completo"
+          subtitle="7 días de neuroentrenamiento para transformar tu vida"
+          icon={CalendarDays}
+        />
       </div>
 
       <div className="space-y-4">

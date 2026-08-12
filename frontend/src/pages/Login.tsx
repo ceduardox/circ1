@@ -60,6 +60,9 @@ export function LoginPage() {
 
         <Card className="shadow-lg">
           <CardHeader className="text-center border-b border-gray-100 dark:border-dark-700 pb-6">
+            <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-primary-600 to-purple-700 text-white shadow-lg shadow-primary-600/25 mb-3">
+              <Lock className="w-5 h-5" />
+            </div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-dark-100">Iniciar Sesión</h1>
             <p className="text-gray-500 dark:text-dark-400 text-sm mt-1">
               Accede a tu programa de entrenamiento

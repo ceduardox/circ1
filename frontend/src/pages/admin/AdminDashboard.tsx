@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
-import { Card, CardContent, CardHeader } from '@/components/ui';
+import { Card, CardContent, CardHeader, PageHeader } from '@/components/ui';
 import { ButtonPrimary, ButtonGhost } from '@/components/ui';
 import { Plus, Users, BookOpen, BarChart, Crown, CheckCircle, Edit, Target, Brain, PenLine, Flame } from 'lucide-react';
 
@@ -33,12 +33,11 @@ export function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Crown className="w-6 h-6 text-yellow-500" /> Panel de Administración
-          </h1>
-          <p className="text-gray-500">Gestiona la comunidad y el programa</p>
-        </div>
+        <PageHeader
+          title="Panel de Administración"
+          subtitle="Gestiona la comunidad y el programa"
+          icon={Crown}
+        />
         <Link to="/admin/days" className="shrink-0">
           <ButtonPrimary><Plus className="w-4 h-4 mr-2" /> Nuevo Día</ButtonPrimary>
         </Link>
@@ -95,8 +94,8 @@ export function AdminDashboardPage() {
               </h2>
               <Link to="/admin/days">
                 <ButtonGhost size="sm">Ver todos</ButtonGhost>
-              </Link>
-            </div>
+        </Link>
+      </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
 import { adminBusinessApi } from '@/services/api';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent, PageHeader } from '@/components/ui';
 import { ButtonGhost, Input, Label, ButtonPrimary } from '@/components/ui';
 import { CountrySelect } from '@/components/ui/CountrySelect';
 import { ChevronLeft, ChevronRight, Search, User, Download, Plus, ChevronDown, Mail, MapPin, Calendar, Shield, Pencil, Wallet, Loader2 } from 'lucide-react';
@@ -231,9 +231,10 @@ export function AdminUsersPage() {
           <ButtonGhost onClick={() => navigate('/admin')}>
             <ChevronLeft className="w-4 h-4" />
           </ButtonGhost>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <User className="w-5 h-5 sm:w-6 sm:h-6" /> Gestión de Usuarios
-          </h1>
+          <PageHeader
+            title="Gestión de Usuarios"
+            icon={User}
+          />
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <ButtonGhost onClick={exportCSV} className="flex-1 sm:flex-none justify-center">

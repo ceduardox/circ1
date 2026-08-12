@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Card, CardContent, CardHeader } from '@/components/ui';
+import { Card, CardContent, CardHeader, PageHeader } from '@/components/ui';
 import { ButtonPrimary, ButtonGhost, ButtonDanger, Input, Label, Textarea } from '@/components/ui';
 import { Plus, Trash2, Edit, ChevronLeft, Loader2, BookOpen, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -103,9 +103,10 @@ export function AdminDaysPage() {
           <ButtonGhost onClick={() => navigate('/admin')}>
             <ChevronLeft className="w-4 h-4" />
           </ButtonGhost>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2">
-            <BookOpen className="w-6 h-6" /> Días del Programa
-          </h1>
+          <PageHeader
+            title="Días del Programa"
+            icon={BookOpen}
+          />
         </div>
         <ButtonPrimary onClick={() => { dayReset(); setShowCreate(true); }} className="shrink-0">
           <Plus className="w-4 h-4 mr-2" /> Nuevo Día

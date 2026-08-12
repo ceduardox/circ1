@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
-import { Card, CardContent, CardHeader } from '@/components/ui';
+import { Card, CardContent, CardHeader, PageHeader } from '@/components/ui';
 import { ButtonPrimary, ButtonGhost, ButtonDanger, Input, Label, Textarea, Select } from '@/components/ui';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
-import { Plus, Trash2, Edit, ChevronLeft, Loader2, GripVertical, Save, X, Eye } from 'lucide-react';
+import { Plus, Trash2, Edit, ChevronLeft, Loader2, GripVertical, Save, X, Eye, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { DndContext, closestCenter, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
@@ -423,10 +423,11 @@ export function AdminDayDetailPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <ButtonGhost onClick={() => navigate('/admin/days')}><ChevronLeft className="w-4 h-4" /></ButtonGhost>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Día {currentDay.dayNumber}: {currentDay.title}</h1>
-            <p className="text-gray-500">{contents.length} contenidos</p>
-          </div>
+          <PageHeader
+            title={`Día ${currentDay.dayNumber}: ${currentDay.title}`}
+            subtitle={`${contents.length} contenidos`}
+            icon={BookOpen}
+          />
         </div>
         <ButtonPrimary onClick={resetForm} className="shrink-0"><Plus className="w-4 h-4 mr-2" /> Agregar Contenido</ButtonPrimary>
       </div>

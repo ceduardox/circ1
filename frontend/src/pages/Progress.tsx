@@ -38,6 +38,7 @@ export function ProgressPage() {
           <ChevronLeft className="w-4 h-4 mr-1" /> Volver
         </ButtonGhost>
         <h1 className="text-2xl font-bold text-gray-900">Mi Progreso</h1>
+        <div className="mx-auto mt-1.5 h-1 w-12 rounded-full bg-gradient-to-r from-primary-600 to-purple-500" />
         <div className="w-20" />
       </div>
 

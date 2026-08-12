@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Settings2, DollarSign, CheckCircle, XCircle, Loader2, RefreshCw, Ban } from 'lucide-react';
 import { adminBusinessApi } from '@/services/api';
-import { Input, Label, Card, CardContent, ButtonPrimary, Button } from '@/components/ui';
+import { Input, Label, Card, CardContent, ButtonPrimary, Button, PageHeader } from '@/components/ui';
 import { toast } from 'sonner';
 
 const statusPayment: Record<string, { label: string; classes: string }> = {
@@ -121,15 +121,14 @@ export function AdminCommissionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Comisiones y Pagos</h1>
-          <p className="text-gray-500 dark:text-dark-400 mt-1">Configuración y aprobación del negocio</p>
-        </div>
-        <Button onClick={load} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">
+      <PageHeader
+        title="Comisiones y Pagos"
+        subtitle="Configuración y aprobación del negocio"
+        icon={Settings2}
+        action={<Button onClick={load} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">
           <RefreshCw className="w-4 h-4" /> Actualizar
-        </Button>
-      </div>
+        </Button>}
+      />
 
       {/* Settings */}
       <Card>

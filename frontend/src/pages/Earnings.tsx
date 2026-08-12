@@ -3,7 +3,7 @@ import { Wallet, TrendingUp, Clock, Download, History, AlertCircle, Loader2, Lan
 import { clsx } from 'clsx';
 import { membershipApi } from '@/services/api';
 import { useMembershipStore } from '@/store/membershipStore';
-import { ButtonPrimary, Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { ButtonPrimary, Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, PageHeader } from '@/components/ui';
 import { maskAddress } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -151,10 +151,11 @@ export function EarningsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">Ganancias</h1>
-        <p className="text-gray-500 dark:text-dark-400 mt-1">Tus comisiones y solicitudes de retiro</p>
-      </div>
+      <PageHeader
+        title="Ganancias"
+        subtitle="Tus comisiones y solicitudes de retiro"
+        icon={Wallet}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

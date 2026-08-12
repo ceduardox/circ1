@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/services/api';
-import { Card, CardContent, CardHeader } from '@/components/ui';
+import { Card, CardContent, CardHeader, PageHeader } from '@/components/ui';
 import { ButtonGhost, Input } from '@/components/ui';
 import { ChevronLeft, Users, BookOpen, BarChart, TrendingUp, Calendar, Clock, Target, Award, AlertTriangle, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -122,10 +122,11 @@ export function AdminAnalyticsPage() {
           <ButtonGhost onClick={() => navigate('/admin')}>
             <ChevronLeft className="w-4 h-4 mr-1" /> Panel
           </ButtonGhost>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1 flex items-center gap-2">
-            <BarChart className="w-6 h-6 text-primary-600" /> Analytics
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">Métricas y estadísticas de la plataforma</p>
+          <PageHeader
+            title="Analytics"
+            subtitle="Métricas y estadísticas de la plataforma"
+            icon={BarChart}
+          />
         </div>
       </div>
 

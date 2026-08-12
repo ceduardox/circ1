@@ -85,6 +85,25 @@ await app.register(adminRoutes, { prefix: '/api/admin' });
 await app.register(membershipRoutes, { prefix: '/api/membership' });
 await app.register(chatRoutes, { prefix: '/api/chat' });
 
+// ─── Frontend (SPA) ───
+// Si existe la build del frontend, se sirve como estático y cualquier ruta
+// no-API cae al index.html (fallback del router).
+const frontendDist = process.env.FRONTEND_DIST || path.join(__dirname, '..', '..', 'frontend', 'dist');
+await app.register(fastifyStatic, {
+  root: frontendDist,
+  prefix: '/',
+  decorateReply: false,
+  wildcard: false,
+});
+
+app.setNotFoundHandler((request, reply) => {
+  const url = request.url.split('?')[0];
+  if (url.startsWith('/api/') || url.startsWith('/uploads/')) {
+    return reply.code(404).send({ error: 'Ruta no encontrada' });
+  }
+  return reply.sendFile('index.html');
+});
+
 try {
   await app.listen({ port: config.port, host: '0.0.0.0' });
   console.log(`🚀 Backend corriendo en http://localhost:${config.port}`);
