@@ -6,14 +6,14 @@ interface UpdateBannerProps {
 
 export function UpdateBanner({ onReload }: UpdateBannerProps) {
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-md animate-enter-up">
-      <div className="flex items-center gap-3 rounded-2xl bg-gray-900 dark:bg-dark-800 text-white border border-white/10 shadow-2xl p-4">
+    <div className="fixed inset-x-0 bottom-4 z-[100] px-4">
+      <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-gray-900 dark:bg-dark-800 text-white border border-white/10 shadow-2xl p-4 animate-enter-up">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center shrink-0">
           <RefreshCw className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm">¡Hay una actualización!</p>
-          <p className="text-xs text-white/70 mt-0.5">Toca para ver la versión nueva.</p>
+          <p className="font-bold text-sm leading-tight">¡Hay una actualización!</p>
+          <p className="text-xs text-white/70 mt-0.5 leading-tight">Toca para ver la versión nueva.</p>
         </div>
         <button
           onClick={onReload}
