@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ButtonPrimary } from '@/components/ui';
-import { Crown, Zap, Rocket, Shield, Infinity as InfinityIcon, ChevronRight, Loader2, ExternalLink, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Crown, Zap, Rocket, Shield, Infinity as InfinityIcon, ChevronRight, Loader2, ExternalLink, CheckCircle2, RefreshCw, Store, Globe2, Repeat2 } from 'lucide-react';
 import { PaymentInfo } from '@/store/membershipStore';
 import { usePaymentFlow } from './usePaymentFlow';
 
@@ -25,6 +25,12 @@ const benefits = [
   { icon: <Zap className="w-5 h-5 text-purple-400" />, title: 'Entrenamiento IA', desc: 'Tu entrenador personal de mente fuerte' },
   { icon: <Rocket className="w-5 h-5 text-pink-400" />, title: 'Comunidad de Élite', desc: 'Únete a los que sí llegan a la meta' },
   { icon: <Shield className="w-5 h-5 text-blue-400" />, title: 'Red de Afiliados', desc: 'Gana comisiones invitando a tu red' },
+];
+
+const franchiseStats = [
+  { icon: <Store className="w-6 h-6" />, number: '+20%', label: 'por producto vendido de ryztor.com' },
+  { icon: <Globe2 className="w-6 h-6" />, number: 'USA', label: 'vende en el mercado #1 del mundo' },
+  { icon: <Repeat2 className="w-6 h-6" />, number: '2', label: 'fuentes de ingreso: ventas + tu red' },
 ];
 
 export function PaymentGate({ onRequestPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5 }: PaymentGateProps) {
@@ -141,6 +147,37 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Franquicia limitada */}
+            {!isMonthly && (
+              <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-700 via-purple-600 to-fuchsia-600 text-white p-5 sm:p-6">
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 animate-gradient-x" />
+                <div className="flex items-center gap-2 mb-3">
+                  <Crown className="w-5 h-5 text-amber-300" />
+                  <p className="text-xs font-bold uppercase tracking-[.2em] text-amber-300">
+                    Franquicia limitada · ryztor.com
+                  </p>
+                </div>
+                <p className="font-bold text-lg leading-snug">
+                  Vende en TikTok Shop sin LLC ni ITIN.
+                </p>
+                <p className="text-sm text-purple-100 mt-1">
+                  El puente con afiliados de TikTok Shop vende los productos de ryztor.com. Tú compartes, ellos venden, tú ganas.
+                </p>
+                <div className="grid grid-cols-3 gap-3 mt-5">
+                  {franchiseStats.map((s, i) => (
+                    <div key={i} className="rounded-2xl bg-white/10 backdrop-blur border border-white/20 px-2 py-3 text-center">
+                      <div className="flex justify-center text-amber-300 mb-1">{s.icon}</div>
+                      <p className="text-2xl font-black leading-none">{s.number}</p>
+                      <p className="text-[10px] text-purple-100 mt-1.5 leading-tight">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-purple-200 mt-4">
+                  Sin LLC ni ITIN propios para empezar · franquicia limitada: hoy puedes vender sin límite, el cupo podrá ajustarse.
+                </p>
               </div>
             )}
 

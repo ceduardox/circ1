@@ -110,6 +110,11 @@ export const membershipApi = {
   markNotificationsRead: () => api.post('/membership/notifications/read'),
 };
 
+export const vipProApi = {
+  modules: () => api.get('/vip-pro/modules'),
+  toggleModule: (id: string, item?: string) => api.post(`/vip-pro/modules/${id}/toggle`, { item }),
+};
+
 export const chatApi = {
   messages: (params?: any) => api.get('/chat/messages', { params }),
   send: (data: any) => api.post('/chat/messages', data),

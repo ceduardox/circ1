@@ -18,6 +18,7 @@ import { ProgressPage } from '@/pages/Progress';
 import { ProgramPage } from '@/pages/Program';
 import { NetworkPage } from '@/pages/Network';
 import { EarningsPage } from '@/pages/Earnings';
+import { VipProPage } from '@/pages/VipPro';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboard';
 import { AdminDaysPage } from '@/pages/admin/AdminDays';
 import { AdminDayDetailPage } from '@/pages/admin/AdminDayDetail';
@@ -69,6 +70,7 @@ function App() {
             <Route path="/program" element={<ProgramPage />} />
             <Route path="/network" element={<NetworkPage />} />
             <Route path="/earnings" element={<EarningsPage />} />
+            <Route path="/vip-pro" element={<VipProPage />} />
 
             <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
               <Route path="/admin" element={<AdminDashboardPage />} />

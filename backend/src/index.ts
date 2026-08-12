@@ -15,6 +15,7 @@ import { programRoutes } from './routes/program.js';
 import { adminRoutes } from './routes/admin.js';
 import { membershipRoutes } from './routes/membership.js';
 import { chatRoutes } from './routes/chat.js';
+import { vipProRoutes } from './routes/vipPro.js';
 import { ZodError } from 'zod';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -84,6 +85,7 @@ await app.register(programRoutes, { prefix: '/api/program' });
 await app.register(adminRoutes, { prefix: '/api/admin' });
 await app.register(membershipRoutes, { prefix: '/api/membership' });
 await app.register(chatRoutes, { prefix: '/api/chat' });
+await app.register(vipProRoutes, { prefix: '/api/vip-pro' });
 
 // ─── Frontend (SPA) ───
 // Si existe la build del frontend, se sirve como estático y cualquier ruta
@@ -101,7 +103,7 @@ app.setNotFoundHandler((request, reply) => {
   if (url.startsWith('/api/') || url.startsWith('/uploads/')) {
     return reply.code(404).send({ error: 'Ruta no encontrada' });
   }
-  return reply.sendFile('index.html', { root: frontendDist });
+  return (reply as any).sendFile('index.html', { root: frontendDist });
 });
 
 try {
