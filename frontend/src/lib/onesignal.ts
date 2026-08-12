@@ -11,22 +11,37 @@ declare global {
 
 type OneSignalSDK = any;
 
+let sdkPromise: Promise<OneSignalSDK> | null = null;
+
+// Obtiene el SDK de OneSignal (ya inicializado por index.html).
+// Se cachea para no re-inicializar ni depender del deferred array repetidamente.
 function getSDK(init: boolean): Promise<OneSignalSDK> {
-  return new Promise((resolve, reject) => {
+  if (sdkPromise) return sdkPromise;
+
+  sdkPromise = new Promise((resolve, reject) => {
     if (!window.OneSignalDeferred) {
+      sdkPromise = null;
       return reject(new Error('SDK de OneSignal no cargado'));
     }
     const push: ((sdk: OneSignalSDK) => void)[] = window.OneSignalDeferred;
     push.push(async (OneSignal: OneSignalSDK) => {
-      if (init) {
-        // Si el init de index.html ya estaba registrado, OneSignal.init es idempotente.
-        await OneSignal.init({
-          appId: '3cb5f8f5-b0a1-4c16-91a7-8f83567808a9',
-        });
+      try {
+        if (init) {
+          // idempotente; si ya estaba iniciado, no rompe nada.
+          await OneSignal.init({
+            appId: '3cb5f8f5-b0a1-4c16-91a7-8f83567808a9',
+          });
+        }
+        resolve(OneSignal);
+      } catch (err) {
+        // Aunque el init falle (ya inicializado con otros params), igual
+        // resolvemos con el SDK para poder usar sus métodos.
+        resolve(OneSignal);
       }
-      resolve(OneSignal);
     });
   });
+
+  return sdkPromise;
 }
 
 /**

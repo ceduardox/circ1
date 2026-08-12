@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { ButtonPrimary, ButtonGhost } from '@/components/ui';
-import { Volume2, Repeat, CheckCircle, Mic } from 'lucide-react';
+import { Volume2, VolumeX, Repeat, CheckCircle } from 'lucide-react';
 
 interface AffirmationCardProps {
   title: string;
@@ -17,6 +17,8 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
 
   const speak = () => {
     if ('speechSynthesis' in window) {
+      // Cancela cualquier audio previo para evitar superposición.
+      speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'es-ES';
       utterance.rate = 0.9;
@@ -24,6 +26,13 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
       utterance.onend = () => setSpeaking(false);
       speechSynthesis.speak(utterance);
     }
+  };
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+    }
+    setSpeaking(false);
   };
 
   const handleRepeat = () => {
@@ -41,6 +50,16 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
       setCurrentRepeat(repeatCount);
     }
   }, [completed]);
+
+  // IMPORTANTE: al desmontar (pasar a otra tarea) se detiene el audio para
+  // que no siga sonando detrás del siguiente contenido (ej. el video).
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   return (
     <div className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${
@@ -81,8 +100,8 @@ export function AffirmationCard({ title, text, repeatCount, instruction, onCompl
             ))}
           </div>
         </div>
-        <ButtonGhost onClick={speak} disabled={speaking} size="sm">
-          {speaking ? <Mic className="w-4 h-4 animate-pulse text-green-500" /> : <Volume2 className="w-4 h-4" />}
+        <ButtonGhost onClick={speaking ? stopSpeaking : speak} size="sm">
+          {speaking ? <VolumeX className="w-4 h-4 text-red-500" /> : <Volume2 className="w-4 h-4" />}
         </ButtonGhost>
       </div>
 

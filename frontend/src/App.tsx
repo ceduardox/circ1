@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { useEffect } from 'react';
@@ -32,6 +32,16 @@ import { FloatingChat } from '@/components/chat/FloatingChat';
 import { UpdateBanner } from '@/components/ui/UpdateBanner';
 import { useUpdateDetector } from '@/hooks/useUpdateDetector';
 
+// Detiene el speechSynthesis al cambiar de ruta (por si una afirmación
+// quedó sonando de fondo al navegar).
+function SpeechCleanup() {
+  const location = useLocation();
+  useEffect(() => {
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+  }, [location.pathname]);
+  return null;
+}
+
 function App() {
   const { fetchMe, isAuthenticated } = useAuthStore();
   const { updateAvailable, reload } = useUpdateDetector();
@@ -46,6 +56,7 @@ function App() {
     <ThemeProvider>
     <BrowserRouter>
       <div className="min-h-screen bg-gray-100 dark:bg-dark-900">
+        <SpeechCleanup />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />

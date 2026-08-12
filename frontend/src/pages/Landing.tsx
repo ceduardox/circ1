@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, BarChart3, Brain, CalendarDays, Check, ChevronDown,
-  Compass, Flame, Menu, Network, ShieldCheck, Sparkles, Star, Target,
+  ArrowRight, BarChart3, Brain, Check, ChevronDown, Compass, Flame,
+  Menu, Network, ShieldCheck, Sparkles, Target,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -54,32 +54,36 @@ export function LandingPage() {
       </header>
 
       <main>
-        <section className="overflow-hidden border-b border-[#17172a]/20">
-          <div className="mx-auto grid min-h-[710px] max-w-[1440px] lg:grid-cols-[48%_52%]">
-            <div className="relative z-10 flex flex-col justify-center px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
-              <div className="mb-7 flex items-center gap-2 text-xs font-bold uppercase tracking-[.28em] text-[#392099]"><Sparkles className="h-4 w-4" /> Neuroentrenamiento</div>
-              <p className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">Deja de sobrevivir en automático.</p>
-              <h1 className="mt-3 max-w-2xl text-[4.1rem] uppercase leading-[.84] tracking-[-.035em] text-[#26106b] sm:text-[6.3rem] lg:text-[6.7rem]" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>Empieza a dirigir tu vida.</h1>
-              <p className="mt-7 max-w-lg text-base font-medium leading-7 text-[#343444]">Entrena claridad, disciplina y ejecución con un sistema diseñado para convertir intención en progreso real.</p>
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <section className="overflow-hidden border-b border-[#17172a]/20 px-4 pb-5 pt-8 sm:px-7 sm:pb-8 lg:px-10 lg:pt-10">
+          <div className="mx-auto max-w-[1440px]">
+            <div className="mb-8 grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div>
+                <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[.28em] text-[#392099]"><Sparkles className="h-4 w-4" /> Neuroentrenamiento</div>
+                <p className="text-3xl font-bold leading-tight sm:text-4xl">Deja de sobrevivir en automático.</p>
+                <h1 className="mt-1 max-w-5xl text-[3.4rem] uppercase leading-[.9] tracking-[-.025em] text-[#26106b] sm:text-[5rem] lg:text-[6.3rem]" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>Empieza a dirigir tu vida.</h1>
+                <p className="mt-5 max-w-2xl text-sm font-medium leading-7 text-[#454450] sm:text-base">Entrena claridad, disciplina y ejecución con un sistema diseñado para convertir intención en progreso real.</p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row lg:pb-2">
                 <Link to={primaryPath} className="inline-flex items-center justify-center gap-3 rounded-xl bg-[#ff5149] px-7 py-4 text-sm font-bold text-white shadow-xl shadow-[#ff5149]/20 transition hover:-translate-y-0.5 hover:bg-[#f13f3b]">{primaryLabel}<ArrowRight className="h-4 w-4" /></Link>
               </div>
             </div>
 
-            <div className="relative min-h-[520px] overflow-hidden bg-[#1c27c9] lg:min-h-full" style={{ clipPath: 'polygon(18% 0,100% 0,100% 100%,0 100%)' }}>
-              <div className="absolute inset-0 bg-[linear-gradient(145deg,#242de0_0%,#151a9c_55%,#392099_100%)]" />
-              <div className="absolute -right-20 top-20 h-[520px] w-[230px] rotate-[29deg] bg-[#fff5e5]" />
-              <div className="absolute bottom-0 left-0 right-0 h-5/6">
-                <img src="/images/landing/hero.webp" alt="Persona avanzando hacia una nueva etapa" className="h-full w-full object-cover object-center mix-blend-lighten" fetchPriority="high" />
+            <div className="relative overflow-hidden bg-[#1c1672] shadow-[0_24px_70px_rgba(35,16,107,.18)] lg:min-h-[590px]">
+              <div className="relative h-[420px] overflow-hidden sm:h-[520px] lg:absolute lg:inset-y-0 lg:left-0 lg:right-[190px] lg:h-auto">
+                <img src="/images/landing/hero.webp" alt="Persona avanzando hacia una nueva etapa" className="h-full w-full object-cover object-center" fetchPriority="high" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0a0d29]/15 via-transparent to-[#26106b]/25" />
+                <div className="pointer-events-none absolute -left-28 top-0 hidden h-[125%] w-48 -skew-x-[18deg] bg-[#f7f0e4] lg:block" />
+                <div className="pointer-events-none absolute -right-16 top-0 hidden h-[125%] w-32 -skew-x-[18deg] bg-[#4b2db5] lg:block" />
               </div>
-              <div className="absolute bottom-7 left-[18%] right-5 grid grid-cols-3 gap-2 text-[#241450] sm:left-[24%]">
-                {['01 Claridad', '02 Acción', '03 Expansión'].map((label, index) => <div key={label} className="border-t border-[#241450]/50 bg-[#f3dfc0]/90 px-3 py-3 text-xs font-semibold backdrop-blur sm:text-sm" style={{ transform: `translateY(${(2-index)*18}px)` }}>{label}</div>)}
+
+              <aside className="relative grid grid-cols-3 bg-gradient-to-b from-[#32178f] to-[#1b0c61] text-white lg:absolute lg:inset-y-0 lg:right-0 lg:flex lg:w-[210px] lg:flex-col lg:justify-center lg:gap-14 lg:pl-10 lg:pr-6">
+                {[{icon:Target,label:'Método probado'},{icon:BarChart3,label:'Progreso visible'},{icon:Network,label:'Comunidad activa'}].map(({icon: Icon,label}) => <div key={label} className="flex flex-col items-center gap-2 border-white/10 px-2 py-5 text-center text-[10px] font-semibold sm:text-xs lg:items-start lg:border-0 lg:p-0 lg:text-left"><Icon className="h-6 w-6 text-[#a894ff] lg:h-8 lg:w-8" /><span>{label}</span></div>)}
+              </aside>
+
+              <div className="relative grid grid-cols-3 bg-[#fffaf1] text-[#0a0d29] lg:absolute lg:bottom-0 lg:left-[7%] lg:right-[210px] lg:max-w-[700px] lg:[clip-path:polygon(4%_0,100%_0,96%_100%,0_100%)]">
+                {[['01','Claridad'],['02','Acción'],['03','Expansión']].map(([number,label], index) => <div key={number} className={`px-4 py-4 sm:px-7 sm:py-5 ${index < 2 ? 'border-r border-[#17172a]/15' : ''}`}><strong className="block text-lg text-[#392099] sm:text-xl">{number}</strong><span className="mt-1 block text-xs font-bold sm:text-sm">{label}</span></div>)}
               </div>
             </div>
-          </div>
-
-          <div className="mx-auto grid max-w-[1440px] grid-cols-2 border-t border-[#17172a]/20 px-5 py-6 sm:grid-cols-4 sm:px-8 lg:px-12">
-            {[{ icon: Star, top: '4.9/5', bottom: 'Experiencia valorada' },{ icon: CalendarDays, top: 'Paso a paso', bottom: 'Ruta estructurada' },{ icon: Network, top: 'Comunidad', bottom: 'Crecimiento compartido' },{ icon: BarChart3, top: 'Avance medible', bottom: 'Progreso visible' }].map(({icon: Icon,top,bottom}) => <div key={top} className="flex items-center gap-3 border-[#17172a]/20 px-3 py-3 odd:border-r sm:border-r sm:last:border-r-0"><Icon className="h-6 w-6 shrink-0 text-[#392099]" /><div><strong className="block text-sm">{top}</strong><span className="text-[10px] text-[#5e5e68] sm:text-xs">{bottom}</span></div></div>)}
           </div>
         </section>
 
@@ -96,9 +100,39 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section aria-label="El proceso Círculo 1" className="px-5 pb-24 sm:px-8 lg:px-12 lg:pb-32">
+          <div className="mx-auto grid max-w-[1340px] gap-5 lg:grid-cols-[1.15fr_.85fr]">
+            <figure className="group relative min-h-[420px] overflow-hidden bg-[#171049] sm:min-h-[560px]">
+              <img
+                src="/images/landing/claridad.webp"
+                alt="Claridad para definir una nueva dirección"
+                className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.025]"
+                loading="lazy"
+              />
+              <figcaption className="absolute bottom-0 left-0 bg-[#fffaf1] px-6 py-4 text-[#0a0d29] sm:px-8">
+                <span className="mr-3 text-lg font-black text-[#392099]">01</span>
+                <span className="text-sm font-bold uppercase tracking-[.18em]">Claridad</span>
+              </figcaption>
+            </figure>
+
+            <figure className="group relative min-h-[420px] overflow-hidden bg-[#171049] sm:min-h-[560px]">
+              <img
+                src="/images/landing/metodo.webp"
+                alt="Acción para construir progreso real"
+                className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.025]"
+                loading="lazy"
+              />
+              <figcaption className="absolute bottom-0 left-0 bg-[#2b1590] px-6 py-4 text-white sm:px-8">
+                <span className="mr-3 text-lg font-black text-[#ff766f]">02</span>
+                <span className="text-sm font-bold uppercase tracking-[.18em]">Acción</span>
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+
         <section id="resultados" className="bg-[#0b0e2d] px-5 py-24 text-white sm:px-8 lg:px-12 lg:py-32">
           <div className="mx-auto grid max-w-[1340px] gap-14 lg:grid-cols-2 lg:items-center">
-            <div className="relative"><div className="absolute -left-4 -top-4 h-28 w-28 bg-[#ff5149]" /><img src="/images/landing/transformacion.webp" alt="Proceso de transformación personal" className="relative aspect-[4/3] w-full object-cover" loading="lazy" /><div className="absolute -bottom-7 right-5 bg-[#f7f0e4] px-6 py-5 text-[#0a0d29] shadow-xl"><strong className="block text-2xl text-[#392099]">Progreso real</strong><span className="text-xs font-semibold uppercase tracking-[.15em]">un día a la vez</span></div></div>
+            <div className="relative"><div className="absolute -left-4 -top-4 h-28 w-28 bg-[#ff5149]" /><img src="/images/landing/transformacion.webp" alt="Proceso de transformación personal" className="relative aspect-[4/3] w-full object-cover" loading="lazy" /><div className="absolute -bottom-5 right-5 bg-[#f7f0e4] px-5 py-3 text-sm font-bold uppercase tracking-[.15em] text-[#392099] shadow-xl">03 Expansión</div></div>
             <div><p className="text-xs font-bold uppercase tracking-[.25em] text-[#ff6c65]">Dentro de la plataforma</p><h2 className="mt-4 text-4xl font-black leading-tight sm:text-6xl">Un sistema para avanzar, no otra colección de videos.</h2><p className="mt-6 max-w-xl text-base leading-8 text-slate-300">Cada contenido tiene una intención: ayudarte a observar, responder, actuar y medir tu evolución personal.</p><div className="mt-9 grid gap-4 sm:grid-cols-2">{['Ruta diaria de neuroentrenamiento','Ejercicios guiados de reflexión','Videos y desafíos prácticos','Seguimiento visible del progreso','Contenido paso a paso','Acceso móvil y en computadora'].map((text) => <div key={text} className="flex items-start gap-3 text-sm"><span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ff5149]"><Check className="h-3 w-3" /></span>{text}</div>)}</div></div>
           </div>
         </section>
