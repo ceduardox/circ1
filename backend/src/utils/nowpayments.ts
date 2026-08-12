@@ -46,6 +46,7 @@ export interface CreateInvoiceParams {
   successUrl?: string;
   cancelUrl?: string;
   ipnCallbackUrl?: string;
+  payCurrency?: string;
 }
 
 export async function createInvoice(params: CreateInvoiceParams): Promise<{
@@ -53,17 +54,24 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<{
   invoiceUrl: string;
   paymentStatus: string;
 }> {
+  const body: Record<string, unknown> = {
+    price_amount: params.priceAmount,
+    price_currency: params.priceCurrency,
+    order_id: params.orderId,
+    order_description: params.orderDescription,
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+    ipn_callback_url: params.ipnCallbackUrl,
+  };
+  // Si el usuario paga en una cripto fija (ej. USDT), se fuerza pay_currency
+  // para que el monto sea EXACTO en esa moneda y no dependa de la conversión.
+  if (params.payCurrency) {
+    body.pay_currency = params.payCurrency;
+    body.price_currency = params.payCurrency;
+  }
   const data = await request<NowPaymentsResponse>('/v1/invoice', {
     method: 'POST',
-    body: JSON.stringify({
-      price_amount: params.priceAmount,
-      price_currency: params.priceCurrency,
-      order_id: params.orderId,
-      order_description: params.orderDescription,
-      success_url: params.successUrl,
-      cancel_url: params.cancelUrl,
-      ipn_callback_url: params.ipnCallbackUrl,
-    }),
+    body: JSON.stringify(body),
   });
   if (!data.payment_id && !data.id) {
     throw new Error('NowPayments no devolvió un invoice válido');

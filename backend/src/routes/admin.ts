@@ -346,6 +346,7 @@ export async function adminRoutes(app: FastifyInstance) {
     monthlyFee: number;
     level1Percent: number;
     level2Percent: number;
+    paymentCurrency: string;
     plans: { id: string; name: string; price: number }[];
   }
 
@@ -374,6 +375,7 @@ export async function adminRoutes(app: FastifyInstance) {
       monthlyFee: Number(map.MONTHLY_FEE ?? 50),
       level1Percent: Number(map.LEVEL1_PERCENT ?? 25),
       level2Percent: Number(map.LEVEL2_PERCENT ?? 5),
+      paymentCurrency: map.PAYMENT_CURRENCY || 'usdtbsc',
       plans,
     };
   }
@@ -384,6 +386,7 @@ export async function adminRoutes(app: FastifyInstance) {
     monthlyFee: z.number().positive().optional(),
     level1Percent: z.number().min(0).max(100).optional(),
     level2Percent: z.number().min(0).max(100).optional(),
+    paymentCurrency: z.string().optional(),
     plans: z.array(z.object({
       id: z.string(),
       name: z.string().min(1),

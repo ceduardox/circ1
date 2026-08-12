@@ -36,12 +36,12 @@ export function MembershipGate({ children }: MembershipGateProps) {
 
   // Sin membresía (nunca activó): paywall de membresía
   if (!memberStatus || memberStatus === 'INACTIVE' || memberStatus === 'REVOKED') {
-    return <PaymentGate onRequestPayment={requestPayment} requesting={requestingPayment} variant="membership" plans={status?.settings?.plans} level1Percent={status?.settings?.level1Percent} level2Percent={status?.settings?.level2Percent} />;
+    return <PaymentGate onRequestPayment={requestPayment} requesting={requestingPayment} variant="membership" plans={status?.settings?.plans} level1Percent={status?.settings?.level1Percent} level2Percent={status?.settings?.level2Percent} paymentCurrency={status?.settings?.paymentCurrency} />;
   }
 
   // Expirado: bloqueado, solo pantalla de renovación $50
   if (memberStatus === 'EXPIRED') {
-    return <PaymentGate onRequestPayment={requestMonthlyPayment} requesting={requestingPayment} variant="monthly" />;
+    return <PaymentGate onRequestPayment={requestMonthlyPayment} requesting={requestingPayment} variant="monthly" paymentCurrency={status?.settings?.paymentCurrency} />;
   }
 
   // En gracia: accede al contenido pero muestra modal para pagar la cuota

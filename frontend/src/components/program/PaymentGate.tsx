@@ -12,6 +12,7 @@ interface PaymentGateProps {
   plans?: { id: string; name: string; price: number }[];
   level1Percent?: number;
   level2Percent?: number;
+  paymentCurrency?: string;
 }
 
 const phrases = [
@@ -34,7 +35,7 @@ const franchiseStats = [
   { icon: <Repeat2 className="w-6 h-6" />, number: '2', label: 'fuentes de ingreso: ventas + tu red' },
 ];
 
-export function PaymentGate({ onRequestPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5 }: PaymentGateProps) {
+export function PaymentGate({ onRequestPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5, paymentCurrency = 'usdtbep20' }: PaymentGateProps) {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pendingPay, setPendingPay] = useState<PaymentInfo & { remainingMin?: number; expiresAt?: string } | null>(null);
@@ -83,8 +84,14 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
 
   const dismissPending = () => setPendingPay(null);
 
-  const price = isMonthly ? '$50' : `$${selectedPlan.price}`;
-  const priceLabel = isMonthly ? '/ mes' : 'USD';
+  const isCrypto = paymentCurrency !== 'usd';
+  const currencyLabel = isCrypto
+    ? ({ usdtbsc: 'USDT BEP-20', usdtmatic: 'USDT Polygon', usdttrc20: 'USDT TRC-20', usdterc20: 'USDT ERC-20' } as Record<string, string>)[paymentCurrency] || 'USDT'
+    : 'USD';
+  const currencyShort = isCrypto ? 'USDT' : 'USD';
+
+  const price = isMonthly ? (isCrypto ? '50' : '$50') : (isCrypto ? `${selectedPlan.price}` : `$${selectedPlan.price}`);
+  const priceLabel = isMonthly ? `/ mes` : (isCrypto ? currencyShort : 'USD');
   const subLabel = isMonthly
     ? 'Mantenimiento mensual de tu membresía'
     : 'Tu llave a la mente fuerte + la franquicia';
@@ -121,7 +128,7 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                   {price} <span className="text-sm font-medium text-gray-400">{priceLabel}</span>
                 </p>
                 <p className="text-xs text-gray-500 dark:text-dark-400">
-                  {isMonthly ? 'Mantiene tu acceso activo' : 'Pago único · + $50/mes mantenimiento'}
+                  {isMonthly ? 'Mantiene tu acceso activo' : `Pago único en ${currencyLabel} · + 50 ${currencyShort}/mes mantenimiento`}
                 </p>
               </div>
             </div>
@@ -153,11 +160,11 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                         )}
                         <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">{pl.name}</p>
                         <p className="text-2xl font-black text-gray-900 dark:text-dark-100 mt-1">
-                          ${pl.price} <span className="text-xs font-medium text-gray-400">USD</span>
+                          {isCrypto ? pl.price : `$${pl.price}`} <span className="text-xs font-medium text-gray-400">{currencyShort}</span>
                         </p>
                         <p className="text-xs text-gray-500 dark:text-dark-400 mt-1.5">
-                          Ganas <span className="font-bold text-emerald-600 dark:text-emerald-400">{earn.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span> por referido
-                          <span className="text-gray-400"> · {earn2.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} nivel 2</span>
+                          Ganas <span className="font-bold text-emerald-600 dark:text-emerald-400">{isCrypto ? `${earn} ${currencyShort}` : earn.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span> por referido
+                          <span className="text-gray-400"> · {isCrypto ? `${earn2} ${currencyShort}` : earn2.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} nivel 2</span>
                         </p>
                         {selectedPlan.id === pl.id && (
                           <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mt-1">✓ Seleccionado</p>
@@ -311,7 +318,7 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                   </span>
                 </ButtonPrimary>
                 <p className="text-center text-xs text-gray-400 dark:text-dark-500">
-                  Pago en cripto seguro vía NowPayments · Activación automática
+                  Pago en {currencyLabel} (NowPayments) · Activación automática
                 </p>
               </div>
             )}

@@ -15,6 +15,7 @@ interface MembershipStatus {
     monthlyFee: number;
     level1Percent: number;
     level2Percent: number;
+    paymentCurrency?: string;
     plans?: { id: string; name: string; price: number }[];
   };
 }

@@ -38,6 +38,7 @@ async function getSettings() {
     monthlyFee: Number(map.MONTHLY_FEE ?? defaults.MONTHLY_FEE),
     level1Percent: Number(map.LEVEL1_PERCENT ?? defaults.LEVEL1_PERCENT),
     level2Percent: Number(map.LEVEL2_PERCENT ?? defaults.LEVEL2_PERCENT),
+    paymentCurrency: map.PAYMENT_CURRENCY || 'usdtbsc',
     plans,
   };
 }
@@ -178,17 +179,21 @@ export async function membershipRoutes(app: FastifyInstance) {
     });
 
     // Crear invoice en NowPayments para que el usuario pague con cripto.
+    // Si la moneda configurada es USDT (bep20/polygon), el monto es EXACTO en USDT
+    // (500 USDT / 1000 USDT) y no depende del tipo de cambio.
     let invoiceUrl: string | null = null;
     if (config.nowpayments.apiKey) {
       try {
+        const payCurrency = settings.paymentCurrency === 'usd' ? undefined : settings.paymentCurrency;
         const invoice = await createInvoice({
           priceAmount: payment.amount,
-          priceCurrency: 'usd',
+          priceCurrency: payCurrency || 'usd',
           orderId: `c1-${payment.id}`,
           orderDescription: `Membresía Círculo 1 - ${user.firstName} ${user.lastName || ''}`.trim(),
           successUrl: `${config.frontendUrl}/program`,
           cancelUrl: `${config.frontendUrl}/program`,
           ipnCallbackUrl: `${config.backendUrl}/api/membership/payments/webhook`,
+          payCurrency,
         });
         invoiceUrl = invoice.invoiceUrl;
         await prisma.membershipPayment.update({
@@ -249,14 +254,16 @@ export async function membershipRoutes(app: FastifyInstance) {
     let invoiceUrl: string | null = null;
     if (config.nowpayments.apiKey) {
       try {
+        const payCurrency = settings.paymentCurrency === 'usd' ? undefined : settings.paymentCurrency;
         const invoice = await createInvoice({
           priceAmount: payment.amount,
-          priceCurrency: 'usd',
+          priceCurrency: payCurrency || 'usd',
           orderId: `c1-${payment.id}`,
           orderDescription: `Cuota mensual Círculo 1 - ${user.firstName} ${user.lastName || ''}`.trim(),
           successUrl: `${config.frontendUrl}/program`,
           cancelUrl: `${config.frontendUrl}/program`,
           ipnCallbackUrl: `${config.backendUrl}/api/membership/payments/webhook`,
+          payCurrency,
         });
         invoiceUrl = invoice.invoiceUrl;
         await prisma.membershipPayment.update({
