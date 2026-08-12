@@ -101,7 +101,7 @@ app.setNotFoundHandler((request, reply) => {
   if (url.startsWith('/api/') || url.startsWith('/uploads/')) {
     return reply.code(404).send({ error: 'Ruta no encontrada' });
   }
-  return reply.sendFile('index.html');
+  return reply.sendFile('index.html', { root: frontendDist });
 });
 
 try {
