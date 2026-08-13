@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { config } from '../config/index.js';
 
 interface SendPushParams {
@@ -6,6 +7,7 @@ interface SendPushParams {
   message: string;
   url?: string;
   icon?: string;
+  webPushTopic?: string;
 }
 
 /**
@@ -37,6 +39,7 @@ export async function sendWebPush(params: SendPushParams): Promise<boolean> {
         url: params.url || webUrl,
         icon: params.icon || undefined,
         chrome_web_icon: params.icon || undefined,
+        web_push_topic: params.webPushTopic || randomUUID(),
       }),
     });
 
