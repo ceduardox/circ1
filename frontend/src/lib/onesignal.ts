@@ -38,25 +38,35 @@ function getSDK(): Promise<OneSignalSDK> {
  * Devuelve true si quedó suscrito.
  */
 export async function requestPushPermission(): Promise<boolean> {
+  // Debe ejecutarse antes de cualquier await: los navegadores solo permiten
+  // abrir el diálogo nativo mientras conservan el gesto directo del usuario.
+  if (typeof Notification === 'undefined') return false;
+
+  if (Notification.permission === 'default') {
+    try {
+      const nativePermission = await Notification.requestPermission();
+      if (nativePermission !== 'granted') return false;
+    } catch (e) {
+      console.error('[Push] Notification.requestPermission:', e);
+      return false;
+    }
+  }
+
+  // Si el usuario lo bloqueó anteriormente, el navegador ya no puede volver a
+  // mostrar el modal: debe habilitarlo desde el candado/configuración del sitio.
+  if (Notification.permission !== 'granted') return false;
+
   try {
     const OneSignal = await getSDK();
-    if (!OneSignal?.Notifications || typeof Notification === 'undefined') return false;
+    if (!OneSignal?.User?.PushSubscription) return false;
 
     // OneSignal v16 expone la suscripción en User.PushSubscription.
     if (Notification.permission === 'granted' && OneSignal.User?.PushSubscription?.optedIn) {
       return true;
     }
 
-    // Esta llamada ocurre directamente desde el clic del usuario y abre el
-    // diálogo nativo "Permitir / Bloquear" cuando el permiso está en default.
-    if (Notification.permission === 'default') {
-      await OneSignal.Notifications.requestPermission();
-    }
-
-    if (Notification.permission !== 'granted') return false;
-
     // Con el permiso concedido, registra/reactiva la suscripción en OneSignal.
-    await OneSignal.User?.PushSubscription?.optIn?.();
+    await OneSignal.User.PushSubscription.optIn();
     for (let i = 0; i < 12; i++) {
       if (OneSignal.User?.PushSubscription?.optedIn && OneSignal.User?.PushSubscription?.id) {
         return true;
@@ -69,6 +79,10 @@ export async function requestPushPermission(): Promise<boolean> {
     console.error('[OneSignal] requestPushPermission:', e);
     return false;
   }
+}
+
+export function getNativePushPermission(): NotificationPermission | 'unsupported' {
+  return typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
 }
 
 /**

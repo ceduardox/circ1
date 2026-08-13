@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { requestPushPermission, syncPushUser } from '@/lib/onesignal';
+import { getNativePushPermission, requestPushPermission, syncPushUser } from '@/lib/onesignal';
 import { Bell, BellRing, MessageCircle, Coins, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardContent } from '@/components/ui';
@@ -78,9 +78,12 @@ export function PushNotificationsPanel() {
       }
       const granted = await requestPushPermission();
       if (!granted) {
-        setPushPromptHint(
-          'El navegador no dio permiso. En Chrome/Edge/PC abre el candadito en la barra de URL y permite "Notificaciones". En iPhone/iPad: agrega la página a Pantalla de inicio para recibir push.'
-        );
+        const permission = getNativePushPermission();
+        setPushPromptHint(permission === 'denied'
+          ? 'Las notificaciones están bloqueadas para este sitio. Abre el candado de la barra de dirección, entra a Permisos y cambia Notificaciones a Permitir.'
+          : permission === 'unsupported'
+          ? 'Este navegador o modo de navegación no admite notificaciones. En iPhone/iPad agrega la página a Pantalla de inicio y ábrela desde allí.'
+          : 'No se pudo terminar la suscripción. Recarga la página e inténtalo nuevamente.');
         return;
       }
       // Asocia el usuario a la suscripción de OneSignal (sin esto no llega el push).
