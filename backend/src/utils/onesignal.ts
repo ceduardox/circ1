@@ -26,11 +26,12 @@ export async function sendWebPush(params: SendPushParams): Promise<boolean> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Basic ${apiKey}`,
+        Authorization: `Key ${apiKey}`,
       },
       body: JSON.stringify({
         app_id: appId,
-        include_external_user_ids: params.externalUserIds,
+        include_aliases: { external_id: params.externalUserIds },
+        target_channel: 'push',
         headings: { en: params.title, es: params.title },
         contents: { en: params.message, es: params.message },
         url: params.url || webUrl,

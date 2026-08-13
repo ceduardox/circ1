@@ -40,24 +40,31 @@ function getSDK(): Promise<OneSignalSDK> {
 export async function requestPushPermission(): Promise<boolean> {
   try {
     const OneSignal = await getSDK();
-    if (!OneSignal?.Notifications) return false;
+    if (!OneSignal?.Notifications || typeof Notification === 'undefined') return false;
 
-    // Si ya está suscrito, listo.
-    const subscribed = await OneSignal.Notifications.isSubscribed().catch(() => false);
-    if (subscribed) return true;
-
-    // Pide permiso (muestra el modal nativo del navegador y registra la suscripción).
-    const result = await OneSignal.Notifications.requestPermission();
-    if (result === 'granted') {
-      // Espera a que OneSignal registre la suscripción del navegador.
-      for (let i = 0; i < 10; i++) {
-        const now = await OneSignal.Notifications.isSubscribed().catch(() => false);
-        if (now) return true;
-        await new Promise(r => setTimeout(r, 500));
-      }
+    // OneSignal v16 expone la suscripción en User.PushSubscription.
+    if (Notification.permission === 'granted' && OneSignal.User?.PushSubscription?.optedIn) {
       return true;
     }
-    return false;
+
+    // Esta llamada ocurre directamente desde el clic del usuario y abre el
+    // diálogo nativo "Permitir / Bloquear" cuando el permiso está en default.
+    if (Notification.permission === 'default') {
+      await OneSignal.Notifications.requestPermission();
+    }
+
+    if (Notification.permission !== 'granted') return false;
+
+    // Con el permiso concedido, registra/reactiva la suscripción en OneSignal.
+    await OneSignal.User?.PushSubscription?.optIn?.();
+    for (let i = 0; i < 12; i++) {
+      if (OneSignal.User?.PushSubscription?.optedIn && OneSignal.User?.PushSubscription?.id) {
+        return true;
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    return !!OneSignal.User?.PushSubscription?.optedIn;
   } catch (e) {
     console.error('[OneSignal] requestPushPermission:', e);
     return false;
@@ -68,11 +75,10 @@ export async function requestPushPermission(): Promise<boolean> {
  * Consulta si el navegador ya tiene el permiso de notificaciones concedido.
  */
 export async function hasPushPermission(): Promise<boolean> {
-  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') return true;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
   try {
     const OneSignal = await getSDK();
-    if (!OneSignal?.Notifications) return false;
-    return await OneSignal.Notifications.isSubscribed().catch(() => false);
+    return !!OneSignal.User?.PushSubscription?.optedIn;
   } catch {
     return false;
   }
