@@ -82,6 +82,7 @@ model User {
   chatBlocked          Boolean          @default(false) @map("chat_blocked")
   pushEnabled          Boolean          @default(false) @map("push_enabled")
   pushChat             Boolean          @default(true) @map("push_chat")
+  pushChatAll          Boolean          @default(false) @map("push_chat_all")
   pushCommissions      Boolean          @default(true) @map("push_commissions")
   pushPayments         Boolean          @default(true) @map("push_payments")
   referralCode         String?          @unique @map("referral_code")

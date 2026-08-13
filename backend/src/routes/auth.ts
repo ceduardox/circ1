@@ -219,6 +219,7 @@ export async function authRoutes(app: FastifyInstance) {
     const data: any = {};
     if (typeof body.pushEnabled === 'boolean') data.pushEnabled = body.pushEnabled;
     if (typeof body.pushChat === 'boolean') data.pushChat = body.pushChat;
+    if (typeof body.pushChatAll === 'boolean') data.pushChatAll = body.pushChatAll;
     if (typeof body.pushCommissions === 'boolean') data.pushCommissions = body.pushCommissions;
     if (typeof body.pushPayments === 'boolean') data.pushPayments = body.pushPayments;
 

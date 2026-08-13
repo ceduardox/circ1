@@ -41,6 +41,7 @@ export const completeContentSchema = z.object({
 export const pushPrefsSchema = z.object({
   pushEnabled: z.boolean().optional(),
   pushChat: z.boolean().optional(),
+  pushChatAll: z.boolean().optional(),
   pushCommissions: z.boolean().optional(),
   pushPayments: z.boolean().optional(),
 });

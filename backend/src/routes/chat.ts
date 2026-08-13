@@ -171,17 +171,29 @@ export async function chatRoutes(app: FastifyInstance) {
       include: { asUser: { select: userSelect }, sender: { select: userSelect } },
     });
 
-    // Notificaciones por menciones (@usuario).
+    // Notificaciones por menciones y a suscritos a todos los mensajes.
     if (finalMessage) {
       try {
+        const shownName = created.asUser?.firstName || created.sender?.firstName || created.sender?.username || 'Alguien';
+
+        // 1. Usuarios suscritos a todos los mensajes del chat
+        const allMsgUsers = await prisma.user.findMany({
+          where: { pushEnabled: true, pushChatAll: true, id: { not: senderId } },
+          select: { id: true },
+        });
+        const allMsgUserIds = allMsgUsers.map(u => u.id);
+
+        // 2. Usuarios mencionados con @
         const mentions = [...finalMessage.matchAll(/@([a-zA-Z0-9_]+)/g)].map(m => m[1].toLowerCase());
+        let mentionedUserIds: string[] = [];
+
         if (mentions.length > 0) {
           const mentioned = await prisma.user.findMany({
             where: { username: { in: mentions }, id: { not: senderId } },
             select: { id: true, pushEnabled: true, pushChat: true },
           });
+
           if (mentioned.length > 0) {
-            const shownName = created.asUser?.firstName || created.sender?.firstName || created.sender?.username || 'Alguien';
             await prisma.notification.createMany({
               data: mentioned.map(u => ({
                 userId: u.id,
@@ -191,19 +203,30 @@ export async function chatRoutes(app: FastifyInstance) {
               })),
             });
 
-            // Web push (OneSignal) a los mencionados que lo tienen activo, aunque el chat esté cerrado.
-            const pushTargets = mentioned.filter(u => u.pushEnabled && u.pushChat).map(u => u.id);
-            if (pushTargets.length > 0) {
-              await sendWebPush({
-                externalUserIds: pushTargets,
-                title: `${shownName} te mencionó en el chat`,
-                message: `"${finalMessage.slice(0, 120)}"`,
-              });
-            }
+            mentionedUserIds = mentioned.filter(u => u.pushEnabled && u.pushChat).map(u => u.id);
           }
         }
-      } catch {
-        // No romper el envío si falla la notificación de mención.
+
+        // Enviar push a los mencionados
+        if (mentionedUserIds.length > 0) {
+          await sendWebPush({
+            externalUserIds: mentionedUserIds,
+            title: `${shownName} te mencionó en el chat`,
+            message: `"${finalMessage.slice(0, 120)}"`,
+          });
+        }
+
+        // Enviar push a los que quieren todos los mensajes (excluyendo a los ya notificados por mención)
+        const allMsgOnlyIds = allMsgUserIds.filter(id => !mentionedUserIds.includes(id));
+        if (allMsgOnlyIds.length > 0) {
+          await sendWebPush({
+            externalUserIds: allMsgOnlyIds,
+            title: `Nuevo mensaje de ${shownName}`,
+            message: `"${finalMessage.slice(0, 120)}"`,
+          });
+        }
+      } catch (e) {
+        // No romper el envío si falla la notificación
       }
     }
 

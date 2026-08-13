@@ -15,6 +15,7 @@ interface User {
   role: 'USER' | 'ADMIN';
   pushEnabled?: boolean;
   pushChat?: boolean;
+  pushChatAll?: boolean;
   pushCommissions?: boolean;
   pushPayments?: boolean;
 }
@@ -30,7 +31,7 @@ interface AuthState {
   fetchMe: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
   updateAvatar: (file: File) => Promise<void>;
-  updatePushPreferences: (data: Partial<Pick<User, 'pushEnabled' | 'pushChat' | 'pushCommissions' | 'pushPayments'>>) => Promise<void>;
+  updatePushPreferences: (data: Partial<Pick<User, 'pushEnabled' | 'pushChat' | 'pushChatAll' | 'pushCommissions' | 'pushPayments'>>) => Promise<void>;
   setAccessToken: (token: string) => void;
 }
 

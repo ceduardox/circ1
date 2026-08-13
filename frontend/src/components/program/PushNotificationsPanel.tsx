@@ -107,7 +107,7 @@ export function PushNotificationsPanel() {
     }
   };
 
-  const updatePref = async (key: 'pushChat' | 'pushCommissions' | 'pushPayments', value: boolean) => {
+  const updatePref = async (key: 'pushChat' | 'pushChatAll' | 'pushCommissions' | 'pushPayments', value: boolean) => {
     setPrefsLoading(true);
     try {
       await updatePushPreferences({ [key]: value });
@@ -157,19 +157,27 @@ export function PushNotificationsPanel() {
         </button>
 
         {/* Sub-toggles */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <PrefToggle
             icon={MessageCircle}
             title="Menciones del chat"
-            desc="Te avisamos cuando te mencionan con @"
+            desc="Avisos cuando te mencionan con @"
             checked={!!(devicePushEnabled && user?.pushChat)}
             disabled={!devicePushEnabled || prefsLoading}
             onChange={(v) => updatePref('pushChat', v)}
           />
           <PrefToggle
+            icon={BellRing}
+            title="Todo el chat"
+            desc="Aviso de cada mensaje en el chat"
+            checked={!!(devicePushEnabled && user?.pushChatAll)}
+            disabled={!devicePushEnabled || prefsLoading}
+            onChange={(v) => updatePref('pushChatAll', v)}
+          />
+          <PrefToggle
             icon={Coins}
             title="Comisiones"
-            desc="Comisiones generadas por tus referidos"
+            desc="Comisiones de tus referidos"
             checked={!!(devicePushEnabled && user?.pushCommissions)}
             disabled={!devicePushEnabled || prefsLoading}
             onChange={(v) => updatePref('pushCommissions', v)}
@@ -177,7 +185,7 @@ export function PushNotificationsPanel() {
           <PrefToggle
             icon={CreditCard}
             title="Pagos y retiros"
-            desc="Membresía activa, retiros aprobados"
+            desc="Membresía activa y retiros"
             checked={!!(devicePushEnabled && user?.pushPayments)}
             disabled={!devicePushEnabled || prefsLoading}
             onChange={(v) => updatePref('pushPayments', v)}
