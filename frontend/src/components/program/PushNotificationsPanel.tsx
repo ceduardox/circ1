@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { requestPushPermission } from '@/lib/onesignal';
+import { requestPushPermission, syncPushUser } from '@/lib/onesignal';
 import { Bell, BellRing, MessageCircle, Coins, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardContent } from '@/components/ui';
@@ -83,6 +83,8 @@ export function PushNotificationsPanel() {
         );
         return;
       }
+      // Asocia el usuario a la suscripción de OneSignal (sin esto no llega el push).
+      await syncPushUser(user?.id as string);
       await updatePushPreferences({ pushEnabled: true });
       toast.success('Notificaciones activadas');
     } catch (e: any) {

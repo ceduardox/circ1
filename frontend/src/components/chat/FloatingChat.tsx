@@ -4,7 +4,7 @@ import { chatApi } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { countryFlag } from '@/lib/utils';
-import { requestPushPermission } from '@/lib/onesignal';
+import { requestPushPermission, syncPushUser } from '@/lib/onesignal';
 import { toast } from 'sonner';
 import 'flag-icons/css/flag-icons.min.css';
 
@@ -427,6 +427,7 @@ export function FloatingChat() {
   const enablePush = async () => {
     const ok = await requestPushPermission();
     if (ok) {
+      await syncPushUser(user?.id as string);
       await updatePushPreferences({ pushEnabled: true });
       toast.success('Notificaciones activadas. Te avisaremos de las menciones en el chat.');
     } else {

@@ -51,37 +51,39 @@ function getSDK(init: boolean): Promise<OneSignalSDK> {
  * Devuelve true si quedó concedido.
  */
 export async function requestPushPermission(): Promise<boolean> {
-  // 1. Si ya está concedido, listo.
-  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    return true;
-  }
+  try {
+    // 1. Asegurar que el SDK está inicializado y esperar a que el SW se registre.
+    const OneSignal = await getSDK(true);
 
-  // 2. API nativa: dispara el modal del navegador.
-  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-    try {
+    // 2. Pedir el permiso vía OneSignal (muestra el modal nativo Y registra la suscripción).
+    if (OneSignal?.Notifications) {
+      try {
+        const result = await OneSignal.Notifications.requestPermission();
+        if (result === 'granted') {
+          await OneSignal.Notifications.setSubscription(true);
+          return true;
+        }
+      } catch { /* falla al fallback nativo */ }
+    }
+
+    // 3. Fallback: API nativa (el modal aparece, luego OneSignal se sincroniza).
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       const result = await Notification.requestPermission();
       if (result === 'granted') {
-        // Sincroniza OneSignal con la suscripción ya concedida.
+        // Forzar a OneSignal a registrar la suscripción del dispositivo.
         try {
-          const OneSignal = await getSDK(false);
-          if (OneSignal?.Notifications?.setSubscription) {
-            await OneSignal.Notifications.setSubscription(true);
-          }
-        } catch { /* OneSignal se sincroniza solo al detectar el permiso */ }
+          await OneSignal?.Notifications?.setSubscription(true);
+        } catch { /* OneSignal se sincroniza al detectar el permiso */ }
         return true;
       }
       return false;
-    } catch {
-      return false;
     }
-  }
 
-  // 3. Fallback: pedir vía OneSignal (para casos donde el SDK lo maneja mejor).
-  try {
-    const OneSignal = await getSDK(true);
-    if (!OneSignal.Notifications) return false;
-    const result = await OneSignal.Notifications.requestPermission();
-    return result === 'granted';
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
