@@ -5,7 +5,7 @@ import { programApi, adminApi } from '@/services/api';
 import { useVipProStore } from '@/store/vipProStore';
 import {
   Home, Flame, Trophy, Lock, CheckCircle, Play, ChevronRight, Users, BookOpen, Target,
-  Clock, BarChart, Footprints, CalendarCheck, Crown, PenLine, Brain, Shield, Heart, Snowflake, Rocket
+  Clock, BarChart, Footprints, CalendarCheck, Crown, PenLine, Brain, Shield, Heart, Snowflake, Rocket, Users2, TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -238,6 +238,41 @@ export function DashboardPage() {
                 </div>
               </div>
             )}
+          </div>
+        </Link>
+      )}
+
+      {/* Construir Equipo */}
+      {user?.role !== 'ADMIN' && (
+        <Link
+          to="/team"
+          className="block group"
+        >
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-600 via-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-600/25 p-5 transition-all group-hover:shadow-xl group-hover:shadow-teal-600/30 group-hover:-translate-y-0.5">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-300 animate-gradient-x" />
+            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+                  <Users2 className="w-5 h-5 text-yellow-300" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold leading-tight flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4 text-yellow-300" />
+                    Construir Equipo
+                  </p>
+                  <p className="text-xs text-teal-100 mt-0.5">
+                    Suma gente · Gana comisiones
+                  </p>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <ChevronRight className="w-5 h-5 text-teal-200 ml-auto transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
+            <p className="relative mt-3 text-[11px] text-teal-100/90 leading-5">
+              Ellos pagan su publicidad, tú cobras. Lleva tus contactos al cierre y sube contenido para que los clientes lleguen solos.
+            </p>
           </div>
         </Link>
       )}

@@ -118,6 +118,16 @@ export const vipProApi = {
   toggleModule: (id: string, item?: string) => api.post(`/vip-pro/modules/${id}/toggle`, { item }),
 };
 
+export const teamApi = {
+  contacts: () => api.get('/team/contacts'),
+  createContact: (data: any) => api.post('/team/contacts', data),
+  updateContact: (id: string, data: any) => api.put(`/team/contacts/${id}`, data),
+  deleteContact: (id: string) => api.delete(`/team/contacts/${id}`),
+  social: () => api.get('/team/social'),
+  saveSocial: (data: any) => api.post('/team/social', data),
+  deleteSocial: (date: string) => api.delete(`/team/social/${date}`),
+};
+
 export const chatApi = {
   messages: (params?: any) => api.get('/chat/messages', { params }),
   send: (data: any) => api.post('/chat/messages', data),

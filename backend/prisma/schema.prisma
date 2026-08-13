@@ -104,6 +104,8 @@ model User {
   chatMessages    ChatMessage[]         @relation("ChatMessageSender")
   impersonatedIn  ChatMessage[]         @relation("ChatMessageAsUser")
   vipProProgress  VipProProgress[]
+  teamContacts    TeamContact[]
+  socialPosts     SocialPost[]
 
   @@map("users")
 }
@@ -350,4 +352,35 @@ model Transcription {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("transcriptions")
+}
+
+model TeamContact {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  contact   String?
+  notes     String?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("team_contacts")
+}
+
+model SocialPost {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  platform  String?
+  date      DateTime
+  posted    Boolean  @default(false)
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("social_posts")
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2 } from 'lucide-react';
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
@@ -15,6 +15,7 @@ export function MobileHeader() {
     { path: '/dashboard', label: 'Mi Día', icon: Home },
     { path: '/progress', label: 'Progreso', icon: BarChart },
     { path: '/network', label: 'Mi Red', icon: Network },
+    { path: '/team', label: 'Construir Equipo', icon: Users2 },
     { path: '/earnings', label: 'Ganancias', icon: Wallet },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown },
     { path: '/notifications', label: 'Notificaciones', icon: Bell },

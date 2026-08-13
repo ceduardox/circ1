@@ -17,6 +17,7 @@ import { ProfilePage } from '@/pages/Profile';
 import { ProgressPage } from '@/pages/Progress';
 import { ProgramPage } from '@/pages/Program';
 import { NetworkPage } from '@/pages/Network';
+import { TeamPage } from '@/pages/Team';
 import { EarningsPage } from '@/pages/Earnings';
 import { NotificationsPage } from '@/pages/Notifications';
 import { VipProPage } from '@/pages/VipPro';
@@ -85,6 +86,7 @@ function App() {
             <Route path="/progress" element={<ProgressPage />} />
             <Route path="/program" element={<ProgramPage />} />
             <Route path="/network" element={<NetworkPage />} />
+            <Route path="/team" element={<TeamPage />} />
             <Route path="/earnings" element={<EarningsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/vip-pro" element={<VipProPage />} />
