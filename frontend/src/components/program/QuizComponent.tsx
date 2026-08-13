@@ -14,7 +14,7 @@ interface QuizComponentProps {
   title: string;
   questions: Question[];
   passingScore?: number;
-  onComplete: (score: number, answers: Record<string, any>) => void;
+  onComplete: (score: number, answers: Record<string, any>) => Promise<void> | void;
   completed?: boolean;
   initialAnswers?: Record<string, any>;
 }
@@ -25,6 +25,8 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [justAnswered, setJustAnswered] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const question = questions[currentQuestion];
   const isLast = currentQuestion === questions.length - 1;
@@ -53,11 +55,21 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
     return finalScore;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isLast) {
       const finalScore = calculateScore();
       setShowResult(true);
-      onComplete(finalScore, answers);
+      if (finalScore >= passingScore) {
+        setSaving(true);
+        setSaveError('');
+        try {
+          await onComplete(finalScore, answers);
+        } catch {
+          setSaveError('No se pudo guardar el resultado. Inténtalo nuevamente.');
+        } finally {
+          setSaving(false);
+        }
+      }
     } else {
       setCurrentQuestion(c => c + 1);
     }
@@ -147,6 +159,8 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
         <p className="text-gray-600 mb-4">
           Puntuación: <span className="font-bold text-xl sm:text-2xl">{score}%</span> (mínimo {passingScore}%)
         </p>
+        {saving && <p className="mb-4 text-sm font-medium text-primary-600">Guardando resultado...</p>}
+        {saveError && <p className="mb-4 rounded-lg bg-red-100 p-3 text-sm text-red-700">{saveError}</p>}
         <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
           {questions.map((q, i) => {
             const userAnswer = answers[q.id];
@@ -165,9 +179,11 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
             );
           })}
         </div>
-        <ButtonPrimary onClick={() => { setShowResult(false); setCurrentQuestion(0); setAnswers({}); }} className="w-full">
-          Reintentar
-        </ButtonPrimary>
+        {!passed && (
+          <ButtonPrimary onClick={() => { setShowResult(false); setCurrentQuestion(0); setAnswers({}); setSaveError(''); }} className="w-full">
+            Reintentar
+          </ButtonPrimary>
+        )}
       </div>
     );
   }

@@ -9,12 +9,22 @@ interface MentalExerciseProps {
   steps: string[];
   onComplete: () => void;
   completed?: boolean;
+  persistenceKey: string;
 }
 
-export function MentalExercise({ title, instruction, durationMinutes, steps, onComplete, completed }: MentalExerciseProps) {
-  const [phase, setPhase] = useState<'idle' | 'running' | 'paused' | 'done'>('idle');
-  const [timeLeft, setTimeLeft] = useState(durationMinutes * 60);
-  const [currentStep, setCurrentStep] = useState(0);
+export function MentalExercise({ title, instruction, durationMinutes, steps, onComplete, completed, persistenceKey }: MentalExerciseProps) {
+  const storageKey = `mental-exercise:${persistenceKey}`;
+  const readSaved = () => {
+    try {
+      return JSON.parse(localStorage.getItem(storageKey) || 'null') as { timeLeft?: number; currentStep?: number } | null;
+    } catch {
+      return null;
+    }
+  };
+  const saved = readSaved();
+  const [phase, setPhase] = useState<'idle' | 'running' | 'paused' | 'done'>(completed ? 'done' : saved ? 'paused' : 'idle');
+  const [timeLeft, setTimeLeft] = useState(saved?.timeLeft ?? durationMinutes * 60);
+  const [currentStep, setCurrentStep] = useState(saved?.currentStep ?? 0);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -42,10 +52,20 @@ export function MentalExercise({ title, instruction, durationMinutes, steps, onC
     }
   }, [timeLeft, phase]);
 
+  useEffect(() => {
+    if (completed || phase === 'done') {
+      localStorage.removeItem(storageKey);
+      return;
+    }
+    if (phase !== 'idle') {
+      localStorage.setItem(storageKey, JSON.stringify({ timeLeft, currentStep }));
+    }
+  }, [completed, currentStep, phase, storageKey, timeLeft]);
+
   const formatTime = (s: number) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
 
   const toggle = () => setPhase(p => p === 'running' ? 'paused' : 'running');
-  const reset = () => { setPhase('idle'); setTimeLeft(durationMinutes * 60); setCurrentStep(0); };
+  const reset = () => { localStorage.removeItem(storageKey); setPhase('idle'); setTimeLeft(durationMinutes * 60); setCurrentStep(0); };
 
   return (
     <div className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${

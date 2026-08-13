@@ -20,7 +20,7 @@ export function DayViewPage() {
 
   const handlePrevDay = () => navigate(`/day/${dayNum - 1}`);
   const handleNextDay = () => {
-    if (canUnlockNext && dayNum < 7) navigate(`/day/${dayNum + 1}`);
+    if (canUnlockNext && day?.nextDayNumber) navigate(`/day/${day.nextDayNumber}`);
   };
 
   const goNext = useCallback(() => {
@@ -35,9 +35,23 @@ export function DayViewPage() {
     }
   }, [currentStep]);
 
-  const handleContentCompleted = useCallback(() => {
-    setTimeout(() => goNext(), 800);
-  }, [goNext]);
+  const handleContentCompleted = useCallback(async () => {
+    // La API ya guardó el ejercicio. Volvemos a consultar el día para que
+    // progreso, bloqueos y navegación usen el estado confirmado del servidor.
+    try {
+      const refreshedDay = await fetchDay(dayNum);
+      setDay(refreshedDay);
+      setTimeout(() => {
+        setCurrentStep(step => Math.min(step + 1, Math.max(refreshedDay.contents.length - 1, 0)));
+      }, 350);
+    } catch {
+      // El store ya hizo la actualización optimista; aun si falla el refresco,
+      // no impedimos que el usuario avance al siguiente contenido disponible.
+      setTimeout(() => {
+        setCurrentStep(step => day ? Math.min(step + 1, Math.max(day.contents.length - 1, 0)) : step);
+      }, 350);
+    }
+  }, [dayNum, fetchDay, day]);
 
   const isContentCompleted = useCallback((contentId: string) => {
     return progress.some((p: any) => p.contentId === contentId && p.status === 'COMPLETED');
@@ -192,10 +206,10 @@ export function DayViewPage() {
         </button>
         <button
           onClick={handleNextDay}
-          disabled={!canUnlockNext || dayNum >= 7}
+          disabled={!canUnlockNext || !day.nextDayNumber}
           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary-500/20"
         >
-          {canUnlockNext ? (
+          {canUnlockNext && day.nextDayNumber ? (
             <>
               Día Siguiente
               <ChevronRight className="w-4 h-4" />
@@ -210,11 +224,11 @@ export function DayViewPage() {
       </div>
 
       {/* Blocked Message */}
-      {!canUnlockNext && dayNum < 7 && (
+      {!canUnlockNext && day.nextDayNumber && (
         <div className="mt-4 p-4 rounded-xl bg-yellow-50 border border-yellow-200 text-center">
           <AlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
           <p className="text-sm text-gray-600">
-            Completa los {totalRequired - completedRequired} ejercicios requeridos para desbloquear el día {dayNum + 1}.
+            Completa los {totalRequired - completedRequired} ejercicios requeridos para desbloquear el día {day.nextDayNumber}.
           </p>
         </div>
       )}

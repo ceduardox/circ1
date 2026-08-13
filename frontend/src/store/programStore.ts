@@ -18,6 +18,7 @@ interface ProgramDay {
   description?: string;
   isActive: boolean;
   contents: DayContent[];
+  nextDayNumber?: number | null;
 }
 
 interface UserProgress {
@@ -86,8 +87,9 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
 
   fetchDay: async (dayNumber) => {
     const { data } = await programApi.getDay(dayNumber);
-    set({ currentDay: data.day, progress: data.progress || [] });
-    return data.day;
+    const day = { ...data.day, nextDayNumber: data.nextDayNumber ?? null };
+    set({ currentDay: day, progress: data.progress || [] });
+    return day;
   },
 
   completeContent: async (dayNumber, contentId, answers) => {

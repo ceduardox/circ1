@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ButtonPrimary, ButtonGhost, Input, Label, Textarea } from '@/components/ui';
+import { ButtonPrimary, Label, Textarea } from '@/components/ui';
 import { CheckCircle, Send, Camera, Mic } from 'lucide-react';
 
 const taskSchema = z.object({
@@ -16,13 +16,15 @@ interface ConfidenceTaskProps {
   task: string;
   evidenceType: 'text' | 'photo' | 'audio';
   description?: string;
-  onComplete: (evidence: string) => void;
+  onComplete: (evidence: string) => Promise<void> | void;
   completed?: boolean;
   initialEvidence?: string;
 }
 
 export function ConfidenceTask({ title, task, evidenceType, description, onComplete, completed, initialEvidence }: ConfidenceTaskProps) {
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: { evidence: initialEvidence || '' },
@@ -30,10 +32,18 @@ export function ConfidenceTask({ title, task, evidenceType, description, onCompl
 
   const evidence = watch('evidence');
 
-  const onSubmit = (data: TaskFormData) => {
-    onComplete(data.evidence);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 2000);
+  const onSubmit = async (data: TaskFormData) => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      await onComplete(data.evidence);
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 2000);
+    } catch {
+      setSaveError('No se pudo guardar la evidencia. Inténtalo nuevamente.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const icons = { text: '✍️', photo: '📸', audio: '🎤' };
@@ -94,10 +104,11 @@ export function ConfidenceTask({ title, task, evidenceType, description, onCompl
             </div>
           )}
           {errors.evidence && <p className="text-red-500 text-sm mt-1">{errors.evidence.message}</p>}
+          {saveError && <p className="mt-2 rounded-lg bg-red-100 p-3 text-sm text-red-700">{saveError}</p>}
         </div>
-        <ButtonPrimary type="submit" disabled={evidence.length < 10} className="w-full">
+        <ButtonPrimary type="submit" disabled={evidence.length < 10 || saving} className="w-full">
           <Send className="w-4 h-4 mr-2" />
-          {submitted ? 'Enviado ✓' : 'Enviar'}
+          {saving ? 'Guardando...' : submitted ? 'Enviado ✓' : 'Enviar'}
         </ButtonPrimary>
       </form>
     </div>

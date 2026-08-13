@@ -5,8 +5,9 @@ import { CheckCircle, RotateCcw, GripVertical, ArrowRight, Star } from 'lucide-r
 
 interface InteractiveExerciseProps {
   title: string;
-  onComplete: () => void;
+  onComplete: (answers?: any) => Promise<void> | void;
   completed: boolean;
+  initialAnswers?: any;
   exercise: {
     type: 'matching' | 'ordering' | 'scenarios' | 'fill_blanks' | 'scale' | 'puzzle';
     instruction: string;
@@ -14,13 +15,15 @@ interface InteractiveExerciseProps {
   };
 }
 
+type CompleteExercise = (answers?: any) => Promise<void> | void;
+
 // ═══════════════════════════════════════════════════════════
 // MATCHING: Conectar pares (ej: objeción → respuesta)
 // ═══════════════════════════════════════════════════════════
-function MatchingExercise({ data, onComplete }: { data: any; onComplete: () => void }) {
+function MatchingExercise({ data, onComplete }: { data: any; onComplete: CompleteExercise }) {
   const { pairs } = data;
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
-  const [matches, setMatches] = useState<Record<number, number>>({});
+  const [matches, setMatches] = useState<Record<number, number>>(() => data.initialAnswers?.matches || {});
   const [showResults, setShowResults] = useState(false);
   const [wrongPair, setWrongPair] = useState<number | null>(null);
   const [justMatched, setJustMatched] = useState<number | null>(null);
@@ -64,7 +67,7 @@ function MatchingExercise({ data, onComplete }: { data: any; onComplete: () => v
   const checkAnswers = () => {
     setShowResults(true);
     const allCorrect = pairs.every((_: any, i: number) => matches[i] === i);
-    if (allCorrect) onComplete();
+    if (allCorrect) onComplete({ matches });
   };
 
   const reset = () => { setMatches({}); setSelectedLeft(null); setShowResults(false); setWrongPair(null); setJustMatched(null); };
@@ -152,9 +155,10 @@ function MatchingExercise({ data, onComplete }: { data: any; onComplete: () => v
 // ═══════════════════════════════════════════════════════════
 // ORDERING: Ordenar pasos (ej: proceso de venta)
 // ═══════════════════════════════════════════════════════════
-function OrderingExercise({ data, onComplete }: { data: any; onComplete: () => void }) {
+function OrderingExercise({ data, onComplete }: { data: any; onComplete: CompleteExercise }) {
   const { items } = data;
   const [currentOrder, setCurrentOrder] = useState(() => {
+    if (Array.isArray(data.initialAnswers?.order)) return data.initialAnswers.order;
     const indices = items.map((_: any, i: number) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -176,7 +180,7 @@ function OrderingExercise({ data, onComplete }: { data: any; onComplete: () => v
   const checkAnswers = () => {
     setShowResults(true);
     const allCorrect = currentOrder.every((idx: number, pos: number) => idx === pos);
-    if (allCorrect) onComplete();
+    if (allCorrect) onComplete({ order: currentOrder });
   };
 
   const reset = () => {
@@ -214,9 +218,9 @@ function OrderingExercise({ data, onComplete }: { data: any; onComplete: () => v
             }`}>{position + 1}</span>
             <span className="text-sm text-gray-700 flex-1">{item}</span>
             {!showResults && (
-              <div className="flex flex-col gap-0.5">
-                <button onClick={() => moveItem(position, Math.max(0, position - 1))} className="text-gray-400 hover:text-gray-600 text-xs" disabled={position === 0}>▲</button>
-                <button onClick={() => moveItem(position, Math.min(items.length - 1, position + 1))} className="text-gray-400 hover:text-gray-600 text-xs" disabled={position === items.length - 1}>▼</button>
+              <div className="flex gap-1 sm:flex-col">
+                <button type="button" aria-label="Mover arriba" onClick={() => moveItem(position, Math.max(0, position - 1))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 disabled:opacity-30" disabled={position === 0}>▲</button>
+                <button type="button" aria-label="Mover abajo" onClick={() => moveItem(position, Math.min(items.length - 1, position + 1))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 disabled:opacity-30" disabled={position === items.length - 1}>▼</button>
               </div>
             )}
             {showResults && isWrong && (
@@ -242,10 +246,10 @@ function OrderingExercise({ data, onComplete }: { data: any; onComplete: () => v
 // ═══════════════════════════════════════════════════════════
 // SCENARIOS: Escenarios de venta con opciones
 // ═══════════════════════════════════════════════════════════
-function ScenariosExercise({ data, onComplete }: { data: any; onComplete: () => void }) {
+function ScenariosExercise({ data, onComplete }: { data: any; onComplete: CompleteExercise }) {
   const { scenarios } = data;
   const [currentScenario, setCurrentScenario] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [answers, setAnswers] = useState<Record<number, number>>(() => data.initialAnswers?.answers || {});
   const [showFeedback, setShowFeedback] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
 
@@ -268,7 +272,7 @@ function ScenariosExercise({ data, onComplete }: { data: any; onComplete: () => 
         setCurrentScenario(currentScenario + 1);
       } else {
         const totalCorrect = scenarios.filter((s: any, i: number) => answers[i] === s.correct).length;
-        if (totalCorrect >= Math.ceil(scenarios.length * 0.7)) onComplete();
+        if (totalCorrect >= Math.ceil(scenarios.length * 0.7)) onComplete({ answers, score: totalCorrect, total: scenarios.length });
       }
     }, 250);
   };
@@ -359,9 +363,9 @@ function ScenariosExercise({ data, onComplete }: { data: any; onComplete: () => 
 // ═══════════════════════════════════════════════════════════
 // FILL_BLANKS: Completar frases de ventas
 // ═══════════════════════════════════════════════════════════
-function FillBlanksExercise({ data, onComplete }: { data: any; onComplete: () => void }) {
+function FillBlanksExercise({ data, onComplete }: { data: any; onComplete: CompleteExercise }) {
   const { sentences } = data;
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>(() => data.initialAnswers?.answers || {});
   const [showResults, setShowResults] = useState(false);
 
   const checkAnswers = () => {
@@ -369,7 +373,7 @@ function FillBlanksExercise({ data, onComplete }: { data: any; onComplete: () =>
     const allCorrect = sentences.every((s: any) =>
       answers[s.id]?.toLowerCase().trim() === s.answer.toLowerCase().trim()
     );
-    if (allCorrect) onComplete();
+    if (allCorrect) onComplete({ answers });
   };
 
   const reset = () => { setAnswers({}); setShowResults(false); };
@@ -432,9 +436,9 @@ function FillBlanksExercise({ data, onComplete }: { data: any; onComplete: () =>
 // ═══════════════════════════════════════════════════════════
 // SCALE: Autoevaluación visual
 // ═══════════════════════════════════════════════════════════
-function ScaleExercise({ data, onComplete }: { data: any; onComplete: () => void }) {
+function ScaleExercise({ data, onComplete }: { data: any; onComplete: CompleteExercise }) {
   const { questions } = data;
-  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [answers, setAnswers] = useState<Record<string, number>>(() => data.initialAnswers?.answers || {});
 
   const handleRate = (id: string, value: number) => {
     setAnswers({ ...answers, [id]: value });
@@ -454,14 +458,17 @@ function ScaleExercise({ data, onComplete }: { data: any; onComplete: () => void
       {questions.map((q: any, qi: number) => (
         <div key={q.id} className={`p-4 bg-white rounded-xl border border-gray-200 animate-enter-up ${answers[q.id] !== undefined ? 'border-primary-200' : ''}`} style={{ animationDelay: `${qi * 0.08}s` }}>
           <p className="text-sm font-medium text-gray-800 mb-3">{q.question}</p>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">{q.lowLabel || '1'}</span>
-            <div className="flex gap-1 flex-1 justify-center">
+          <div>
+            <div className="mb-2 flex items-start justify-between gap-4 text-[11px] leading-tight text-gray-400 sm:text-xs">
+              <span className="max-w-[45%]">{q.lowLabel || '1'}</span>
+              <span className="max-w-[45%] text-right">{q.highLabel || '10'}</span>
+            </div>
+            <div className="grid w-full grid-cols-10 gap-1 sm:gap-1.5">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
                 <button
                   key={val}
                   onClick={() => handleRate(q.id, val)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all duration-200 ${
+                  className={`aspect-square min-w-0 w-full rounded-md text-[10px] font-bold transition-all duration-200 sm:rounded-lg sm:text-xs ${
                     answers[q.id] === val
                       ? val <= 3 ? 'bg-red-500 text-white scale-110 shadow-md animate-pop-correct' :
                         val <= 6 ? 'bg-amber-500 text-white scale-110 shadow-md animate-pop-correct' :
@@ -473,7 +480,6 @@ function ScaleExercise({ data, onComplete }: { data: any; onComplete: () => void
                 </button>
               ))}
             </div>
-            <span className="text-xs text-gray-400">{q.highLabel || '10'}</span>
           </div>
           {answers[q.id] !== undefined && (
             <p className={`text-xs text-center mt-2 font-semibold animate-pop-correct ${
@@ -486,7 +492,7 @@ function ScaleExercise({ data, onComplete }: { data: any; onComplete: () => void
       ))}
       {allRated && (
         <div className="flex justify-center pt-2">
-          <ButtonPrimary onClick={onComplete} className="animate-pulse-soft">Completar Autoevaluación</ButtonPrimary>
+          <ButtonPrimary onClick={() => onComplete({ answers })} className="animate-pulse-soft">Completar Autoevaluación</ButtonPrimary>
         </div>
       )}
     </div>
@@ -496,9 +502,9 @@ function ScaleExercise({ data, onComplete }: { data: any; onComplete: () => void
 // ═══════════════════════════════════════════════════════════
 // PUZZLE: Completar concepto arrastrando piezas
 // ═══════════════════════════════════════════════════════════
-function PuzzleExercise({ data, onComplete }: { data: any; onComplete: () => void }) {
+function PuzzleExercise({ data, onComplete }: { data: any; onComplete: CompleteExercise }) {
   const { pieces, slots } = data;
-  const [placed, setPlaced] = useState<Record<number, number>>({});
+  const [placed, setPlaced] = useState<Record<number, number>>(() => data.initialAnswers?.placed || {});
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [lastPlaced, setLastPlaced] = useState<number | null>(null);
@@ -533,7 +539,7 @@ function PuzzleExercise({ data, onComplete }: { data: any; onComplete: () => voi
   const checkAnswers = () => {
     setShowResults(true);
     const allCorrect = pieces.every((_: any, i: number) => placed[i] === i);
-    if (allCorrect) onComplete();
+    if (allCorrect) onComplete({ placed });
   };
 
   const reset = () => { setPlaced({}); setSelectedPiece(null); setShowResults(false); setLastPlaced(null); setWrongPlace(null); };
@@ -616,15 +622,32 @@ function PuzzleExercise({ data, onComplete }: { data: any; onComplete: () => voi
 // ═══════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════
-export function InteractiveExercise({ title, onComplete, completed, exercise }: InteractiveExerciseProps) {
+export function InteractiveExercise({ title, onComplete, completed, exercise, initialAnswers }: InteractiveExerciseProps) {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const exerciseData = { ...exercise.data, initialAnswers };
+
+  const handleComplete = useCallback(async (answers?: any) => {
+    if (saving) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      await onComplete(answers);
+    } catch {
+      setSaveError('No se pudo guardar el ejercicio. Revisa tu conexión e inténtalo nuevamente.');
+    } finally {
+      setSaving(false);
+    }
+  }, [onComplete, saving]);
+
   const renderExercise = () => {
     switch (exercise.type) {
-      case 'matching': return <MatchingExercise data={exercise.data} onComplete={onComplete} />;
-      case 'ordering': return <OrderingExercise data={exercise.data} onComplete={onComplete} />;
-      case 'scenarios': return <ScenariosExercise data={exercise.data} onComplete={onComplete} />;
-      case 'fill_blanks': return <FillBlanksExercise data={exercise.data} onComplete={onComplete} />;
-      case 'scale': return <ScaleExercise data={exercise.data} onComplete={onComplete} />;
-      case 'puzzle': return <PuzzleExercise data={exercise.data} onComplete={onComplete} />;
+      case 'matching': return <MatchingExercise data={exerciseData} onComplete={handleComplete} />;
+      case 'ordering': return <OrderingExercise data={exerciseData} onComplete={handleComplete} />;
+      case 'scenarios': return <ScenariosExercise data={exerciseData} onComplete={handleComplete} />;
+      case 'fill_blanks': return <FillBlanksExercise data={exerciseData} onComplete={handleComplete} />;
+      case 'scale': return <ScaleExercise data={exerciseData} onComplete={handleComplete} />;
+      case 'puzzle': return <PuzzleExercise data={exerciseData} onComplete={handleComplete} />;
       default: return <p className="text-gray-500">Tipo de ejercicio no soportado</p>;
     }
   };
@@ -645,6 +668,8 @@ export function InteractiveExercise({ title, onComplete, completed, exercise }: 
           <CheckCircle className="w-5 h-5" /> Ejercicio completado
         </div>
       )}
+      {saving && <div className="rounded-xl bg-primary-50 p-3 text-center text-sm font-medium text-primary-700">Guardando progreso...</div>}
+      {saveError && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{saveError}</div>}
       {renderExercise()}
     </div>
   );

@@ -107,7 +107,13 @@ export async function programRoutes(app: FastifyInstance) {
       include: { content: true },
     });
 
-    return { day, progress };
+    const nextDay = await prisma.programDay.findFirst({
+      where: { isActive: true, dayNumber: { gt: day.dayNumber } },
+      orderBy: { dayNumber: 'asc' },
+      select: { dayNumber: true },
+    });
+
+    return { day, progress, nextDayNumber: nextDay?.dayNumber ?? null };
   });
 
   app.post('/day/:dayNumber/content/:contentId/complete', { preHandler: authMiddleware }, async (request, reply) => {
@@ -122,6 +128,11 @@ export async function programRoutes(app: FastifyInstance) {
     });
     if (!content) return reply.code(404).send({ error: 'Contenido no encontrado' });
 
+    const existingProgress = await prisma.userProgress.findUnique({
+      where: { userId_contentId: { userId, contentId } },
+      select: { status: true },
+    });
+
     const progress = await prisma.userProgress.upsert({
       where: { userId_contentId: { userId, contentId } },
       update: { status: 'COMPLETED', answers, completedAt: new Date() },
@@ -130,6 +141,7 @@ export async function programRoutes(app: FastifyInstance) {
 
     // Si con esta tarea se completan todas las obligatorias del día, notificar que el siguiente día se desbloqueó.
     try {
+      if (existingProgress?.status === 'COMPLETED') return { progress };
       const required = await prisma.dayContent.findMany({
         where: { dayId: content.dayId, isRequired: true },
         select: { id: true },

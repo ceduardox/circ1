@@ -21,9 +21,9 @@ export function ContentRenderer({ content, dayNumber, onCompleted, preview = fal
   const userProgress = preview ? undefined : progress.find(p => p.contentId === content.id);
   const completed = preview ? false : userProgress?.status === 'COMPLETED';
 
-  const handleComplete = async () => {
-    if (!preview) await completeContent(dayNumber, content.id);
-    onCompleted?.();
+  const handleComplete = async (answers?: any) => {
+    if (!preview) await completeContent(dayNumber, content.id, answers);
+    await onCompleted?.();
   };
 
   const handleReflectionSave = async (data: any) => {
@@ -33,7 +33,7 @@ export function ContentRenderer({ content, dayNumber, onCompleted, preview = fal
         await completeContent(dayNumber, content.id, { content: data.content });
       }
     }
-    onCompleted?.();
+    await onCompleted?.();
   };
 
   const baseProps = {
@@ -89,10 +89,12 @@ export function ContentRenderer({ content, dayNumber, onCompleted, preview = fal
       const { questions, passingScore = 70 } = content.content;
       return (
         <QuizComponent
-          {...baseProps}
+          title={content.title}
+          completed={completed}
+          onComplete={async (score, answers) => handleComplete({ score, answers })}
           questions={questions}
           passingScore={passingScore}
-          initialAnswers={userProgress?.answers}
+          initialAnswers={userProgress?.answers?.answers ?? userProgress?.answers}
         />
       );
     }
@@ -104,6 +106,7 @@ export function ContentRenderer({ content, dayNumber, onCompleted, preview = fal
           instruction={instruction}
           durationMinutes={durationMinutes}
           steps={steps}
+          persistenceKey={content.id}
         />
       );
     }
@@ -111,7 +114,9 @@ export function ContentRenderer({ content, dayNumber, onCompleted, preview = fal
       const { task, evidenceType, description } = content.content;
       return (
         <ConfidenceTask
-          {...baseProps}
+          title={content.title}
+          completed={completed}
+          onComplete={async evidence => handleComplete({ evidence })}
           task={task}
           evidenceType={evidenceType}
           description={description}
@@ -126,6 +131,7 @@ export function ContentRenderer({ content, dayNumber, onCompleted, preview = fal
           {...baseProps}
           title={content.title}
           exercise={{ type: exerciseType, instruction, data: exerciseData }}
+          initialAnswers={userProgress?.answers}
         />
       );
     }
