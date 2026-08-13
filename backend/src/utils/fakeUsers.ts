@@ -11,6 +11,14 @@ const fakeUsers = [
   { username: 'elena', email: 'elena@test.com', firstName: 'Elena', lastName: 'Test', password: 'chat1234', country: 'Espana' },
   { username: 'luis', email: 'luis@test.com', firstName: 'Luis', lastName: 'Test', password: 'chat1234', country: 'Chile' },
   { username: 'nadia', email: 'nadia@test.com', firstName: 'Nadia', lastName: 'Test', password: 'chat1234', country: 'Peru' },
+  { username: 'bruno', email: 'bruno@test.com', firstName: 'Bruno', lastName: 'Test', password: 'chat1234', country: 'Brasil' },
+  { username: 'valeria', email: 'valeria@test.com', firstName: 'Valeria', lastName: 'Test', password: 'chat1234', country: 'Ecuador' },
+  { username: 'sebastian', email: 'sebastian@test.com', firstName: 'Sebastian', lastName: 'Test', password: 'chat1234', country: 'Uruguay' },
+  { username: 'camila', email: 'camila@test.com', firstName: 'Camila', lastName: 'Test', password: 'chat1234', country: 'Paraguay' },
+  { username: 'rodrigo', email: 'rodrigo@test.com', firstName: 'Rodrigo', lastName: 'Test', password: 'chat1234', country: 'Bolivia' },
+  { username: 'ana', email: 'ana@test.com', firstName: 'Ana', lastName: 'Test', password: 'chat1234', country: 'Venezuela' },
+  { username: 'mateo', email: 'mateo@test.com', firstName: 'Mateo', lastName: 'Test', password: 'chat1234', country: 'Guatemala' },
+  { username: 'sofi', email: 'sofi@test.com', firstName: 'Sofia', lastName: 'Test', password: 'chat1234', country: 'Dominicana' },
 ];
 
 export async function syncFakeUsers(): Promise<number> {
