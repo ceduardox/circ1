@@ -126,6 +126,11 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
   };
 
   const q = question;
+  const hasAnswer = q.type === 'text'
+    ? !!answers[q.id]
+    : q.type === 'single'
+    ? answers[q.id] !== undefined
+    : (answers[q.id] || []).length > 0;
 
   if (showResult) {
     const passed = score >= passingScore;
@@ -207,7 +212,7 @@ export function QuizComponent({ title, questions, passingScore = 70, onComplete,
             Anterior
           </ButtonSecondary>
         )}
-        <ButtonPrimary onClick={handleNext} className="flex-1" disabled={!answers[q.id] && q.type !== 'text'}>
+        <ButtonPrimary onClick={handleNext} className="flex-1" disabled={!hasAnswer}>
           {isLast ? 'Finalizar' : 'Siguiente'}
           <ArrowRight className="w-4 h-4" />
         </ButtonPrimary>
