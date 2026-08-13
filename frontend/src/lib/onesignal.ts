@@ -46,14 +46,40 @@ function getSDK(init: boolean): Promise<OneSignalSDK> {
 
 /**
  * Pide permiso al usuario para enviar notificaciones push.
- * Devuelve true si quedó suscrito.
+ * Usa la API nativa del navegador (Notification) que muestra el modal
+ * "Permitir / Bloquear" en todos los sistemas (Windows, Android, iOS PWA).
+ * Devuelve true si quedó concedido.
  */
 export async function requestPushPermission(): Promise<boolean> {
+  // 1. Si ya está concedido, listo.
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    return true;
+  }
+
+  // 2. API nativa: dispara el modal del navegador.
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    try {
+      const result = await Notification.requestPermission();
+      if (result === 'granted') {
+        // Sincroniza OneSignal con la suscripción ya concedida.
+        try {
+          const OneSignal = await getSDK(false);
+          if (OneSignal?.Notifications?.setSubscription) {
+            await OneSignal.Notifications.setSubscription(true);
+          }
+        } catch { /* OneSignal se sincroniza solo al detectar el permiso */ }
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  // 3. Fallback: pedir vía OneSignal (para casos donde el SDK lo maneja mejor).
   try {
     const OneSignal = await getSDK(true);
     if (!OneSignal.Notifications) return false;
-    const permission = await OneSignal.Notifications.permissionNative();
-    if (permission === 'granted') return true;
     const result = await OneSignal.Notifications.requestPermission();
     return result === 'granted';
   } catch {
@@ -65,6 +91,9 @@ export async function requestPushPermission(): Promise<boolean> {
  * Consulta si el navegador ya tiene el permiso de notificaciones concedido.
  */
 export async function hasPushPermission(): Promise<boolean> {
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    return true;
+  }
   try {
     const OneSignal = await getSDK(false);
     if (!OneSignal.Notifications) return false;
