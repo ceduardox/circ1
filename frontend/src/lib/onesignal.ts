@@ -1,6 +1,6 @@
 // Wrapper tipado para el SDK web de OneSignal (v16).
 // Se carga en index.html con OneSignalDeferred y se usa para:
-//  - Pedir permiso de notificaciones (botón del chat)
+//  - Pedir permiso de notificaciones (botón del chat / panel)
 //  - Asociar el usuario autenticado (external_user_id) → el backend envía push con ese id.
 
 declare global {
@@ -13,9 +13,9 @@ type OneSignalSDK = any;
 
 let sdkPromise: Promise<OneSignalSDK> | null = null;
 
-// Obtiene el SDK de OneSignal (ya inicializado por index.html).
-// Se cachea para no re-inicializar ni depender del deferred array repetidamente.
-function getSDK(init: boolean): Promise<OneSignalSDK> {
+// Obtiene el SDK de OneSignal ya inicializado por index.html.
+// El init real ocurre en index.html; aquí solo esperamos a que esté listo.
+function getSDK(): Promise<OneSignalSDK> {
   if (sdkPromise) return sdkPromise;
 
   sdkPromise = new Promise((resolve, reject) => {
@@ -24,20 +24,8 @@ function getSDK(init: boolean): Promise<OneSignalSDK> {
       return reject(new Error('SDK de OneSignal no cargado'));
     }
     const push: ((sdk: OneSignalSDK) => void)[] = window.OneSignalDeferred;
-    push.push(async (OneSignal: OneSignalSDK) => {
-      try {
-        if (init) {
-          // idempotente; si ya estaba iniciado, no rompe nada.
-          await OneSignal.init({
-            appId: '3cb5f8f5-b0a1-4c16-91a7-8f83567808a9',
-          });
-        }
-        resolve(OneSignal);
-      } catch (err) {
-        // Aunque el init falle (ya inicializado con otros params), igual
-        // resolvemos con el SDK para poder usar sus métodos.
-        resolve(OneSignal);
-      }
+    push.push((OneSignal: OneSignalSDK) => {
+      resolve(OneSignal);
     });
   });
 
@@ -46,45 +34,32 @@ function getSDK(init: boolean): Promise<OneSignalSDK> {
 
 /**
  * Pide permiso al usuario para enviar notificaciones push.
- * Usa la API nativa del navegador (Notification) que muestra el modal
- * "Permitir / Bloquear" en todos los sistemas (Windows, Android, iOS PWA).
- * Devuelve true si quedó concedido.
+ * Usa el flujo de OneSignal que muestra el modal nativo y registra la suscripción.
+ * Devuelve true si quedó suscrito.
  */
 export async function requestPushPermission(): Promise<boolean> {
   try {
-    // 1. Asegurar que el SDK está inicializado y esperar a que el SW se registre.
-    const OneSignal = await getSDK(true);
+    const OneSignal = await getSDK();
+    if (!OneSignal?.Notifications) return false;
 
-    // 2. Pedir el permiso vía OneSignal (muestra el modal nativo Y registra la suscripción).
-    if (OneSignal?.Notifications) {
-      try {
-        const result = await OneSignal.Notifications.requestPermission();
-        if (result === 'granted') {
-          await OneSignal.Notifications.setSubscription(true);
-          return true;
-        }
-      } catch { /* falla al fallback nativo */ }
-    }
+    // Si ya está suscrito, listo.
+    const subscribed = await OneSignal.Notifications.isSubscribed().catch(() => false);
+    if (subscribed) return true;
 
-    // 3. Fallback: API nativa (el modal aparece, luego OneSignal se sincroniza).
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      const result = await Notification.requestPermission();
-      if (result === 'granted') {
-        // Forzar a OneSignal a registrar la suscripción del dispositivo.
-        try {
-          await OneSignal?.Notifications?.setSubscription(true);
-        } catch { /* OneSignal se sincroniza al detectar el permiso */ }
-        return true;
+    // Pide permiso (muestra el modal nativo del navegador y registra la suscripción).
+    const result = await OneSignal.Notifications.requestPermission();
+    if (result === 'granted') {
+      // Espera a que OneSignal registre la suscripción del navegador.
+      for (let i = 0; i < 10; i++) {
+        const now = await OneSignal.Notifications.isSubscribed().catch(() => false);
+        if (now) return true;
+        await new Promise(r => setTimeout(r, 500));
       }
-      return false;
-    }
-
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       return true;
     }
-
     return false;
-  } catch {
+  } catch (e) {
+    console.error('[OneSignal] requestPushPermission:', e);
     return false;
   }
 }
@@ -93,14 +68,11 @@ export async function requestPushPermission(): Promise<boolean> {
  * Consulta si el navegador ya tiene el permiso de notificaciones concedido.
  */
 export async function hasPushPermission(): Promise<boolean> {
-  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    return true;
-  }
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') return true;
   try {
-    const OneSignal = await getSDK(false);
-    if (!OneSignal.Notifications) return false;
-    const permission = await OneSignal.Notifications.permissionNative();
-    return permission === 'granted';
+    const OneSignal = await getSDK();
+    if (!OneSignal?.Notifications) return false;
+    return await OneSignal.Notifications.isSubscribed().catch(() => false);
   } catch {
     return false;
   }
@@ -109,17 +81,30 @@ export async function hasPushPermission(): Promise<boolean> {
 /**
  * Asocia el id interno del usuario (external_user_id) para poder enviarle
  * push dirigidos por ese id. Pasar null desasocia (logout).
+ * IMPORTANTE: debe llamarse DESPUÉS de que la suscripción esté activa.
  */
 export async function syncPushUser(userId: string | null): Promise<void> {
   try {
-    const OneSignal = await getSDK(false);
-    if (!OneSignal) return;
-    if (userId) {
-      await OneSignal.login(userId);
-    } else {
-      await OneSignal.logout();
+    const OneSignal = await getSDK();
+    if (!OneSignal?.login) return;
+
+    // Espera un poco a que el SDK esté listo si la suscripción aún se está registrando.
+    const tryLogin = async () => {
+      if (userId) {
+        await OneSignal.login(userId);
+      } else {
+        await OneSignal.logout();
+      }
+    };
+
+    try {
+      await tryLogin();
+    } catch {
+      // Reintenta tras 1s (el SDK puede no estar listo aún).
+      await new Promise(r => setTimeout(r, 1000));
+      await tryLogin();
     }
-  } catch {
-    // No romper la app si el SDK no está listo / localhost sin permiso.
+  } catch (e) {
+    console.error('[OneSignal] syncPushUser:', e);
   }
 }
