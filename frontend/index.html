@@ -30,12 +30,27 @@
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "3cb5f8f5-b0a1-4c16-91a7-8f83567808a9",
-          allowLocalhostAsSecureOrigin: true,
-          serviceWorkerParam: { scope: "/" },
-          serviceWorkerPath: "OneSignalSDK.sw.js",
+      window.oneSignalClient = null;
+      window.oneSignalReady = false;
+      window.oneSignalInitError = null;
+      window.oneSignalInitPromise = new Promise(function(resolve) {
+        window.OneSignalDeferred.push(async function(OneSignal) {
+          try {
+            await OneSignal.init({
+              appId: "3cb5f8f5-b0a1-4c16-91a7-8f83567808a9",
+              allowLocalhostAsSecureOrigin: true,
+              serviceWorkerParam: { scope: "/" },
+              serviceWorkerPath: "/OneSignalSDK.sw.js?v=20260813-2",
+              notifyButton: { enable: false },
+            });
+            window.oneSignalClient = OneSignal;
+            window.oneSignalReady = true;
+            resolve(true);
+          } catch (error) {
+            window.oneSignalInitError = error && error.message ? error.message : "OneSignal init failed";
+            console.error("[OneSignal] Init error:", error);
+            resolve(false);
+          }
         });
       });
     </script>

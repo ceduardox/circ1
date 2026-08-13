@@ -6,30 +6,29 @@
 declare global {
   interface Window {
     OneSignalDeferred?: any[];
+    oneSignalClient?: any;
+    oneSignalReady?: boolean;
+    oneSignalInitError?: string | null;
+    oneSignalInitPromise?: Promise<boolean>;
   }
 }
 
 type OneSignalSDK = any;
 
-let sdkPromise: Promise<OneSignalSDK> | null = null;
-
 // Obtiene el SDK de OneSignal ya inicializado por index.html.
-// El init real ocurre en index.html; aquí solo esperamos a que esté listo.
-function getSDK(): Promise<OneSignalSDK> {
-  if (sdkPromise) return sdkPromise;
+// Usa la misma promesa y el mismo cliente para permisos, identidad y estado.
+async function getSDK(): Promise<OneSignalSDK> {
+  if (window.oneSignalReady && window.oneSignalClient) return window.oneSignalClient;
+  if (!window.oneSignalInitPromise) throw new Error('SDK de OneSignal no cargado');
 
-  sdkPromise = new Promise((resolve, reject) => {
-    if (!window.OneSignalDeferred) {
-      sdkPromise = null;
-      return reject(new Error('SDK de OneSignal no cargado'));
-    }
-    const push: ((sdk: OneSignalSDK) => void)[] = window.OneSignalDeferred;
-    push.push((OneSignal: OneSignalSDK) => {
-      resolve(OneSignal);
-    });
-  });
-
-  return sdkPromise;
+  const ready = await Promise.race([
+    window.oneSignalInitPromise,
+    new Promise<boolean>(resolve => setTimeout(() => resolve(false), 8000)),
+  ]);
+  if (!ready || !window.oneSignalClient) {
+    throw new Error(window.oneSignalInitError || 'OneSignal no terminó de inicializar');
+  }
+  return window.oneSignalClient;
 }
 
 /**
