@@ -183,6 +183,9 @@ export function RegisterPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   className="pl-10 pr-10"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="new-password"
                   {...register('password')}
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -196,7 +199,7 @@ export function RegisterPage() {
               <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input id="confirmPassword" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10" {...register('confirmPassword')} />
+                <Input id="confirmPassword" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10" autoCapitalize="none" autoCorrect="off" autoComplete="new-password" {...register('confirmPassword')} />
               </div>
               {errors.confirmPassword && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.confirmPassword.message}</p>}
             </div>

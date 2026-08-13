@@ -121,6 +121,9 @@ export function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    autoComplete="current-password"
                     required
                   />
                   <button

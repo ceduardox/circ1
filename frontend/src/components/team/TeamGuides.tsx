@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, Flame, Presentation, DollarSign, ChevronDown, CheckCircle2, MessageCircle, Lightbulb } from 'lucide-react';
+import { Phone, Flame, Presentation, DollarSign, ChevronDown, CheckCircle2, MessageCircle, Lightbulb, ShoppingBag, Video } from 'lucide-react';
 
 interface Guide {
   id: string;
@@ -10,9 +10,27 @@ interface Guide {
   shadow: string;
   tag: string;
   steps: { text: string }[];
+  link?: { label: string; url: string };
 }
 
 const guides: Guide[] = [
+  {
+    id: 'videos-productos',
+    title: 'Vende con tus videos',
+    desc: 'Pon los productos de ryztor.com en tus redes con tu link y gana por cada venta, además de la membresía.',
+    icon: Video,
+    color: 'from-rose-500 to-pink-600',
+    shadow: 'shadow-rose-500/20',
+    tag: 'Doble ingreso',
+    link: { label: 'Ver productos en ryztor.com', url: 'https://ryztor.com' },
+    steps: [
+      { text: 'Entra a ryztor.com y elige 1-2 productos que se vean bien en video.' },
+      { text: 'Graba el producto en uso: muestra cómo se ve, su tamaño, cómo funciona.' },
+      { text: 'Edítalo simple: corta lo aburrido, agrega texto grande y música.' },
+      { text: 'Publica en tu red con TU link de afiliado en la descripción.' },
+      { text: 'Comparte también en historias: "Mira lo que uso, te lo dejo aquí 👇".' },
+    ],
+  },
   {
     id: 'frio',
     title: 'Llamada en frío',
@@ -140,6 +158,17 @@ export function TeamGuides() {
                     <span className="leading-6">{s.text}</span>
                   </div>
                 ))}
+                {g.link && (
+                  <a
+                    href={g.link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white text-sm font-bold hover:opacity-90 transition-opacity mt-2"
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    {g.link.label}
+                  </a>
+                )}
                 <div className="flex items-start gap-2 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 mt-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
                   Practica en voz alta antes de la llamada. La confianza se nota.
