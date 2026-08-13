@@ -19,6 +19,7 @@ import { chatRoutes } from './routes/chat.js';
 import { vipProRoutes } from './routes/vipPro.js';
 import { teamRoutes } from './routes/team.js';
 import { syncDayVideos } from './utils/dayVideos.js';
+import { syncFakeUsers } from './utils/fakeUsers.js';
 import { scheduleDailyReminder } from './utils/dailyReminder.js';
 import { ZodError } from 'zod';
 
@@ -56,6 +57,14 @@ try {
   if (synced > 0) console.log(`🎬 Videos de tareas actualizados: ${synced} días`);
 } catch (e) {
   console.error('⚠️ No se pudieron sincronizar los videos de las tareas:', e);
+}
+
+// Sincroniza los usuarios fake del chat (idempotente) en cada arranque.
+try {
+  const fakeCreated = await syncFakeUsers();
+  if (fakeCreated > 0) console.log(`👥 Usuarios fake del chat creados: ${fakeCreated}`);
+} catch (e) {
+  console.error('⚠️ No se pudieron sincronizar los usuarios fake:', e);
 }
 
 await app.register(cors, {
