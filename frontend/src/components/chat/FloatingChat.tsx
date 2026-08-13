@@ -4,7 +4,7 @@ import { chatApi } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { countryFlag } from '@/lib/utils';
-import { requestPushPermission, syncPushUser } from '@/lib/onesignal';
+import { hasPushPermission, requestPushPermission, syncPushUser } from '@/lib/onesignal';
 import { toast } from 'sonner';
 import 'flag-icons/css/flag-icons.min.css';
 
@@ -281,7 +281,7 @@ export function FloatingChat() {
   const { user, isAuthenticated, updatePushPreferences } = useAuthStore();
   const membershipStatus = useMembershipStore(s => s.status);
   const fetchStatus = useMembershipStore(s => s.fetchStatus);
-  const pushEnabled = !!user?.pushEnabled;
+  const [devicePushEnabled, setDevicePushEnabled] = useState(false);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [draft, setDraft] = useState('');
@@ -429,6 +429,7 @@ export function FloatingChat() {
     if (ok) {
       await syncPushUser(user?.id as string);
       await updatePushPreferences({ pushEnabled: true });
+      setDevicePushEnabled(true);
       toast.success('Notificaciones activadas. Te avisaremos de las menciones en el chat.');
     } else {
       toast.error('Permiso denegado. Activa las notificaciones desde el navegador para recibir menciones.');
@@ -437,8 +438,17 @@ export function FloatingChat() {
 
   const disablePush = async () => {
     await updatePushPreferences({ pushEnabled: false });
+    setDevicePushEnabled(false);
     toast.success('Notificaciones desactivadas');
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    hasPushPermission().then(enabled => {
+      if (!cancelled) setDevicePushEnabled(enabled);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Carga el estado de membresía del usuario (para ocultar el chat a no-pagados).
   useEffect(() => {
@@ -605,12 +615,12 @@ export function FloatingChat() {
             </div>
             <div className="flex items-center gap-1">
               <button
-                onClick={pushEnabled ? disablePush : enablePush}
+                onClick={devicePushEnabled ? disablePush : enablePush}
                 className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
                 aria-label="Activar o desactivar notificaciones del chat"
-                title={pushEnabled ? 'Desactivar notificaciones' : 'Activar notificaciones de menciones'}
+                title={devicePushEnabled ? 'Desactivar notificaciones' : 'Activar notificaciones de menciones'}
               >
-                {pushEnabled ? <BellRing className="w-4 h-4 text-emerald-200" /> : <Bell className="w-4 h-4" />}
+                {devicePushEnabled ? <BellRing className="w-4 h-4 text-emerald-200" /> : <Bell className="w-4 h-4" />}
               </button>
               {isAdmin && (
                 <button

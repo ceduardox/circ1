@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { getNativePushPermission, requestPushPermission, syncPushUser } from '@/lib/onesignal';
+import { getNativePushPermission, hasPushPermission, requestPushPermission, syncPushUser } from '@/lib/onesignal';
 import { Bell, BellRing, MessageCircle, Coins, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardContent } from '@/components/ui';
@@ -63,16 +63,25 @@ function PrefToggle({
 
 export function PushNotificationsPanel() {
   const { user, updatePushPreferences } = useAuthStore();
-  const pushEnabled = !!user?.pushEnabled;
+  const [devicePushEnabled, setDevicePushEnabled] = useState(false);
   const [prefsLoading, setPrefsLoading] = useState(false);
   const [pushPromptHint, setPushPromptHint] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    hasPushPermission().then(enabled => {
+      if (!cancelled) setDevicePushEnabled(enabled);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const updatePushEnabled = async () => {
     setPrefsLoading(true);
     setPushPromptHint('');
     try {
-      if (pushEnabled) {
+      if (devicePushEnabled) {
         await updatePushPreferences({ pushEnabled: false });
+        setDevicePushEnabled(false);
         toast.success('Notificaciones desactivadas');
         return;
       }
@@ -89,6 +98,7 @@ export function PushNotificationsPanel() {
       // Asocia el usuario a la suscripción de OneSignal (sin esto no llega el push).
       await syncPushUser(user?.id as string);
       await updatePushPreferences({ pushEnabled: true });
+      setDevicePushEnabled(true);
       toast.success('Notificaciones activadas');
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Error al actualizar las notificaciones');
@@ -131,19 +141,19 @@ export function PushNotificationsPanel() {
           className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-800 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors text-left"
         >
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${pushEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-500'}`}>
-              {pushEnabled ? <BellRing className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${devicePushEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-500'}`}>
+              {devicePushEnabled ? <BellRing className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
             </div>
             <div>
               <p className="font-medium text-gray-900 dark:text-dark-100">
-                {pushEnabled ? 'Notificaciones activadas' : 'Activar notificaciones'}
+                {devicePushEnabled ? 'Notificaciones activadas' : 'Activar notificaciones'}
               </p>
               <p className="text-xs text-gray-500">
-                {pushEnabled ? 'Recibirás avisos cuando haya actividad' : 'Toca para pedir permiso y recibir avisos'}
+                {devicePushEnabled ? 'Recibirás avisos cuando haya actividad' : 'Toca para pedir permiso y recibir avisos'}
               </p>
             </div>
           </div>
-          <Toggle checked={pushEnabled} disabled={prefsLoading} />
+          <Toggle checked={devicePushEnabled} disabled={prefsLoading} />
         </button>
 
         {/* Sub-toggles */}
@@ -152,24 +162,24 @@ export function PushNotificationsPanel() {
             icon={MessageCircle}
             title="Menciones del chat"
             desc="Te avisamos cuando te mencionan con @"
-            checked={!!(pushEnabled && user?.pushChat)}
-            disabled={!pushEnabled || prefsLoading}
+            checked={!!(devicePushEnabled && user?.pushChat)}
+            disabled={!devicePushEnabled || prefsLoading}
             onChange={(v) => updatePref('pushChat', v)}
           />
           <PrefToggle
             icon={Coins}
             title="Comisiones"
             desc="Comisiones generadas por tus referidos"
-            checked={!!(pushEnabled && user?.pushCommissions)}
-            disabled={!pushEnabled || prefsLoading}
+            checked={!!(devicePushEnabled && user?.pushCommissions)}
+            disabled={!devicePushEnabled || prefsLoading}
             onChange={(v) => updatePref('pushCommissions', v)}
           />
           <PrefToggle
             icon={CreditCard}
             title="Pagos y retiros"
             desc="Membresía activa, retiros aprobados"
-            checked={!!(pushEnabled && user?.pushPayments)}
-            disabled={!pushEnabled || prefsLoading}
+            checked={!!(devicePushEnabled && user?.pushPayments)}
+            disabled={!devicePushEnabled || prefsLoading}
             onChange={(v) => updatePref('pushPayments', v)}
           />
         </div>
