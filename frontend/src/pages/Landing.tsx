@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, BarChart3, Brain, Check, ChevronDown, Compass, Flame,
-  Menu, Network, ShieldCheck, Sparkles, Target,
+  ArrowRight, BarChart3, Brain, CalendarDays, Check, ChevronDown, Compass, Flame,
+  Menu, ShieldCheck, Sparkles, Star, Target, Users,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -25,11 +25,11 @@ export function LandingPage() {
   const primaryLabel = isAuthenticated ? 'Ir a mi programa' : 'Comenzar mi proceso';
 
   return (
-    <div className="min-h-screen bg-[#f7f0e4] text-[#0a0d29]">
-      <header className="sticky top-0 z-50 border-b border-[#17172a]/10 bg-[#f7f0e4]/90 backdrop-blur-xl">
-        <nav className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12" aria-label="Navegación principal">
+    <div className="min-h-screen bg-[#faf7f2] text-[#0a0d29]">
+      <header className="absolute inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-5 lg:px-12">
+        <nav className="mx-auto flex h-[72px] max-w-[1500px] items-center justify-between rounded-2xl border border-white/80 bg-white/95 px-4 shadow-[0_18px_45px_rgba(31,20,79,.10)] backdrop-blur-xl sm:h-[86px] sm:px-7 lg:px-12" aria-label="Navegación principal">
           <Link to="/" className="flex items-center gap-3" aria-label="Círculo 1, inicio">
-            <img src="/images/logo.png" alt="Círculo 1" className="h-10 w-auto" />
+            <img src="/images/logo.png" alt="Círculo 1" className="h-9 w-auto sm:h-12" />
           </Link>
 
           <div className="hidden items-center gap-9 text-sm font-semibold lg:flex">
@@ -41,7 +41,7 @@ export function LandingPage() {
 
           <div className="flex items-center gap-2 sm:gap-4">
             {!isAuthenticated && <Link to="/login" className="hidden px-3 py-3 text-sm font-semibold hover:text-[#392099] sm:block">Ingresar</Link>}
-            <Link to={primaryPath} className="rounded-xl bg-[#ff5149] px-4 py-3 text-xs font-bold text-white shadow-lg shadow-[#ff5149]/20 transition hover:-translate-y-0.5 hover:bg-[#f13f3b] sm:px-6 sm:text-sm">{isAuthenticated ? 'Mi programa' : 'Comenzar'}</Link>
+            <Link to={primaryPath} className="rounded-xl bg-[#ff6259] px-4 py-3 text-xs font-bold text-white shadow-[0_10px_25px_rgba(255,81,73,.28)] transition hover:-translate-y-0.5 hover:bg-[#f13f3b] sm:px-7 sm:py-4 sm:text-sm">{isAuthenticated ? 'Mi programa' : 'Comenzar'}</Link>
             <details className="relative lg:hidden">
               <summary className="flex h-11 w-11 cursor-pointer list-none items-center justify-center" aria-label="Abrir menú"><Menu className="h-7 w-7" /></summary>
               <div className="absolute right-0 top-14 w-56 rounded-2xl border border-black/10 bg-[#fffaf1] p-3 shadow-2xl">
@@ -54,36 +54,31 @@ export function LandingPage() {
       </header>
 
       <main>
-        <section className="overflow-hidden border-b border-[#17172a]/20 px-4 pb-5 pt-8 sm:px-7 sm:pb-8 lg:px-10 lg:pt-10">
-          <div className="mx-auto max-w-[1440px]">
-            <div className="mb-8 grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
-              <div>
-                <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[.28em] text-[#392099]"><Sparkles className="h-4 w-4" /> Neuroentrenamiento</div>
-                <p className="text-3xl font-bold leading-tight sm:text-4xl">Deja de sobrevivir en automático.</p>
-                <h1 className="mt-1 max-w-5xl text-[3.4rem] uppercase leading-[.9] tracking-[-.025em] text-[#26106b] sm:text-[5rem] lg:text-[6.3rem]" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>Empieza a dirigir tu vida.</h1>
-                <p className="mt-5 max-w-2xl text-sm font-medium leading-7 text-[#454450] sm:text-base">Entrena claridad, disciplina y ejecución con un sistema diseñado para convertir intención en progreso real.</p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row lg:pb-2">
-                <Link to={primaryPath} className="inline-flex items-center justify-center gap-3 rounded-xl bg-[#ff5149] px-7 py-4 text-sm font-bold text-white shadow-xl shadow-[#ff5149]/20 transition hover:-translate-y-0.5 hover:bg-[#f13f3b]">{primaryLabel}<ArrowRight className="h-4 w-4" /></Link>
-              </div>
+        <section className="relative overflow-hidden border-b border-[#17172a]/10 bg-[#f9f6f1] pt-[105px] sm:pt-[126px] lg:pt-[100px]">
+          <div className="mx-auto max-w-[1600px] lg:grid lg:min-h-[720px] lg:grid-cols-[42%_58%]">
+            <div className="relative z-20 flex flex-col justify-center px-6 pb-12 pt-12 sm:px-12 lg:px-[6.5vw] lg:pb-24 lg:pt-28">
+              <div className="mb-7 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.28em] text-[#4b2db5]"><Sparkles className="h-4 w-4" /> Neuroentrenamiento</div>
+              <p className="max-w-[520px] text-[2rem] font-extrabold leading-[1.08] tracking-[-.025em] sm:text-[2.65rem] lg:text-[2.8rem]">Deja de sobrevivir en automático.</p>
+              <h1 className="mt-4 max-w-[610px] text-[3.8rem] font-black uppercase leading-[.87] tracking-[-.055em] text-[#392099] sm:text-[5.6rem] lg:text-[5.8rem] xl:text-[6.7rem]">Empieza a dirigir tu vida<span className="text-[#ff6259]">.</span></h1>
+              <p className="mt-7 max-w-[550px] text-sm font-medium leading-7 text-[#3e3d49] sm:text-base">Entrena claridad, disciplina y ejecución con un sistema diseñado para convertir <strong className="text-[#392099]">intención en progreso real.</strong></p>
+              <Link to={primaryPath} className="mt-9 inline-flex w-fit items-center justify-center gap-3 rounded-xl bg-[#ff6259] px-7 py-4 text-sm font-bold text-white shadow-[0_18px_35px_rgba(255,81,73,.24)] transition hover:-translate-y-0.5 hover:bg-[#f13f3b]">{primaryLabel}<ArrowRight className="h-4 w-4" /></Link>
             </div>
 
-            <div className="relative overflow-hidden bg-[#1c1672] shadow-[0_24px_70px_rgba(35,16,107,.18)] lg:min-h-[590px]">
-              <div className="relative h-[420px] overflow-hidden sm:h-[520px] lg:absolute lg:inset-y-0 lg:left-0 lg:right-[190px] lg:h-auto">
-                <img src="/images/landing/hero.webp" alt="Persona avanzando hacia una nueva etapa" className="h-full w-full object-cover object-center" fetchPriority="high" />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0a0d29]/15 via-transparent to-[#26106b]/25" />
-                <div className="pointer-events-none absolute -left-28 top-0 hidden h-[125%] w-48 -skew-x-[18deg] bg-[#f7f0e4] lg:block" />
-                <div className="pointer-events-none absolute -right-16 top-0 hidden h-[125%] w-32 -skew-x-[18deg] bg-[#4b2db5] lg:block" />
-              </div>
-
-              <aside className="relative grid grid-cols-3 bg-gradient-to-b from-[#32178f] to-[#1b0c61] text-white lg:absolute lg:inset-y-0 lg:right-0 lg:flex lg:w-[210px] lg:flex-col lg:justify-center lg:gap-14 lg:pl-10 lg:pr-6">
-                {[{icon:Target,label:'Método probado'},{icon:BarChart3,label:'Progreso visible'},{icon:Network,label:'Comunidad activa'}].map(({icon: Icon,label}) => <div key={label} className="flex flex-col items-center gap-2 border-white/10 px-2 py-5 text-center text-[10px] font-semibold sm:text-xs lg:items-start lg:border-0 lg:p-0 lg:text-left"><Icon className="h-6 w-6 text-[#a894ff] lg:h-8 lg:w-8" /><span>{label}</span></div>)}
+            <div className="relative min-h-[500px] overflow-hidden bg-[#21106f] sm:min-h-[620px] lg:min-h-0">
+              <img src="/images/landing/hero.webp" alt="Persona avanzando hacia una nueva etapa" className="absolute inset-0 h-full w-full object-cover object-center" fetchPriority="high" />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#29106f]/10 via-transparent to-[#16084f]/30" />
+              <div className="pointer-events-none absolute -left-20 top-0 hidden h-full w-40 -skew-x-[18deg] bg-[#f9f6f1] lg:block" />
+              <aside className="absolute inset-y-0 right-0 flex w-[105px] flex-col justify-center gap-14 bg-gradient-to-b from-[#45239d]/95 to-[#1c075d]/95 px-3 text-white sm:w-[150px] sm:px-6 lg:w-[175px]">
+                {[{icon:Target,label:'Sistema probado'},{icon:BarChart3,label:'Resultados reales'},{icon:Users,label:'Comunidad activa'}].map(({icon: Icon,label}) => <div key={label} className="flex flex-col items-center gap-3 text-center text-[9px] font-semibold sm:text-xs"><Icon className="h-7 w-7 text-[#b8a6ff] sm:h-9 sm:w-9" /><span>{label}</span></div>)}
               </aside>
-
-              <div className="relative grid grid-cols-3 bg-[#fffaf1] text-[#0a0d29] lg:absolute lg:bottom-0 lg:left-[7%] lg:right-[210px] lg:max-w-[700px] lg:[clip-path:polygon(4%_0,100%_0,96%_100%,0_100%)]">
-                {[['01','Claridad'],['02','Acción'],['03','Expansión']].map(([number,label], index) => <div key={number} className={`px-4 py-4 sm:px-7 sm:py-5 ${index < 2 ? 'border-r border-[#17172a]/15' : ''}`}><strong className="block text-lg text-[#392099] sm:text-xl">{number}</strong><span className="mt-1 block text-xs font-bold sm:text-sm">{label}</span></div>)}
+              <div className="absolute bottom-0 left-3 right-[82px] grid grid-cols-3 bg-white/95 text-[#0a0d29] shadow-2xl backdrop-blur sm:left-[8%] sm:right-[120px] lg:right-[150px] lg:[clip-path:polygon(5%_0,100%_0,95%_100%,0_100%)]">
+                {[['01','Claridad'],['02','Acción'],['03','Expansión']].map(([number,label], index) => <div key={number} className={`px-4 py-4 sm:px-8 sm:py-6 ${index < 2 ? 'border-r border-[#17172a]/10' : ''}`}><strong className="block text-base text-[#392099] sm:text-xl">{number}</strong><span className="mt-1 block text-[10px] font-bold sm:text-sm">{label}</span></div>)}
               </div>
             </div>
+          </div>
+
+          <div className="relative z-30 mx-auto grid max-w-[1500px] grid-cols-2 gap-y-7 border-t border-[#17172a]/10 bg-white/95 px-6 py-7 shadow-[0_-12px_35px_rgba(31,20,79,.05)] sm:px-10 lg:grid-cols-4 lg:rounded-t-2xl lg:px-12">
+            {[{icon:Star,title:'4.9/5',text:'Experiencia valorada'},{icon:CalendarDays,title:'Paso a paso',text:'Ruta estructurada sin complicaciones'},{icon:Users,title:'Comunidad',text:'Crecimiento compartido y apoyo constante'},{icon:BarChart3,title:'Avance medible',text:'Progreso visible y sostenible'}].map(({icon: Icon,title,text}, index) => <div key={title} className={`flex items-start gap-4 ${index % 2 ? 'border-l border-[#17172a]/10 pl-5' : ''} lg:border-l lg:pl-8 first:lg:border-l-0 first:lg:pl-0`}><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f1ebff] text-[#5426e8]"><Icon className="h-6 w-6" /></span><span><strong className="block text-sm">{title}</strong><span className="mt-1 block max-w-[190px] text-xs leading-5 text-[#565560]">{text}</span></span></div>)}
           </div>
         </section>
 
