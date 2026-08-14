@@ -45,14 +45,15 @@ function SpeechCleanup() {
 }
 
 function App() {
-  const { fetchMe, isAuthenticated } = useAuthStore();
+  const { fetchMe, isAuthenticated, accessToken } = useAuthStore();
   const { updateAvailable, reload } = useUpdateDetector();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Al abrir la app, valida la sesión si hay token guardado.
+    if (isAuthenticated || accessToken) {
       fetchMe();
     }
-  }, [isAuthenticated, fetchMe]);
+  }, [isAuthenticated, accessToken, fetchMe]);
 
   return (
     <ThemeProvider>

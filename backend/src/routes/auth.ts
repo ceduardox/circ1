@@ -3,10 +3,18 @@ import { prisma } from '../utils/prisma.js';
 import { hashPassword, verifyPassword, generateReferralCode } from '../utils/auth.js';
 import { registerSchema, loginSchema, updateProfileSchema, pushPrefsSchema } from '../utils/schemas.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { config } from '../config/index.js';
 import { randomUUID } from 'crypto';
 import { writeFile, mkdir } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import path from 'path';
+
+// Duración de la cookie del refresh token (90 días por defecto, igual que el JWT).
+const REFRESH_COOKIE_MS = (() => {
+  const m = process.env.JWT_REFRESH_EXPIRY || '90d';
+  const days = parseInt(m.replace('d', ''), 10) || 90;
+  return days * 24 * 60 * 60 * 1000;
+})();
 
 interface JWTPayload {
   sub: string;
@@ -90,11 +98,11 @@ export async function authRoutes(app: FastifyInstance) {
     });
 
     const accessToken = app.jwt.sign({ sub: user.id, email: user.email, role: user.role });
-    const refreshToken = app.jwt.sign({ sub: user.id, type: 'refresh' }, { expiresIn: '7d' });
+    const refreshToken = app.jwt.sign({ sub: user.id, type: 'refresh' }, { expiresIn: config.jwt.refreshExpiry });
 
     reply.setCookie('refreshToken', refreshToken, {
       httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, path: '/',
+      maxAge: REFRESH_COOKIE_MS, path: '/',
     });
 
     return { user, accessToken };
@@ -130,24 +138,20 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/login', async (request, reply) => {
     const body = loginSchema.parse(request.body);
 
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: { equals: body.identifier, mode: 'insensitive' } },
-          { username: { equals: body.identifier, mode: 'insensitive' } },
-        ],
-      },
-    });
+    // Busca por email o username (dos consultas simples, evita el bug del OR de Prisma).
+    let user = await prisma.user.findFirst({ where: { email: body.identifier } });
+    if (!user) user = await prisma.user.findFirst({ where: { username: body.identifier } });
+
     if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
       return reply.code(401).send({ error: 'Credenciales inválidas' });
     }
 
     const accessToken = app.jwt.sign({ sub: user.id, email: user.email, role: user.role });
-    const refreshToken = app.jwt.sign({ sub: user.id, type: 'refresh' }, { expiresIn: '7d' });
+    const refreshToken = app.jwt.sign({ sub: user.id, type: 'refresh' }, { expiresIn: config.jwt.refreshExpiry });
 
     reply.setCookie('refreshToken', refreshToken, {
       httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, path: '/',
+      maxAge: REFRESH_COOKIE_MS, path: '/',
     });
 
     return { user: { id: user.id, email: user.email, username: user.username, firstName: user.firstName, lastName: user.lastName, role: user.role, avatarUrl: user.avatarUrl, pushEnabled: user.pushEnabled, pushChat: user.pushChat, pushCommissions: user.pushCommissions, pushPayments: user.pushPayments }, accessToken };
@@ -163,11 +167,11 @@ export async function authRoutes(app: FastifyInstance) {
       if (!user) throw new Error();
 
       const accessToken = app.jwt.sign({ sub: user.id, email: user.email, role: user.role });
-      const newRefreshToken = app.jwt.sign({ sub: user.id, type: 'refresh' }, { expiresIn: '7d' });
+      const newRefreshToken = app.jwt.sign({ sub: user.id, type: 'refresh' }, { expiresIn: config.jwt.refreshExpiry });
 
       reply.setCookie('refreshToken', newRefreshToken, {
         httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, path: '/',
+        maxAge: REFRESH_COOKIE_MS, path: '/',
       });
 
       return { accessToken };

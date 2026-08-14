@@ -278,7 +278,7 @@ function ZoomableImage({ src, onClose }: { src: string; onClose: () => void }) {
 }
 
 export function FloatingChat() {
-  const { user, isAuthenticated, updatePushPreferences } = useAuthStore();
+  const { user, isAuthenticated, isInitializing, updatePushPreferences } = useAuthStore();
   const membershipStatus = useMembershipStore(s => s.status);
   const fetchStatus = useMembershipStore(s => s.fetchStatus);
   const [devicePushEnabled, setDevicePushEnabled] = useState(false);
@@ -583,7 +583,8 @@ export function FloatingChat() {
 
   const impUser = users.find(u => u.id === impersonateId);
 
-  if (!isAuthenticated) return null;
+  // Mientras se valida la sesión (reabrir la app), no mostrar el chat.
+  if (isInitializing || !isAuthenticated) return null;
 
   // Solo usuarios ADMIN o con membresía activa/en gracia ven el chat.
   const memberStatus = membershipStatus?.status;

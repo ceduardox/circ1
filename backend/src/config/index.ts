@@ -8,8 +8,8 @@ export const config = {
   
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-secret-change-me',
-    accessExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',
-    refreshExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
+    accessExpiry: process.env.JWT_ACCESS_EXPIRY || '30d',
+    refreshExpiry: process.env.JWT_REFRESH_EXPIRY || '90d',
   },
   
   database: {
