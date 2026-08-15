@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Rocket, ShoppingBag, Wallet, CheckCircle2,
   Circle, ExternalLink, Loader2, Crown, ChevronDown, Zap, Users, Package,
+  AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { PageHeader, ButtonPrimary } from '@/components/ui';
@@ -18,7 +19,7 @@ const iconMap: Record<string, any> = {
 };
 
 export function VipProPage() {
-  const { modules, loading, fetchModules, toggleModule } = useVipProStore();
+  const { modules, loading, error, fetchModules, toggleModule } = useVipProStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
@@ -94,6 +95,29 @@ export function VipProPage() {
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200" role="alert">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h3 className="font-bold">No se pudo cargar VIP Pro</h3>
+              <p className="mt-1 break-words text-sm">{error}</p>
+              <p className="mt-2 text-xs opacity-75">Endpoint: /api/vip-pro/modules</p>
+              <button
+                type="button"
+                onClick={() => fetchModules()}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Reintentar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : modules.length === 0 ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200" role="status">
+          La API respondió correctamente, pero no hay módulos VIP Pro activos para mostrar.
         </div>
       ) : (
         <div className="space-y-4">

@@ -42,9 +42,20 @@ export const useVipProStore = create<VipProState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const { data } = await vipProApi.modules();
+      if (!Array.isArray(data?.modules)) {
+        throw new Error('La API respondió sin una lista válida de módulos');
+      }
       set({ modules: data.modules, loading: false });
     } catch (e: any) {
-      set({ error: e?.response?.data?.error || 'No se pudieron cargar los módulos', loading: false });
+      const status = e?.response?.status;
+      const detail = e?.response?.data?.error || e?.message || 'No se pudieron cargar los módulos';
+      const message = status ? `Error ${status}: ${detail}` : detail;
+      console.error('[VIP Pro] Error al cargar módulos', {
+        status: status ?? 'sin respuesta',
+        message: detail,
+        endpoint: '/api/vip-pro/modules',
+      });
+      set({ modules: [], error: message, loading: false });
     }
   },
 
