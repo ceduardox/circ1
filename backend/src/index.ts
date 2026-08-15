@@ -51,6 +51,17 @@ app.setErrorHandler((error, request, reply) => {
 
 await runMigrations();
 
+// Sincroniza el contenido VIP Pro después de crear/actualizar sus tablas.
+// El seed usa upsert por slug: no duplica módulos ni altera el progreso del usuario.
+if (config.nodeEnv === 'production') {
+  try {
+    console.log('🌱 Sincronizando módulos VIP Pro...');
+    execSync('npx --no-install tsx prisma/seed-vip.ts', { stdio: 'inherit', cwd: process.cwd() });
+  } catch (e) {
+    console.error('⚠️ No se pudieron sincronizar los módulos VIP Pro:', e);
+  }
+}
+
 // Sincroniza los videos de las tareas diarias (idempotente) en cada arranque.
 try {
   const synced = await syncDayVideos();
