@@ -145,17 +145,37 @@ export function TikTokShopPage() {
         icon={Music}
       />
 
-      {/* Banner membresía no al día */}
-      {data.memberStatus !== 'ACTIVE' && data.memberStatus !== 'GRACE' && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
-          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-red-700 dark:text-red-300">
-            <p className="font-semibold">Tu membresía no está al día</p>
+      {/* Banner GRACE: aún recibe comisiones pero debe renovar YA */}
+      {data.memberStatus === 'GRACE' && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-800 rounded-2xl">
+          <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-800 dark:text-amber-300">
+            <p className="font-semibold">Tu membresía está en período de gracia</p>
             <p className="text-xs mt-1">
-              Tus comisiones pendientes serán acreditadas al admin hasta que renueves tu membresía.
-              {' '}<Link to="/earnings" className="underline font-medium">Renovarla</Link>
+              Aún recibes tus comisiones, pero <strong>si vence la gracia perderás tus pagos</strong>: las ventas que registre el admin irán al administrador.
+              {' '}<Link to="/program" className="underline font-bold">Renovar mi membresía ahora</Link>
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Banner no al día: NO recibe comisiones, todo va al admin */}
+      {data.memberStatus !== 'ACTIVE' && data.memberStatus !== 'GRACE' && data.memberStatus && (
+        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-2xl">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-red-700 dark:text-red-300 flex-1">
+            <p className="font-semibold">NO estás recibiendo tus pagos</p>
+            <p className="text-xs mt-1">
+              Tu membresía no está al día. <strong>Las ventas que registre el admin van al administrador</strong>, no a ti.
+              Activa tu membresía para empezar a cobrar tus comisiones.
+            </p>
+          </div>
+          <Link
+            to="/program"
+            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+          >
+            <Sparkles className="w-3.5 h-3.5" /> Activar membresía
+          </Link>
         </div>
       )}
 
