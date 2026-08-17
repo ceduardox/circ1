@@ -1,6 +1,7 @@
 import { prisma } from './prisma.js';
 import { isEligibleForCommissions } from './membershipStatus.js';
 import { sendWebPush } from './onesignal.js';
+import { activateMembership } from './activation.js';
 
 const fmtUSD = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
@@ -146,14 +147,13 @@ export async function approveTikTokCommission(commissionId: string, processedBy:
   return { success: true };
 }
 
-// Genera comisiones de referido (25% nivel 1, 5% nivel 2) por el pack
-// asignado manualmente por el admin a un usuario sin membresía real.
-// Reutiliza el modelo Commission (anclado a un MembershipPayment sintético)
-// para que el referidor lo vea en su historial.
-// Regla de TikTok: si el receptor no está al día, ese % lo recibe el admin.
+// Activa la membresía de un usuario a partir de un pack asignado manualmente por
+// el admin (equivale a que el usuario hubiera pagado su membresía con cripto).
+// Reutiliza activateMembership: activa membresía + genera comisiones de referido
+// (25% nivel 1 / 5% nivel 2) con la regla unilevel (RETENTED si no está al día).
 export async function creditPackReferral(userId: string, packType: number, processedBy: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || !user.referrerId) return { success: true, level1: 0, level2: 0 };
+  if (!user) return { success: true, level1: 0, level2: 0 };
 
   // Si el usuario ya pagó una membresía real, el referidor ya cobró su comisión
   // por ese pago (activateMembership). No duplicar.
@@ -162,98 +162,30 @@ export async function creditPackReferral(userId: string, packType: number, proce
   });
   if (paidMembership) return { success: true, skipped: 'already-paid', level1: 0, level2: 0 };
 
-  const settings = await getCommissionSettings();
   const packValue = packType >= 1000 ? 1000 : 500;
-  const l1Amount = Math.round(packValue * settings.level1Percent / 100 * 100) / 100;
-  const l2Amount = Math.round(packValue * settings.level2Percent / 100 * 100) / 100;
 
-  // Pago sintético que ancla las comisiones (no activa membresía real).
-  const anchor = await prisma.membershipPayment.create({
+  // Pago sintético (PENDING) que dispara el mismo flujo que un pago cripto:
+  // activateMembership lo aprueba, activa la membresía y reparte comisiones.
+  const payment = await prisma.membershipPayment.create({
     data: {
       userId,
       amount: packValue,
       type: 'MEMBERSHIP',
-      status: 'APPROVED',
+      status: 'PENDING',
       planId: packType >= 1000 ? 'elite' : 'estandar',
       planName: packType >= 1000 ? 'Élite' : 'Estándar',
       method: 'PACK_MANUAL',
       reference: 'pack-admin',
-      processedAt: new Date(),
       processedBy,
     },
   });
 
-  // ── Nivel 1: el referidor directo ──
-  const referrer = await prisma.user.findUnique({ where: { id: user.referrerId } });
-  if (referrer) {
-    let receiverId = referrer.id;
-    if (!isEligibleForCommissions(referrer)) {
-      receiverId = processedBy; // no está al día → el admin que asigna se queda con el %
-    }
-    await prisma.$transaction(async (tx) => {
-      await tx.user.update({ where: { id: receiverId }, data: { balance: { increment: l1Amount } } });
-      const updated = await tx.user.findUnique({ where: { id: receiverId }, select: { balance: true } });
-      await tx.commission.create({
-        data: {
-          paymentId: anchor.id,
-          userId: receiverId,
-          sourceUserId: userId,
-          level: 1,
-          percent: settings.level1Percent,
-          amount: l1Amount,
-          status: 'PAID',
-        },
-      });
-      await tx.balanceLog.create({
-        data: {
-          userId: receiverId,
-          type: 'credit',
-          amount: l1Amount,
-          balance: updated?.balance ?? 0,
-          note: `Comisión nivel 1 por pack TikTok Shop de ${user.username}`,
-        },
-      });
-    });
-    const name = user.firstName || user.username || 'Un miembro';
-    await notifyWithPush(receiverId, 'Comisión por tu red', `${name} activó TikTok Shop y ganaste ${fmtUSD(l1Amount)} (nivel 1).`, 'pushCommissions');
-  }
+  await activateMembership(payment.id, processedBy);
 
-  // ── Nivel 2: el referidor del referidor ──
-  if (referrer?.referrerId) {
-    const grandReferrer = await prisma.user.findUnique({ where: { id: referrer.referrerId } });
-    if (grandReferrer) {
-      let receiverId = grandReferrer.id;
-      if (!isEligibleForCommissions(grandReferrer)) {
-        receiverId = processedBy;
-      }
-      await prisma.$transaction(async (tx) => {
-        await tx.user.update({ where: { id: receiverId }, data: { balance: { increment: l2Amount } } });
-        const updated = await tx.user.findUnique({ where: { id: receiverId }, select: { balance: true } });
-        await tx.commission.create({
-          data: {
-            paymentId: anchor.id,
-            userId: receiverId,
-            sourceUserId: userId,
-            level: 2,
-            percent: settings.level2Percent,
-            amount: l2Amount,
-            status: 'PAID',
-          },
-        });
-        await tx.balanceLog.create({
-          data: {
-            userId: receiverId,
-            type: 'credit',
-            amount: l2Amount,
-            balance: updated?.balance ?? 0,
-            note: `Comisión nivel 2 por pack TikTok Shop de ${user.username}`,
-          },
-        });
-      });
-      const name = user.firstName || user.username || 'Un miembro';
-      await notifyWithPush(receiverId, 'Comisión de tu red', `${name} de tu red activó TikTok Shop y ganaste ${fmtUSD(l2Amount)} (nivel 2).`, 'pushCommissions');
-    }
-  }
+  // Reporta al admin los montos generados (para su toast).
+  const settings = await getCommissionSettings();
+  const level1 = Math.round(packValue * settings.level1Percent / 100 * 100) / 100;
+  const level2 = Math.round(packValue * settings.level2Percent / 100 * 100) / 100;
 
-  return { success: true, level1: l1Amount, level2: l2Amount };
+  return { success: true, paymentId: payment.id, level1, level2 };
 }
