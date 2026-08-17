@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
@@ -95,6 +95,17 @@ export function DashboardPage() {
     return 'Buenas noches';
   };
 
+  const completedDates = useMemo(() => {
+    const set = new Set<string>();
+    stats?.progress?.forEach((p: any) => {
+      if (p.status === 'COMPLETED' && p.completedAt) {
+        const d = new Date(p.completedAt);
+        set.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+      }
+    });
+    return set;
+  }, [stats]);
+
   const getWeekDays = () => {
     const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
     const today = new Date();
@@ -109,7 +120,9 @@ export function DashboardPage() {
       const isToday = date.toDateString() === today.toDateString();
       const isPast = date < today && !isToday;
       const dayNum = date.getDate();
-      return { label, dayNum, isToday, isPast };
+      const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      const done = completedDates.has(dateKey);
+      return { label, dayNum, isToday, isPast, done };
     });
   };
 
@@ -178,7 +191,7 @@ export function DashboardPage() {
                         strokeDasharray={`${2 * Math.PI * 35}`}
                         strokeDashoffset={`${2 * Math.PI * 35 * (1 - dayProgress / 100)}`}
                         strokeLinecap="round"
-                        className="text-primary-600 dark:text-primary-400 transition-all duration-500" />
+                        className="text-primary-600 dark:text-primary-400 transition-[stroke-dashoffset] duration-700 ease-out" />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-xl font-bold text-gray-900 dark:text-dark-100">{completedCount}</span>
@@ -246,8 +259,8 @@ export function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Entrenamiento */}
               <Link to={`/day/${currentDay?.dayNumber || 1}`} className="block group">
-                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
+                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-200">
+                  <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                     <BookOpen className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -264,8 +277,8 @@ export function DashboardPage() {
 
               {/* VIP Pro */}
               <Link to="/vip-pro" className="block group">
-                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 hover:border-amber-200 dark:hover:border-amber-800 transition-all duration-200">
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                     <Crown className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -287,8 +300,8 @@ export function DashboardPage() {
 
               {/* Construir Equipo */}
               <Link to="/team" className="block group">
-                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 hover:border-emerald-200 dark:hover:border-emerald-800 transition-all duration-200">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
                     <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -342,7 +355,26 @@ export function DashboardPage() {
                 <h2 className="font-semibold text-gray-900 dark:text-dark-100">Logros</h2>
                 <span className="text-sm text-gray-500 dark:text-dark-400">{unlockedCount}/{achievements.length} desbloqueados</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+              {unlockedCount === 0 ? (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
+                    <Trophy className="w-8 h-8 text-primary-400 dark:text-primary-500" />
+                  </div>
+                  <p className="text-gray-600 dark:text-dark-300 font-medium">Aún no tienes logros</p>
+                  <p className="text-sm text-gray-400 dark:text-dark-500 mt-1">
+                    Completa tu primera tarea de hoy y desbloquéalo
+                  </p>
+                  <Link
+                    to={`/day/${currentDay?.dayNumber || 1}`}
+                    className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 font-medium text-sm transition-all"
+                  >
+                    Empezar mi primera tarea
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {achievements.map(achievement => {
                   const Icon = iconMap[achievement.icon] || Trophy;
                   const isUnlocked = !!achievement.unlockedAt;
@@ -384,7 +416,8 @@ export function DashboardPage() {
                     </div>
                   );
                 })}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -418,14 +451,17 @@ export function DashboardPage() {
                 <div key={i} className="flex flex-col items-center gap-1">
                   <span className="text-[10px] font-medium text-gray-400 dark:text-dark-500">{day.label}</span>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
-                    day.isToday
+                    day.done
+                      ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
+                      : day.isToday
                       ? 'bg-primary-600 text-white shadow-sm'
                       : day.isPast
                       ? 'bg-gray-100 dark:bg-dark-700 text-gray-400 dark:text-dark-500'
                       : 'bg-white dark:bg-dark-800 text-gray-300 dark:text-dark-600 border border-gray-100 dark:border-dark-700'
                   }`}>
-                    {day.dayNum}
+                    {day.done ? <CheckCircle className="w-4 h-4" /> : day.dayNum}
                   </div>
+                  {day.done && <span className="sr-only">completado</span>}
                 </div>
               ))}
             </div>
@@ -455,12 +491,21 @@ export function DashboardPage() {
                 </button>
               )}
             </div>
-            {!stats?.streak && (
-              <p className="text-[11px] text-gray-400 dark:text-dark-500 mt-3 flex items-center gap-1.5">
-                <span className="text-primary-500">✦</span>
-                Empieza hoy para activar tu primera racha.
-              </p>
-            )}
+            {!stats?.streak ? (
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-dark-700">
+                <p className="text-[11px] text-gray-400 dark:text-dark-500 flex items-center gap-1.5">
+                  <Flame className="w-3 h-3 text-orange-400" />
+                  Completa tu primera tarea de hoy y no pierdas tu racha.
+                </p>
+                <Link
+                  to={`/day/${currentDay?.dayNumber || 1}`}
+                  className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 text-xs font-medium hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-all"
+                >
+                  Empezar hoy
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
