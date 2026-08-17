@@ -18,10 +18,12 @@ async function getAutoApprove(): Promise<boolean> {
 }
 
 export async function adminTiktokRoutes(app: FastifyInstance) {
-  // ─── Búsqueda de usuarios con/ sin campaña ───
+  // ─── Listado de usuarios con paginación (30 por página) y búsqueda ───
   app.get('/users', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
-    const query = request.query as { search?: string };
+    const query = request.query as { search?: string; page?: string };
     const search = query.search?.trim() || '';
+    const page = Math.max(1, parseInt(query.page || '1', 10) || 1);
+    const take = 30;
 
     const where = search
       ? { OR: [
@@ -32,18 +34,22 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
         ] }
       : {};
 
-    const users = await prisma.user.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-      select: {
-        id: true, email: true, username: true, firstName: true, lastName: true, country: true,
-        membershipStatus: true,
-        tiktokCampaign: { select: { id: true, packType: true, baseCreators: true, extraCreators: true, isActive: true, _count: { select: { creators: true } } } },
-      },
-    });
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * take,
+        take,
+        select: {
+          id: true, email: true, username: true, firstName: true, lastName: true, country: true,
+          membershipStatus: true, membershipExpiresAt: true,
+          tiktokCampaign: { select: { id: true, packType: true, baseCreators: true, extraCreators: true, isActive: true, _count: { select: { creators: true } } } },
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
 
-    return { users };
+    return { users, total, page, totalPages: Math.ceil(total / take), perPage: take };
   });
 
   // ─── Detalle de campaña de un usuario (o crear si no existe) ───

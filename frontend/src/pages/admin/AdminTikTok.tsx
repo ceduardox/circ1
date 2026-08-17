@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, User, Plus, Trash2, Pencil, CheckCircle, XCircle, Loader2, Package, Music, DollarSign, ExternalLink, Users, ShoppingBag } from 'lucide-react';
+import { Search, User, Plus, Trash2, Pencil, CheckCircle, XCircle, Loader2, Package, Music, DollarSign, ExternalLink, Users, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, Mail, MapPin, Crown } from 'lucide-react';
 import { adminTiktokApi, adminBusinessApi } from '@/services/api';
 import { Input, Label, ButtonPrimary, Button, PageHeader } from '@/components/ui';
 import { TikTokIcon } from '@/components/TikTokLogo';
@@ -60,25 +60,61 @@ export function AdminTikTokPage() {
   );
 }
 
-// ─── Usuarios y campañas ───
+// ─── Usuarios y campañas (lista paginada con activación de pack) ───
 function UsersTab() {
   const [search, setSearch] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
+  const [packBusy, setPackBusy] = useState<string | null>(null);
 
-  const searchUsers = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!search.trim()) return;
+  const load = async (targetPage = page, term = search) => {
     setLoading(true);
     try {
-      const { data } = await adminTiktokApi.searchUsers(search.trim());
-      setResults(data.users || []);
-      setSelected(null);
+      const { data } = await adminTiktokApi.searchUsers(term.trim(), targetPage);
+      setUsers(data.users || []);
+      setTotal(data.total || 0);
+      setTotalPages(data.totalPages || 1);
+      setPage(data.page || 1);
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Error al buscar');
+      toast.error(err.response?.data?.error || 'Error al cargar usuarios');
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load(1, '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const runSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    load(1, search);
+  };
+
+  const assignPack = async (u: any, packType: number) => {
+    const base = packType >= 1000 ? 10 : 5;
+    if (!u.tiktokCampaign && !confirm(`¿Activar TikTok Shop para ${u.firstName || u.username} con Pack $${packType}? Se activará su membresía y se repartirán comisiones de red.`)) return;
+    setPackBusy(u.id);
+    try {
+      const { data: res } = await adminTiktokApi.updatePack(u.id, { packType, baseCreators: base });
+      const ref = res.referral;
+      if (ref?.level1 || ref?.level2) {
+        toast.success(`Membresía activada (Pack $${packType}). Comisión de red: ${fmt(ref.level1)} (nivel 1)${ref.level2 ? ` + ${fmt(ref.level2)} (nivel 2)` : ''}`);
+      } else if (ref?.skipped === 'already-paid') {
+        toast.info(`Pack $${packType} actualizado. El usuario ya pagó membresía (comisión ya generada).`);
+      } else {
+        toast.success(`Membresía activada con Pack $${packType}`);
+      }
+      await load();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al asignar pack');
+    } finally {
+      setPackBusy(null);
     }
   };
 
@@ -92,9 +128,9 @@ function UsersTab() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Buscador */}
-      <form onSubmit={searchUsers} className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex gap-2">
+      <form onSubmit={runSearch} className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
@@ -110,56 +146,194 @@ function UsersTab() {
         </ButtonPrimary>
       </form>
 
-      {/* Resultados */}
-      {results.length > 0 && !selected && (
-        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100 dark:border-dark-700 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900 dark:text-dark-100 flex items-center gap-2">
-              <User className="w-4 h-4 text-primary-600" /> Usuarios encontrados
-            </h2>
-            <span className="text-xs text-gray-500">{results.length}</span>
+      <div className="flex items-center justify-between px-1">
+        <p className="text-sm text-gray-500 dark:text-dark-400">
+          <strong className="text-gray-900 dark:text-dark-100">{total}</strong> usuarios
+        </p>
+        <p className="text-xs text-gray-400 dark:text-dark-500">Selecciona el pack para activar la membresía y repartir comisiones</p>
+      </div>
+
+      {/* Detalle de campaña (si el admin entra a un usuario) */}
+      {selected ? (
+        <CampaignDetail data={selected} onBack={() => setSelected(null)} onRefresh={setSelected} />
+      ) : (
+        <>
+          {/* Lista (desktop: tabla) */}
+          <div className="hidden lg:block bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wider text-gray-400 dark:text-dark-500 border-b border-gray-100 dark:border-dark-700">
+                    <th className="px-4 py-3">Usuario</th>
+                    <th className="px-4 py-3">Membresía</th>
+                    <th className="px-4 py-3">Pack / Creadores</th>
+                    <th className="px-4 py-3 text-right">Activar membresía</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
+                  {users.map(u => (
+                    <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/40 transition-colors">
+                      <td className="px-4 py-3">
+                        <button onClick={() => selectUser(u)} className="flex items-center gap-3 text-left">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-purple-700 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                            {u.firstName?.[0] || u.username?.[0] || '?'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-900 dark:text-dark-100 truncate">
+                              {u.firstName} {u.lastName} <span className="text-gray-400 font-normal">· @{u.username}</span>
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-dark-400 flex items-center gap-2 truncate">
+                              <Mail className="w-3 h-3" /> {u.email}
+                              {u.country && <><span>·</span><MapPin className="w-3 h-3" /> {u.country}</>}
+                            </p>
+                          </div>
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <MembershipBadge status={u.membershipStatus} />
+                      </td>
+                      <td className="px-4 py-3">
+                        {u.tiktokCampaign ? (
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400">
+                            Pack {u.tiktokCampaign.packType} · {u.tiktokCampaign._count.creators}/{u.tiktokCampaign.baseCreators + u.tiktokCampaign.extraCreators} creadores
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-dark-400">
+                            Sin campaña
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <PackSelect user={u} busy={packBusy === u.id} onAssign={assignPack} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-dark-700">
-            {results.map(u => (
-              <button
-                key={u.id}
-                onClick={() => selectUser(u)}
-                className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors"
+
+          {/* Lista (móvil: cards desplegables) */}
+          <div className="lg:hidden space-y-3">
+            {users.map(u => <MobileUserCard key={u.id} user={u} busy={packBusy === u.id} onSelect={() => selectUser(u)} onAssign={assignPack} />)}
+          </div>
+
+          {users.length === 0 && !loading && (
+            <div className="text-center py-10 text-gray-400 dark:text-dark-500 text-sm bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700">
+              No se encontraron usuarios.
+            </div>
+          )}
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button
+                size="sm"
+                disabled={page <= 1 || loading}
+                onClick={() => load(page - 1)}
+                className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"
               >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-purple-700 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                  {u.firstName?.[0] || u.username?.[0] || '?'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
-                    {u.firstName} {u.lastName}
-                    <span className="text-gray-400 font-normal"> · @{u.username}</span>
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-dark-400 truncate">{u.email} · {u.country || '—'}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  {u.tiktokCampaign ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
-                        Pack {u.tiktokCampaign.packType}
-                      </span>
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400">
-                        {u.tiktokCampaign._count.creators}/{u.tiktokCampaign.baseCreators + u.tiktokCampaign.extraCreators} creadores
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-dark-400">
-                      Sin campaña
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
+                <ChevronLeft className="w-4 h-4" /> Anterior
+              </Button>
+              <span className="text-sm text-gray-600 dark:text-dark-300">
+                Página <strong>{page}</strong> de {totalPages}
+              </span>
+              <Button
+                size="sm"
+                disabled={page >= totalPages || loading}
+                onClick={() => load(page + 1)}
+                className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"
+              >
+                Siguiente <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function MembershipBadge({ status }: { status: string }) {
+  const meta: Record<string, { label: string; classes: string }> = {
+    ACTIVE: { label: 'Activa', classes: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
+    INACTIVE: { label: 'Inactiva', classes: 'bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-dark-400' },
+    REVOKED: { label: 'Revocada', classes: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+    GRACE: { label: 'En gracia', classes: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+    EXPIRED: { label: 'Expirada', classes: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+  };
+  const m = meta[status] || { label: status || '—', classes: 'bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-dark-400' };
+  return (
+    <span className={clsx('text-[11px] font-semibold px-2.5 py-1 rounded-full', m.classes)}>{m.label}</span>
+  );
+}
+
+function PackSelect({ user, busy, onAssign }: { user: any; busy: boolean; onAssign: (u: any, packType: number) => void }) {
+  const current = user.tiktokCampaign?.packType;
+  return (
+    <div className="inline-flex items-center gap-2">
+      <select
+        className="text-xs rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 px-2 py-2"
+        value={current ? String(current) : '0'}
+        disabled={busy}
+        onChange={(e) => {
+          const packType = Number(e.target.value);
+          if (packType === 0) return;
+          onAssign(user, packType);
+        }}
+      >
+        <option value="0">{current ? 'Pack activo' : '— Sin pack —'}</option>
+        <option value="500">Pack $500 (5)</option>
+        <option value="1000">Pack $1000 (10)</option>
+      </select>
+      {busy && <Loader2 className="w-4 h-4 animate-spin text-primary-600" />}
+    </div>
+  );
+}
+
+function MobileUserCard({ user, busy, onSelect, onAssign }: { user: any; busy: boolean; onSelect: () => void; onAssign: (u: any, packType: number) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-dark-700/40 transition-colors">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-purple-700 text-white flex items-center justify-center text-sm font-bold shrink-0">
+          {user.firstName?.[0] || user.username?.[0] || '?'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
+            {user.firstName} {user.lastName} <span className="text-gray-400 font-normal">· @{user.username}</span>
+          </p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <MembershipBadge status={user.membershipStatus} />
+            {user.tiktokCampaign ? (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400">
+                Pack {user.tiktokCampaign.packType} · {user.tiktokCampaign._count.creators}/{user.tiktokCampaign.baseCreators + user.tiktokCampaign.extraCreators}
+              </span>
+            ) : (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-dark-400">Sin campaña</span>
+            )}
+          </div>
+        </div>
+        <ChevronDown className={clsx('w-4 h-4 text-gray-400 transition-transform shrink-0', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 border-t border-gray-100 dark:border-dark-700 pt-3 space-y-3">
+          <p className="text-xs text-gray-500 dark:text-dark-400 truncate flex items-center gap-1.5">
+            <Mail className="w-3 h-3" /> {user.email}
+            {user.country && <><span>·</span><MapPin className="w-3 h-3" /> {user.country}</>}
+          </p>
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={onSelect}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-dark-200 text-xs font-semibold hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
+            >
+              <Users className="w-3.5 h-3.5" /> Ver campaña
+            </button>
+            <PackSelect user={user} busy={busy} onAssign={onAssign} />
           </div>
         </div>
       )}
-
-      {/* Detalle de campaña */}
-      {selected && <CampaignDetail data={selected} onBack={() => setSelected(null)} onRefresh={setSelected} />}
     </div>
   );
 }

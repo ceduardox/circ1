@@ -192,7 +192,7 @@ export const tiktokApi = {
 };
 
 export const adminTiktokApi = {
-  searchUsers: (search: string) => api.get('/admin/tiktok/users', { params: { search } }),
+  searchUsers: (search: string, page?: number) => api.get('/admin/tiktok/users', { params: { search, page } }),
   campaign: (userId: string) => api.get(`/admin/tiktok/campaigns/${userId}`),
   activateCampaign: (userId: string) => api.post(`/admin/tiktok/campaigns/${userId}/activate`),
   updatePack: (userId: string, data: any) => api.put(`/admin/tiktok/campaigns/${userId}/pack`, data),
