@@ -50,6 +50,7 @@ enum PaymentStatus {
 enum PaymentType {
   MEMBERSHIP
   MONTHLY
+  CREATOR_EXTRA
 }
 
 enum WithdrawalStatus {
@@ -63,65 +64,84 @@ enum CommissionStatus {
   RETENTED
 }
 
-model User {
-  id                   String           @id @default(uuid())
-  email                String           @unique
-  username             String           @unique
-  passwordHash         String           @map("password_hash")
-  firstName            String?          @map("first_name")
-  lastName             String?          @map("last_name")
-  age                  Int?
-  country              String?
-  avatarUrl            String?          @map("avatar_url")
-  role                 UserRole         @default(USER)
-  streakFreezes        Int              @default(2) @map("streak_freezes")
-  membershipStatus     MembershipStatus @default(INACTIVE) @map("membership_status")
-  membershipPaidAt     DateTime?        @map("membership_paid_at")
-  membershipExpiresAt  DateTime?        @map("membership_expires_at")
-  balance              Float            @default(0)
-  chatBlocked          Boolean          @default(false) @map("chat_blocked")
-  pushEnabled          Boolean          @default(false) @map("push_enabled")
-  pushChat             Boolean          @default(true) @map("push_chat")
-  pushChatAll          Boolean          @default(false) @map("push_chat_all")
-  pushCommissions      Boolean          @default(true) @map("push_commissions")
-  pushPayments         Boolean          @default(true) @map("push_payments")
-  referralCode         String?          @unique @map("referral_code")
-  referrerId           String?          @map("referrer_id")
-  referralPlans        Json?            @map("referral_plans")
-  createdAt            DateTime         @default(now()) @map("created_at")
-  updatedAt            DateTime         @updatedAt @map("updated_at")
+enum TikTokCreatorStatus {
+  PENDIENTE
+  ACEPTADO
+  ACTIVO
+}
 
-  progress        UserProgress[]
-  reflections     UserReflection[]
-  notifications   Notification[]
-  balanceLogs     BalanceLog[]
-  payments        MembershipPayment[]
-  commissions     Commission[]          @relation("CommissionReceiver")
-  earnedFrom      Commission[]          @relation("CommissionSource")
-  withdrawals     Withdrawal[]
-  payoutAccounts  PayoutAccount[]
-  referrer        User?                 @relation("Referrals", fields: [referrerId], references: [id])
-  referrals       User[]                @relation("Referrals")
-  chatMessages    ChatMessage[]         @relation("ChatMessageSender")
-  impersonatedIn  ChatMessage[]         @relation("ChatMessageAsUser")
-  vipProProgress  VipProProgress[]
-  teamContacts    TeamContact[]
-  socialPosts     SocialPost[]
+enum TikTokCommissionType {
+  STUDENT
+  SPONSOR
+}
+
+enum TikTokCommissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                  String           @id @default(uuid())
+  email               String           @unique
+  username            String           @unique
+  passwordHash        String           @map("password_hash")
+  firstName           String?          @map("first_name")
+  lastName            String?          @map("last_name")
+  age                 Int?
+  country             String?
+  avatarUrl           String?          @map("avatar_url")
+  role                UserRole         @default(USER)
+  streakFreezes       Int              @default(2) @map("streak_freezes")
+  membershipStatus    MembershipStatus @default(INACTIVE) @map("membership_status")
+  membershipPaidAt    DateTime?        @map("membership_paid_at")
+  membershipExpiresAt DateTime?        @map("membership_expires_at")
+  balance             Float            @default(0)
+  chatBlocked         Boolean          @default(false) @map("chat_blocked")
+  pushEnabled         Boolean          @default(false) @map("push_enabled")
+  pushChat            Boolean          @default(true) @map("push_chat")
+  pushChatAll         Boolean          @default(false) @map("push_chat_all")
+  pushCommissions     Boolean          @default(true) @map("push_commissions")
+  pushPayments        Boolean          @default(true) @map("push_payments")
+  referralCode        String?          @unique @map("referral_code")
+  referrerId          String?          @map("referrer_id")
+  referralPlans       Json?            @map("referral_plans")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  progress          UserProgress[]
+  reflections       UserReflection[]
+  notifications     Notification[]
+  balanceLogs       BalanceLog[]
+  payments          MembershipPayment[]
+  commissions       Commission[]        @relation("CommissionReceiver")
+  earnedFrom        Commission[]        @relation("CommissionSource")
+  withdrawals       Withdrawal[]
+  payoutAccounts    PayoutAccount[]
+  referrer          User?               @relation("Referrals", fields: [referrerId], references: [id])
+  referrals         User[]              @relation("Referrals")
+  chatMessages      ChatMessage[]       @relation("ChatMessageSender")
+  impersonatedIn    ChatMessage[]       @relation("ChatMessageAsUser")
+  vipProProgress    VipProProgress[]
+  teamContacts      TeamContact[]
+  socialPosts       SocialPost[]
+  tiktokCampaign    TikTokShopCampaign?
+  tiktokCommissions TikTokCommission[]
 
   @@map("users")
 }
 
 model ChatMessage {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  asUserId  String?  @map("as_user_id")
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  asUserId  String?   @map("as_user_id")
   message   String
-  imageUrl  String?  @map("image_url")
+  imageUrl  String?   @map("image_url")
   deletedAt DateTime? @map("deleted_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
-  sender    User     @relation("ChatMessageSender", fields: [userId], references: [id], onDelete: Cascade)
-  asUser    User?    @relation("ChatMessageAsUser", fields: [asUserId], references: [id], onDelete: SetNull)
+  sender User  @relation("ChatMessageSender", fields: [userId], references: [id], onDelete: Cascade)
+  asUser User? @relation("ChatMessageAsUser", fields: [asUserId], references: [id], onDelete: SetNull)
 
   @@map("chat_messages")
 }
@@ -141,32 +161,35 @@ model MembershipPayment {
   processedAt DateTime?     @map("processed_at")
   processedBy String?       @map("processed_by")
 
-  npPaymentId String?       @map("np_payment_id")
-  npInvoiceUrl String?      @map("np_invoice_url")
-  npStatus    String?       @map("np_status")
-  npPayAmount Float?        @map("np_pay_amount")
-  npPayCurrency String?     @map("np_pay_currency")
+  npPaymentId   String? @map("np_payment_id")
+  npInvoiceUrl  String? @map("np_invoice_url")
+  npStatus      String? @map("np_status")
+  npPayAmount   Float?  @map("np_pay_amount")
+  npPayCurrency String? @map("np_pay_currency")
 
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId String? @map("campaign_id")
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign    TikTokShopCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   commissions Commission[]
 
   @@map("membership_payments")
 }
 
 model Commission {
-  id           String            @id @default(uuid())
-  paymentId    String            @map("payment_id")
-  userId       String            @map("user_id")
-  sourceUserId String            @map("source_user_id")
+  id           String           @id @default(uuid())
+  paymentId    String           @map("payment_id")
+  userId       String           @map("user_id")
+  sourceUserId String           @map("source_user_id")
   level        Int
   percent      Float
   amount       Float
-  status       CommissionStatus  @default(PAID)
-  createdAt    DateTime          @default(now()) @map("created_at")
+  status       CommissionStatus @default(PAID)
+  createdAt    DateTime         @default(now()) @map("created_at")
 
-  payment      MembershipPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  user         User              @relation("CommissionReceiver", fields: [userId], references: [id], onDelete: Cascade)
-  sourceUser   User              @relation("CommissionSource", fields: [sourceUserId], references: [id], onDelete: Cascade)
+  payment    MembershipPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  user       User              @relation("CommissionReceiver", fields: [userId], references: [id], onDelete: Cascade)
+  sourceUser User              @relation("CommissionSource", fields: [sourceUserId], references: [id], onDelete: Cascade)
 
   @@map("commissions")
 }
@@ -184,7 +207,7 @@ model Withdrawal {
   processedAt DateTime?        @map("processed_at")
   processedBy String?          @map("processed_by")
 
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("withdrawals")
 }
@@ -198,7 +221,7 @@ model PayoutAccount {
   details   Json?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("payout_accounts")
 }
@@ -212,7 +235,7 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
@@ -226,19 +249,19 @@ model BalanceLog {
   note      String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("balance_logs")
 }
 
 model ProgramDay {
-  id          String   @id @default(uuid())
-  dayNumber   Int      @unique @map("day_number")
+  id          String    @id @default(uuid())
+  dayNumber   Int       @unique @map("day_number")
   title       String
   description String?
   unlockDate  DateTime? @map("unlock_date")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   contents    DayContent[]
   progress    UserProgress[]
@@ -248,34 +271,34 @@ model ProgramDay {
 }
 
 model DayContent {
-  id          String      @id @default(uuid())
-  dayId       String      @map("day_id")
-  type        ContentType
-  title       String
-  content     Json
-  orderIndex  Int         @default(0) @map("order_index")
-  isRequired  Boolean     @default(true) @map("is_required")
-  createdAt   DateTime    @default(now()) @map("created_at")
+  id         String      @id @default(uuid())
+  dayId      String      @map("day_id")
+  type       ContentType
+  title      String
+  content    Json
+  orderIndex Int         @default(0) @map("order_index")
+  isRequired Boolean     @default(true) @map("is_required")
+  createdAt  DateTime    @default(now()) @map("created_at")
 
-  day         ProgramDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
-  progress    UserProgress[]
+  day      ProgramDay     @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  progress UserProgress[]
 
   @@map("day_contents")
 }
 
 model UserProgress {
-  id          String         @id @default(uuid())
-  userId      String         @map("user_id")
-  dayId       String         @map("day_id")
-  contentId   String         @map("content_id")
-  status      ContentStatus  @default(PENDING)
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  dayId       String        @map("day_id")
+  contentId   String        @map("content_id")
+  status      ContentStatus @default(PENDING)
   answers     Json?
-  completedAt DateTime?      @map("completed_at")
-  createdAt   DateTime       @default(now()) @map("created_at")
+  completedAt DateTime?     @map("completed_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
 
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  day         ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
-  content     DayContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day     ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  content DayContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, contentId])
   @@map("user_progress")
@@ -289,8 +312,8 @@ model UserReflection {
   content        String
   createdAt      DateTime       @default(now()) @map("created_at")
 
-  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  day            ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day  ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dayId, reflectionType])
   @@map("user_reflections")
@@ -325,16 +348,16 @@ model VipProModule {
 }
 
 model VipProProgress {
-  id          String        @id @default(uuid())
-  userId      String        @map("user_id")
-  moduleId    String        @map("module_id")
-  completed   Boolean       @default(false)
-  completedAt DateTime?     @map("completed_at")
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  moduleId    String    @map("module_id")
+  completed   Boolean   @default(false)
+  completedAt DateTime? @map("completed_at")
   checks      Json?
-  createdAt   DateTime      @default(now()) @map("created_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module VipProModule  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module VipProModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, moduleId])
   @@map("vip_pro_progress")
@@ -384,4 +407,88 @@ model SocialPost {
 
   @@unique([userId, date])
   @@map("social_posts")
+}
+
+model TikTokShopCampaign {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  packType      Int      @default(500) @map("pack_type")
+  baseCreators  Int      @default(5) @map("base_creators")
+  extraCreators Int      @default(0) @map("extra_creators")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creators     TikTokCreator[]
+  sales        TikTokSale[]
+  slotPayments MembershipPayment[]
+
+  @@map("tiktok_shop_campaigns")
+}
+
+model TikTokCreator {
+  id         String              @id @default(uuid())
+  campaignId String              @map("campaign_id")
+  name       String
+  tiktokUrl  String?             @map("tiktok_url")
+  status     TikTokCreatorStatus @default(PENDIENTE)
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+
+  campaign TikTokShopCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sales    TikTokSale[]
+
+  @@map("tiktok_creators")
+}
+
+model TikTokProduct {
+  id             String   @id @default(uuid())
+  name           String
+  price          Float
+  commissionRate Float    @default(25) @map("commission_rate")
+  sponsorRate    Float    @default(5) @map("sponsor_rate")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  sales TikTokSale[]
+
+  @@map("tiktok_products")
+}
+
+model TikTokSale {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  creatorId  String   @map("creator_id")
+  productId  String   @map("product_id")
+  quantity   Int      @default(1)
+  unitPrice  Float    @map("unit_price")
+  saleDate   DateTime @map("sale_date")
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  campaign    TikTokShopCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator     TikTokCreator      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  product     TikTokProduct      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  commissions TikTokCommission[]
+
+  @@map("tiktok_sales")
+}
+
+model TikTokCommission {
+  id         String                 @id @default(uuid())
+  saleId     String                 @map("sale_id")
+  userId     String                 @map("user_id")
+  type       TikTokCommissionType
+  percent    Float
+  amount     Float
+  status     TikTokCommissionStatus @default(PENDING)
+  createdAt  DateTime               @default(now()) @map("created_at")
+  approvedAt DateTime?              @map("approved_at")
+
+  sale TikTokSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tiktok_commissions")
 }

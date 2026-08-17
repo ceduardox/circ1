@@ -65,7 +65,7 @@ export function LandingPage() {
             </div>
 
             <div className="relative min-h-[500px] overflow-hidden bg-[#21106f] sm:min-h-[620px] lg:min-h-0">
-              <img src="/images/landing/hero.webp" alt="Persona avanzando hacia una nueva etapa" className="absolute inset-0 h-full w-full object-cover object-center" fetchPriority="high" />
+              <img src="/images/landing/hero.webp" alt="Persona avanzando hacia una nueva etapa" className="absolute inset-0 h-full w-full object-cover object-center" />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#29106f]/10 via-transparent to-[#16084f]/30" />
               <div className="pointer-events-none absolute -left-20 top-0 hidden h-full w-40 -skew-x-[18deg] bg-[#f9f6f1] lg:block" />
               <aside className="absolute inset-y-0 right-0 flex w-[105px] flex-col justify-center gap-14 bg-gradient-to-b from-[#45239d]/95 to-[#1c075d]/95 px-3 text-white sm:w-[150px] sm:px-6 lg:w-[175px]">

@@ -6,6 +6,7 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
 import { ContentType } from '@prisma/client';
 import { activateMembership } from '../utils/activation.js';
+import { activateCreatorExtra } from '../utils/tiktok.js';
 import { getPaymentStatus } from '../utils/nowpayments.js';
 import { config } from '../config/index.js';
 import { generateReferralCode } from '../utils/auth.js';
@@ -354,6 +355,8 @@ export async function adminRoutes(app: FastifyInstance) {
     paymentCurrency: string;
     registerOpen: boolean;
     plans: { id: string; name: string; price: number }[];
+    tiktokExtraCreatorPrice: number;
+    tiktokAutoApprove: boolean;
   }
 
   async function getSettings(): Promise<SettingsResult> {
@@ -383,6 +386,8 @@ export async function adminRoutes(app: FastifyInstance) {
       level2Percent: Number(map.LEVEL2_PERCENT ?? 5),
       paymentCurrency: map.PAYMENT_CURRENCY || 'usdtbsc',
       registerOpen: map.REGISTER_OPEN === undefined ? true : map.REGISTER_OPEN !== false,
+      tiktokExtraCreatorPrice: Number(map.TIKTOK_EXTRA_CREATOR_PRICE ?? 50),
+      tiktokAutoApprove: map.TIKTOK_AUTO_APPROVE !== undefined ? map.TIKTOK_AUTO_APPROVE !== false : false,
       plans,
     };
   }
@@ -395,6 +400,8 @@ export async function adminRoutes(app: FastifyInstance) {
     level2Percent: z.number().min(0).max(100).optional(),
     paymentCurrency: z.string().optional(),
     registerOpen: z.boolean().optional(),
+    tiktokExtraCreatorPrice: z.number().positive().optional(),
+    tiktokAutoApprove: z.boolean().optional(),
     plans: z.array(z.object({
       id: z.string(),
       name: z.string().min(1),
@@ -410,7 +417,11 @@ export async function adminRoutes(app: FastifyInstance) {
     const body = settingsSchema.parse(request.body);
     const entries = Object.entries(body) as [string, any][];
     // Mapea el nombre del campo a la key usada en la BD (REGISTER_OPEN en mayúsculas).
-    const keyMap: Record<string, string> = { registerOpen: 'REGISTER_OPEN' };
+    const keyMap: Record<string, string> = {
+      registerOpen: 'REGISTER_OPEN',
+      tiktokExtraCreatorPrice: 'TIKTOK_EXTRA_CREATOR_PRICE',
+      tiktokAutoApprove: 'TIKTOK_AUTO_APPROVE',
+    };
     for (const [key, value] of entries) {
       const dbKey = keyMap[key] || key;
       await prisma.adminSetting.upsert({
@@ -474,7 +485,11 @@ export async function adminRoutes(app: FastifyInstance) {
 
     if (FINAL.includes(npStatus)) {
       try {
-        await activateMembership(id, 'nowpayments-verify');
+        if (payment.type === 'CREATOR_EXTRA') {
+          await activateCreatorExtra(id, 'nowpayments-verify');
+        } else {
+          await activateMembership(id, 'nowpayments-verify');
+        }
         return { verified: true, npStatus, activated: true };
       } catch (err: any) {
         return { verified: true, npStatus, activated: false, error: err.message };
@@ -491,10 +506,16 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = request.params as PaymentParams;
     const adminUser = (request as any).user as JWTPayload;
 
+    const payment = await prisma.membershipPayment.findUnique({ where: { id } });
+    if (!payment) return reply.code(404).send({ error: 'Pago no encontrado' });
+
     try {
-      await activateMembership(id, adminUser.sub);
+      if (payment.type === 'CREATOR_EXTRA') {
+        await activateCreatorExtra(id, adminUser.sub);
+      } else {
+        await activateMembership(id, adminUser.sub);
+      }
     } catch (err: any) {
-      if (err.message === 'Pago no encontrado') return reply.code(404).send({ error: err.message });
       if (err.message === 'Este pago ya fue procesado') return reply.code(400).send({ error: err.message });
       throw err;
     }

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { config } from '../config/index.js';
 import { createInvoice, getPaymentStatus, verifyWebhookSignature } from '../utils/nowpayments.js';
 import { activateMembership } from '../utils/activation.js';
+import { activateCreatorExtra } from '../utils/tiktok.js';
 import { sendWebPush } from '../utils/onesignal.js';
 import { validateWithdrawalInput } from '../utils/withdrawals.js';
 
@@ -85,7 +86,7 @@ const PAYMENT_TTL_MINUTES = 30;
 // Si había uno expirado, lo marca como expirado en la BD para no bloquear.
 async function getActivePendingPayment(userId: string) {
   const pending = await prisma.membershipPayment.findFirst({
-    where: { userId, status: 'PENDING' },
+    where: { userId, status: 'PENDING', type: { in: ['MEMBERSHIP', 'MONTHLY'] } },
     orderBy: { createdAt: 'desc' },
   });
   if (!pending) return null;
@@ -337,7 +338,11 @@ export async function membershipRoutes(app: FastifyInstance) {
     });
 
     if (payment.status === 'PENDING' && FINAL_STATUSES.includes(npStatus)) {
-      await activateMembership(paymentId, 'nowpayments');
+      if (payment.type === 'CREATOR_EXTRA') {
+        await activateCreatorExtra(paymentId, 'nowpayments');
+      } else {
+        await activateMembership(paymentId, 'nowpayments');
+      }
     }
   }
 
@@ -378,7 +383,7 @@ export async function membershipRoutes(app: FastifyInstance) {
     const userId = (request.user as JWTPayload).sub;
 
     const pending = await prisma.membershipPayment.findFirst({
-      where: { userId, status: 'PENDING' },
+      where: { userId, status: 'PENDING', type: { in: ['MEMBERSHIP', 'MONTHLY'] } },
       orderBy: { createdAt: 'desc' },
     });
     if (!pending) return { payment: null };

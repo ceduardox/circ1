@@ -182,3 +182,30 @@ export const adminApi = {
   transcriptionStatus: (id: string) => api.get(`/admin/transcribe/${id}`),
   transcriptions: () => api.get('/admin/transcribe'),
 };
+
+export const tiktokApi = {
+  my: () => api.get('/tiktok/my'),
+  activate: () => api.post('/tiktok/activate'),
+  extraPaymentRequest: () => api.post('/tiktok/extra-payment/request'),
+  extraPaymentPending: () => api.get('/tiktok/extra-payment/pending'),
+  extraPaymentStatus: (id: string) => api.get(`/tiktok/extra-payment/${id}/status`),
+};
+
+export const adminTiktokApi = {
+  searchUsers: (search: string) => api.get('/admin/tiktok/users', { params: { search } }),
+  campaign: (userId: string) => api.get(`/admin/tiktok/campaigns/${userId}`),
+  activateCampaign: (userId: string) => api.post(`/admin/tiktok/campaigns/${userId}/activate`),
+  addCreator: (userId: string, data: any) => api.post(`/admin/tiktok/campaigns/${userId}/creators`, data),
+  updateCreator: (id: string, data: any) => api.put(`/admin/tiktok/creators/${id}`, data),
+  deleteCreator: (id: string) => api.delete(`/admin/tiktok/creators/${id}`),
+  products: () => api.get('/admin/tiktok/products'),
+  createProduct: (data: any) => api.post('/admin/tiktok/products', data),
+  updateProduct: (id: string, data: any) => api.put(`/admin/tiktok/products/${id}`, data),
+  deleteProduct: (id: string) => api.delete(`/admin/tiktok/products/${id}`),
+  registerSale: (data: any) => api.post('/admin/tiktok/sales', data),
+  deleteSale: (id: string) => api.delete(`/admin/tiktok/sales/${id}`),
+  pendingCommissions: () => api.get('/admin/tiktok/commissions/pending'),
+  approveCommission: (id: string) => api.post(`/admin/tiktok/commissions/${id}/approve`),
+  rejectCommission: (id: string) => api.post(`/admin/tiktok/commissions/${id}/reject`),
+  allCommissions: () => api.get('/admin/tiktok/commissions'),
+};

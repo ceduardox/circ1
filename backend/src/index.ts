@@ -18,6 +18,8 @@ import { membershipRoutes } from './routes/membership.js';
 import { chatRoutes } from './routes/chat.js';
 import { vipProRoutes } from './routes/vipPro.js';
 import { teamRoutes } from './routes/team.js';
+import { tiktokRoutes } from './routes/tiktok.js';
+import { adminTiktokRoutes } from './routes/adminTiktok.js';
 import { syncDayVideos } from './utils/dayVideos.js';
 import { syncFakeUsers } from './utils/fakeUsers.js';
 import { scheduleDailyReminder } from './utils/dailyReminder.js';
@@ -119,6 +121,8 @@ await app.register(membershipRoutes, { prefix: '/api/membership' });
 await app.register(chatRoutes, { prefix: '/api/chat' });
 await app.register(vipProRoutes, { prefix: '/api/vip-pro' });
 await app.register(teamRoutes, { prefix: '/api/team' });
+await app.register(tiktokRoutes, { prefix: '/api/tiktok' });
+await app.register(adminTiktokRoutes, { prefix: '/api/admin/tiktok' });
 
 // ─── Frontend (SPA) ───
 // Si existe la build del frontend, se sirve como estático y cualquier ruta

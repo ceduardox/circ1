@@ -21,6 +21,7 @@ import { TeamPage } from '@/pages/Team';
 import { EarningsPage } from '@/pages/Earnings';
 import { NotificationsPage } from '@/pages/Notifications';
 import { VipProPage } from '@/pages/VipPro';
+import { TikTokShopPage } from '@/pages/TikTokShop';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboard';
 import { AdminDaysPage } from '@/pages/admin/AdminDays';
 import { AdminDayDetailPage } from '@/pages/admin/AdminDayDetail';
@@ -30,6 +31,7 @@ import { AdminCommissionsPage } from '@/pages/admin/AdminCommissions';
 import { AdminNetworkPage } from '@/pages/admin/AdminNetwork';
 import { AdminWithdrawalsPage } from '@/pages/admin/AdminWithdrawals';
 import { AdminTranscribePage } from '@/pages/admin/AdminTranscribe';
+import { AdminTikTokPage } from '@/pages/admin/AdminTikTok';
 import { FloatingChat } from '@/components/chat/FloatingChat';
 import { UpdateBanner } from '@/components/ui/UpdateBanner';
 import { useUpdateDetector } from '@/hooks/useUpdateDetector';
@@ -91,6 +93,7 @@ function App() {
             <Route path="/earnings" element={<EarningsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/vip-pro" element={<VipProPage />} />
+            <Route path="/tiktok-shop" element={<TikTokShopPage />} />
 
             <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
@@ -101,6 +104,7 @@ function App() {
               <Route path="/admin/commissions" element={<AdminCommissionsPage />} />
               <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
               <Route path="/admin/transcribe" element={<AdminTranscribePage />} />
+              <Route path="/admin/tiktok" element={<AdminTikTokPage />} />
               <Route path="/admin/network" element={<AdminNetworkPage />} />
             </Route>
           </Route>
