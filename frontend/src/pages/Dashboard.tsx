@@ -305,38 +305,85 @@ export function DashboardPage() {
           </div>
 
           {/* Próximo logro */}
+          {achievements.length > 0 && (() => {
+            const next = achievements.find(a => !a.unlockedAt);
+            if (!next) return null;
+            const pct = next.target > 0 ? Math.round((next.progress / next.target) * 100) : 0;
+            return (
+              <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
+                      <Gem className="w-5 h-5 text-gray-400 dark:text-dark-500" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400 dark:text-dark-500">Próximo logro</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">{next.title}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 hidden sm:block">
+                      <div className="h-1.5 bg-gray-100 dark:bg-dark-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400 dark:text-dark-500 whitespace-nowrap">{pct}% · {next.progress}/{next.target}</span>
+                    <ChevronRight className="w-4 h-4 text-gray-300 dark:text-dark-500" />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Logros */}
           {achievements.length > 0 && (
-            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
-                    <Gem className="w-5 h-5 text-gray-400 dark:text-dark-500" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-gray-400 dark:text-dark-500">Próximo logro</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">
-                      {achievements.find(a => !a.unlockedAt)?.title || 'Sigue intentando'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {(() => {
-                    const next = achievements.find(a => !a.unlockedAt);
-                    if (!next) return null;
-                    const pct = next.target > 0 ? Math.round((next.progress / next.target) * 100) : 0;
-                    return (
-                      <>
-                        <div className="w-32 hidden sm:block">
-                          <div className="h-1.5 bg-gray-100 dark:bg-dark-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-primary-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                          </div>
+            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-gray-900 dark:text-dark-100">Logros</h2>
+                <span className="text-sm text-gray-500 dark:text-dark-400">{unlockedCount}/{achievements.length} desbloqueados</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {achievements.map(achievement => {
+                  const Icon = iconMap[achievement.icon] || Trophy;
+                  const isUnlocked = !!achievement.unlockedAt;
+                  const progressPct = achievement.target > 0 ? Math.round((achievement.progress / achievement.target) * 100) : 0;
+
+                  return (
+                    <div
+                      key={achievement.id}
+                      className={`relative rounded-xl p-4 text-center transition-all ${
+                        isUnlocked
+                          ? 'bg-primary-50/80 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800'
+                          : 'bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 opacity-60'
+                      }`}
+                    >
+                      {isUnlocked && (
+                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-white" />
                         </div>
-                        <span className="text-xs text-gray-400 dark:text-dark-500 whitespace-nowrap">{pct}% · {next.progress}/{next.target}</span>
-                      </>
-                    );
-                  })()}
-                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-dark-500" />
-                </div>
+                      )}
+                      <div className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 ${
+                        isUnlocked ? 'bg-primary-200 dark:bg-primary-800 text-primary-700 dark:text-primary-300' : 'bg-gray-200 dark:bg-dark-600 text-gray-400 dark:text-dark-500'
+                      }`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <p className={`text-xs font-semibold mb-0.5 ${isUnlocked ? 'text-primary-900 dark:text-primary-200' : 'text-gray-500 dark:text-dark-400'}`}>
+                        {achievement.title}
+                      </p>
+                      <p className={`text-[10px] leading-tight ${isUnlocked ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-dark-500'}`}>
+                        {achievement.description}
+                      </p>
+                      {!isUnlocked && (
+                        <div className="mt-2">
+                          <div className="h-1 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
+                            <div className="h-full bg-gray-400 dark:bg-dark-500 rounded-full" style={{ width: `${progressPct}%` }} />
+                          </div>
+                          <p className="text-[9px] text-gray-400 dark:text-dark-500 mt-1">{achievement.progress}/{achievement.target}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
