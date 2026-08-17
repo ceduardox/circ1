@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
-import { programApi, adminApi } from '@/services/api';
+import { programApi } from '@/services/api';
 import { useVipProStore } from '@/store/vipProStore';
 import {
-  Home, Flame, Trophy, Lock, CheckCircle, Play, ChevronRight, Users, BookOpen, Target,
-  Clock, BarChart, Footprints, CalendarCheck, Crown, PenLine, Brain, Shield, Heart, Snowflake, Rocket, Users2, TrendingUp, Gem
+  Flame, Trophy, ChevronRight, Users, BookOpen, Target,
+  Crown, Snowflake, Gem, Footprints, CalendarCheck, PenLine, Brain, Shield, Heart
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -88,18 +88,30 @@ export function DashboardPage() {
   const totalItems = currentDay?.contents?.length || 7;
   const dayProgress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
 
-  const statCards = [
-    { label: 'Racha actual', value: `${stats?.streak || 0}`, icon: Flame, color: 'text-orange-500', suffix: stats?.streak === 1 ? 'día' : 'días', highlight: (stats?.streak || 0) >= 3 },
-    { label: 'Puntos', value: `${stats?.points || 0}`, icon: Target, color: 'text-primary-500', suffix: 'pts' },
-    { label: 'Nivel', value: `${stats?.level || 1}`, icon: Trophy, color: 'text-amber-500', suffix: `/ 100` },
-  ];
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Buenos días';
+    if (hour < 19) return 'Buenas tardes';
+    return 'Buenas noches';
+  };
 
-  const adminStats = [
-    { label: 'Ejercicios Hechos', value: stats?.stats?.totalCompleted || 0, icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Días Completados', value: stats?.stats?.daysCompleted || 0, icon: BookOpen, color: 'text-purple-600', bg: 'bg-purple-50' },
-    { label: 'Reflexiones', value: stats?.stats?.reflectionCount || 0, icon: PenLine, color: 'text-pink-600', bg: 'bg-pink-50' },
-    { label: 'Quizzes Aprobados', value: stats?.stats?.quizCount || 0, icon: Brain, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  ];
+  const getWeekDays = () => {
+    const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+
+    return days.map((label, i) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      const isToday = date.toDateString() === today.toDateString();
+      const isPast = date < today && !isToday;
+      const dayNum = date.getDate();
+      return { label, dayNum, isToday, isPast };
+    });
+  };
 
   if (loading) {
     return (
@@ -112,374 +124,299 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-6 text-white shadow-lg shadow-primary-600/20">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">
-              Bienvenido, {user?.firstName || 'Admin'}
-            </h1>
-            <p className="text-primary-100 mt-1">
-              {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-            <p className="text-primary-200 font-medium mt-1">Volver a empezar tu entrenamiento</p>
-          </div>
-
-          {/* Pack de membresía adquirido */}
-          {user?.role !== 'ADMIN' && status?.pack && (
-            <div className="shrink-0 inline-flex flex-col items-start gap-1 rounded-2xl bg-white/10 border border-white/20 backdrop-blur px-4 py-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-primary-100 flex items-center gap-1">
-                <Gem className="w-3 h-3" /> Tu pack de membresía
-              </span>
-              <div className="flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-300" />
-                <span className="text-lg font-black">
-                  {status.pack.packType === 1000 ? 'Élite $1,000' : 'Estándar $500'}
-                </span>
-              </div>
-              <span className="text-[11px] text-primary-100">
-                {status.pack.packType === 1000 ? '10 creadores de TikTok' : '5 creadores de TikTok'}
-              </span>
-            </div>
-          )}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2">
+            {getGreeting()}, {user?.firstName || 'Admin'} <span className="text-2xl">👋</span>
+          </h1>
+          <p className="text-gray-500 dark:text-dark-400 text-sm mt-1">
+            Hoy avanzas un paso más hacia tu objetivo.
+          </p>
         </div>
+        <p className="text-sm text-gray-400 dark:text-dark-500">
+          {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {statCards.map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <div key={i} className={`bg-white dark:bg-dark-800 rounded-2xl border shadow-sm p-4 flex items-center gap-4 ${stat.highlight ? 'border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/20' : 'border-gray-100 dark:border-dark-700'}`}>
-              <div className={`p-3 rounded-xl ${stat.color} bg-opacity-10`}>
-                <Icon className={`w-5 h-5 ${stat.color} ${stat.highlight ? 'animate-pulse' : ''}`} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-dark-400">{stat.label}</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-dark-100">
-                  {stat.value}
-                  {stat.suffix && <span className="text-sm font-normal text-gray-400 dark:text-dark-500 ml-1">{stat.suffix}</span>}
-                </p>
-              </div>
-              {stat.highlight && (
-                <div className="ml-auto text-2xl">🔥</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Streak Freeze */}
-      {stats?.streakFreezes > 0 || stats?.freezableGap ? (
-        <div className={`rounded-2xl border shadow-sm p-4 flex items-center justify-between ${
-          stats?.freezableGap
-            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-            : 'bg-white dark:bg-dark-800 border-gray-100 dark:border-dark-700'
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/50">
-              <Snowflake className="w-5 h-5 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-dark-100">
-                {stats?.freezableGap
-                  ? 'Racha en riesgo — ¡Úsala antes de que se pierda!'
-                  : `Streak Freezes: ${stats?.streakFreezes}`}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-dark-400">
-                {stats?.freezableGap
-                  ? 'Protege tu racha con 1 freeze'
-                  : 'Protegen tu racha si falta 1 día'}
-              </p>
-            </div>
-          </div>
-          {stats?.freezableGap && stats?.streakFreezes > 0 && (
-            <button
-              onClick={handleUseFreeze}
-              disabled={freezing}
-              className="px-4 py-2 rounded-xl bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              {freezing ? 'Usando...' : `Usar Freeze (${stats?.streakFreezes})`}
-            </button>
-          )}
-        </div>
-      ) : null}
-
-      {/* Mi Progreso */}
-      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
-        <h2 className="font-semibold text-gray-900 dark:text-dark-100 mb-3">Mi Progreso</h2>
-        <div className="flex items-center gap-3">
-          <div className="text-3xl font-bold text-primary-600 dark:text-primary-400">{stats?.overallProgress || 0}%</div>
-          <div className="flex-1">
-            <div className="h-3 bg-gray-100 dark:bg-dark-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all"
-                style={{ width: `${stats?.overallProgress || 0}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* VIP Pro */}
-      {user?.role !== 'ADMIN' && (
-        <Link
-          to="/vip-pro"
-          className="block group"
-        >
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-700 via-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-600/25 p-5 transition-all group-hover:shadow-xl group-hover:shadow-purple-600/30 group-hover:-translate-y-0.5 animate-pulse-soft">
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 animate-gradient-x" />
-            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
-            <div className="relative flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
-                  <Rocket className="w-5 h-5 text-amber-300" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold leading-tight flex items-center gap-1.5">
-                    <Crown className="w-4 h-4 text-amber-300" />
-                    VIP Pro
+      {/* Main Layout: Content + Sidebar */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Column: Main Content */}
+        <div className="flex-1 space-y-6">
+          {/* Hero: TU RUTA DE HOY */}
+          {currentDay && (
+            <div className="relative bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
+              <div className="flex flex-col sm:flex-row">
+                {/* Left: Content */}
+                <div className="flex-1 p-6">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                    Tu ruta de hoy
+                  </span>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-dark-100 mt-2">
+                    Día {currentDay.dayNumber} · {currentDay.title}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-dark-400 mt-1">
+                    Completa {totalItems} tareas para desbloquear el siguiente día.
                   </p>
-                  <p className="text-xs text-purple-100 mt-0.5">
-                    {modules.length > 0
-                      ? `${modules.filter(m => m.completed).length}/${modules.length} pasos · Vende en TikTok Shop`
-                      : 'Vende en TikTok Shop'}
-                  </p>
+
+                  <div className="flex items-center gap-6 mt-5">
+                    {/* Circular progress */}
+                    <div className="relative w-20 h-20 shrink-0">
+                      <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="35" fill="none" stroke="currentColor" strokeWidth="6"
+                          className="text-gray-100 dark:text-dark-700" />
+                        <circle cx="40" cy="40" r="35" fill="none" stroke="currentColor" strokeWidth="6"
+                          strokeDasharray={`${2 * Math.PI * 35}`}
+                          strokeDashoffset={`${2 * Math.PI * 35 * (1 - dayProgress / 100)}`}
+                          strokeLinecap="round"
+                          className="text-primary-600 dark:text-primary-400 transition-all duration-500" />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-xl font-bold text-gray-900 dark:text-dark-100">{completedCount}</span>
+                        <span className="text-[10px] text-gray-400 dark:text-dark-500">de {totalItems}</span>
+                      </div>
+                    </div>
+
+                    {/* CTA */}
+                    <div className="flex-1">
+                      <Link
+                        to={`/day/${currentDay.dayNumber}`}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 font-medium text-sm transition-all shadow-sm"
+                      >
+                        Continuar entrenamiento
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                      <Link
+                        to="/program"
+                        className="block mt-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                      >
+                        Ver programa completo
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-2xl font-black text-amber-300">
-                  {modules.length > 0 ? Math.round((modules.filter(m => m.completed).length / modules.length) * 100) : 0}%
-                </div>
-                <ChevronRight className="w-5 h-5 text-purple-200 ml-auto transition-transform group-hover:translate-x-1" />
-              </div>
-            </div>
-            {modules.length > 0 && (
-              <div className="relative mt-4">
-                <div className="h-2 bg-white/15 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full transition-all duration-500"
-                    style={{ width: `${(modules.filter(m => m.completed).length / modules.length) * 100}%` }}
+
+                {/* Right: Stairs image */}
+                <div className="hidden sm:flex items-end justify-center p-6 w-56 shrink-0">
+                  <img
+                    src="/images/escalera.png"
+                    alt="Progreso"
+                    className="w-full h-auto object-contain max-h-40"
                   />
                 </div>
               </div>
-            )}
-          </div>
-        </Link>
-      )}
+            </div>
+          )}
 
-      {/* Construir Equipo */}
-      {user?.role !== 'ADMIN' && (
-        <Link
-          to="/team"
-          className="block group"
-        >
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-600 via-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-600/25 p-5 transition-all group-hover:shadow-xl group-hover:shadow-teal-600/30 group-hover:-translate-y-0.5">
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-300 animate-gradient-x" />
-            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
-            <div className="relative flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
-                  <Users2 className="w-5 h-5 text-yellow-300" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold leading-tight flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-yellow-300" />
-                    Construir Equipo
-                  </p>
-                  <p className="text-xs text-teal-100 mt-0.5">
-                    Suma gente · Gana comisiones
-                  </p>
-                </div>
+          {/* Stats Row */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-900/20">
+                <Flame className="w-5 h-5 text-orange-500" />
               </div>
-              <div className="text-right shrink-0">
-                <ChevronRight className="w-5 h-5 text-teal-200 ml-auto transition-transform group-hover:translate-x-1" />
+              <div>
+                <p className="text-[11px] text-gray-400 dark:text-dark-500">Racha</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-dark-100">
+                  {stats?.streak || 0} <span className="text-xs font-normal text-gray-400 dark:text-dark-500">días</span>
+                </p>
               </div>
             </div>
-            <p className="relative mt-3 text-[11px] text-teal-100/90 leading-5">
-              Ellos pagan su publicidad, tú cobras. Lleva tus contactos al cierre y sube contenido para que los clientes lleguen solos.
-            </p>
-          </div>
-        </Link>
-      )}
-
-      {/* Día Actual */}
-      {currentDay && (
-        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-white">
-                    Día {currentDay.dayNumber}: {currentDay.title}
-                  </h2>
-                  <p className="text-primary-100 text-sm mt-1">
-                    {completedCount}/{totalItems} completado
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-white">{dayProgress}%</div>
-                  <p className="text-primary-100 text-[11px] mt-0.5">
-                    {totalItems - completedCount > 0
-                      ? `Te faltan ${totalItems - completedCount} ${totalItems - completedCount === 1 ? 'tarea' : 'tareas'}`
-                      : '¡Día completado!'}
-                  </p>
-                </div>
+            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary-50 dark:bg-primary-900/20">
+                <Target className="w-5 h-5 text-primary-500" />
               </div>
-            <div className="mt-3">
-              <div className="h-2.5 bg-white/20 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    dayProgress >= 100
-                      ? 'bg-emerald-300 animate-pulse-soft'
-                      : 'bg-gradient-to-r from-yellow-300 via-white to-white shadow-[0_0_12px_rgba(255,255,255,0.6)]'
-                  }`}
-                  style={{ width: `${dayProgress}%` }}
-                />
+              <div>
+                <p className="text-[11px] text-gray-400 dark:text-dark-500">Puntos</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-dark-100">{stats?.points || 0}</p>
               </div>
-              <p className="text-primary-100 text-[11px] mt-2">
-                {dayProgress >= 100
-                  ? '🎉 ¡Completaste el día! Desbloqueaste el siguiente.'
-                  : dayProgress >= 70
-                  ? '¡Ya casi! Termina las tareas restantes para desbloquear el siguiente día.'
-                  : 'Completa todas las tareas del día para desbloquear el siguiente.'}
-              </p>
+            </div>
+            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20">
+                <Trophy className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-[11px] text-gray-400 dark:text-dark-500">Nivel</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-dark-100">{stats?.level || 1}</p>
+              </div>
             </div>
           </div>
 
-          <div className="p-4 space-y-2">
-            {currentDay.contents?.slice(0, 3).map((content: any, i: number) => {
-              const contentProgress = stats?.progress?.find((p: any) => p.contentId === content.id);
-              const isCompleted = contentProgress?.status === 'COMPLETED';
-              const isCurrent = !isCompleted && i === completedCount;
-              return (
-                <div
-                  key={content.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
-                    isCompleted
-                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800'
-                      : isCurrent
-                      ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800'
-                      : 'bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 opacity-60'
-                  }`}
-                >
-                  {isCompleted ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                  ) : isCurrent ? (
-                    <Play className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  ) : (
-                    <Lock className="w-5 h-5 text-gray-400 dark:text-dark-500" />
-                  )}
-                  <div className="flex-1">
-                    <span className={`text-sm font-medium ${
-                      isCompleted ? 'text-emerald-700 dark:text-emerald-300' : isCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-dark-400'
-                    }`}>
-                      {i + 1}. {content.title}
+          {/* Tus caminos de crecimiento */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-3">Tus caminos de crecimiento</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Entrenamiento */}
+              <Link to={`/day/${currentDay?.dayNumber || 1}`} className="block group">
+                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all">
+                  <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
+                    <BookOpen className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-dark-100 text-sm">Entrenamiento</p>
+                    <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5">Continúa tu programa diario</p>
+                    <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-primary-600 dark:text-primary-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                      En progreso
                     </span>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-dark-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </div>
-              );
-            })}
-          </div>
+              </Link>
 
-          <div className="p-4 border-t border-gray-100 dark:border-dark-700 space-y-3">
-            <Link
-              to={`/day/${currentDay.dayNumber}`}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary-600 text-white hover:bg-primary-700 font-medium transition-all"
-            >
-              Continuar Día {currentDay.dayNumber}
-              <ChevronRight className="w-4 h-4" />
-            </Link>
-            <Link
-              to="/program"
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-700 dark:text-dark-200 hover:bg-gray-50 dark:hover:bg-dark-700 font-medium transition-all"
-            >
-              Ver Programa Completo
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Logros */}
-      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-semibold text-gray-900 dark:text-dark-100">Logros</h2>
-          <span className="text-sm text-gray-500 dark:text-dark-400">{unlockedCount}/{achievements.length} desbloqueados</span>
-        </div>
-
-        {unlockedCount === 0 ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 dark:bg-dark-700 flex items-center justify-center mb-4">
-              <Trophy className="w-8 h-8 text-gray-400 dark:text-dark-500" />
-            </div>
-            <p className="text-gray-500 dark:text-dark-400">Aún no tienes logros. ¡Empieza tu entrenamiento!</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {achievements.map(achievement => {
-              const Icon = iconMap[achievement.icon] || Trophy;
-              const isUnlocked = !!achievement.unlockedAt;
-              const progressPct = achievement.target > 0 ? Math.round((achievement.progress / achievement.target) * 100) : 0;
-
-              return (
-                <div
-                  key={achievement.id}
-                  className={`relative rounded-xl p-4 text-center transition-all ${
-                    isUnlocked
-                      ? 'bg-gradient-to-br from-primary-50 to-primary-100/50 dark:from-primary-900/30 dark:to-primary-800/30 border border-primary-200 dark:border-primary-700'
-                      : 'bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 opacity-60'
-                  }`}
-                >
-                  {isUnlocked && (
-                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-3 h-3 text-white" />
-                    </div>
-                  )}
-                  <div className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 ${
-                    isUnlocked ? 'bg-primary-200 dark:bg-primary-800 text-primary-700 dark:text-primary-300' : 'bg-gray-200 dark:bg-dark-600 text-gray-400 dark:text-dark-500'
-                  }`}>
-                    <Icon className="w-5 h-5" />
+              {/* VIP Pro */}
+              <Link to="/vip-pro" className="block group">
+                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all">
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                    <Crown className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                   </div>
-                  <p className={`text-xs font-semibold mb-0.5 ${isUnlocked ? 'text-primary-900 dark:text-primary-200' : 'text-gray-500 dark:text-dark-400'}`}>
-                    {achievement.title}
-                  </p>
-                  <p className={`text-[10px] leading-tight ${isUnlocked ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-dark-500'}`}>
-                    {achievement.description}
-                  </p>
-                  {!isUnlocked && (
-                    <div className="mt-2">
-                      <div className="h-1 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gray-400 dark:bg-dark-500 rounded-full"
-                          style={{ width: `${progressPct}%` }}
-                        />
-                      </div>
-                      <p className="text-[9px] text-gray-400 dark:text-dark-500 mt-1">{achievement.progress}/{achievement.target}</p>
-                    </div>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-dark-100 text-sm">VIP Pro</p>
+                    <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5">
+                      {modules.length > 0
+                        ? `Activa ${modules.filter(m => m.completed).length}/${modules.length} pasos para vender en TikTok Shop`
+                        : 'Activa pasos para vender en TikTok Shop'}
+                    </p>
+                    {modules.length > 0 && (
+                      <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                        {modules.filter(m => m.completed).length}/{modules.length} pasos
+                      </span>
+                    )}
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-dark-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              </Link>
 
-      {/* Admin Panel */}
-      {user?.role === 'ADMIN' && (
-        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 dark:text-dark-100 mb-4">Panel de Administración</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {adminStats.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <div key={i} className={`${stat.bg} rounded-xl p-4 text-center`}>
-                  <Icon className={`w-6 h-6 ${stat.color} mx-auto mb-2`} />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-dark-100">{stat.value}</p>
-                  <p className="text-xs text-gray-600 dark:text-dark-300 mt-1">{stat.label}</p>
+              {/* Construir Equipo */}
+              <Link to="/team" className="block group">
+                <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                    <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-dark-100 text-sm">Construir equipo</p>
+                    <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5">Invita personas y gana comisiones</p>
+                    <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      Comenzar
+                    </span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-dark-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </div>
-              );
-            })}
+              </Link>
+            </div>
+          </div>
+
+          {/* Próximo logro */}
+          {achievements.length > 0 && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
+                    <Gem className="w-5 h-5 text-gray-400 dark:text-dark-500" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-400 dark:text-dark-500">Próximo logro</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">
+                      {achievements.find(a => !a.unlockedAt)?.title || 'Sigue intentando'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const next = achievements.find(a => !a.unlockedAt);
+                    if (!next) return null;
+                    const pct = next.target > 0 ? Math.round((next.progress / next.target) * 100) : 0;
+                    return (
+                      <>
+                        <div className="w-32 hidden sm:block">
+                          <div className="h-1.5 bg-gray-100 dark:bg-dark-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-400 dark:text-dark-500 whitespace-nowrap">{pct}% · {next.progress}/{next.target}</span>
+                      </>
+                    );
+                  })()}
+                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-dark-500" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="w-full lg:w-72 space-y-4 shrink-0">
+          {/* Plan Card */}
+          {user?.role !== 'ADMIN' && status?.pack && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
+                  <Crown className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-gray-900 dark:text-dark-100 text-sm">
+                    Plan {status.pack.packType === 1000 ? 'Élite' : 'Estándar'} · ${status.pack.packType.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-dark-400">
+                    {status.pack.packType === 1000 ? '10 creadores incluidos' : '5 creadores incluidos'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tu avance esta semana */}
+          <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-3">Tu avance esta semana</h3>
+            <div className="grid grid-cols-7 gap-1.5 text-center">
+              {getWeekDays().map((day, i) => (
+                <div key={i} className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-medium text-gray-400 dark:text-dark-500">{day.label}</span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
+                    day.isToday
+                      ? 'bg-primary-600 text-white shadow-sm'
+                      : day.isPast
+                      ? 'bg-gray-100 dark:bg-dark-700 text-gray-400 dark:text-dark-500'
+                      : 'bg-white dark:bg-dark-800 text-gray-300 dark:text-dark-600 border border-gray-100 dark:border-dark-700'
+                  }`}>
+                    {day.dayNum}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Streak Freeze */}
+          <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                  <Snowflake className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">
+                    {stats?.streakFreezes || 0} protector{stats?.streakFreezes !== 1 ? 'es' : ''} de racha
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-dark-500">disponibles</p>
+                </div>
+              </div>
+              {stats?.freezableGap && stats?.streakFreezes > 0 && (
+                <button
+                  onClick={handleUseFreeze}
+                  disabled={freezing}
+                  className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
+                >
+                  {freezing ? 'Usando...' : 'Usar'}
+                </button>
+              )}
+            </div>
+            {!stats?.streak && (
+              <p className="text-[11px] text-gray-400 dark:text-dark-500 mt-3 flex items-center gap-1.5">
+                <span className="text-primary-500">✦</span>
+                Empieza hoy para activar tu primera racha.
+              </p>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
