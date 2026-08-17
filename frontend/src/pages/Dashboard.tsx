@@ -5,7 +5,7 @@ import { useMembershipStore } from '@/store/membershipStore';
 import { programApi } from '@/services/api';
 import { useVipProStore } from '@/store/vipProStore';
 import {
-  Flame, Trophy, ChevronRight, Users, BookOpen, Target,
+  Flame, Trophy, ChevronRight, Users, BookOpen, Target, CheckCircle,
   Crown, Snowflake, Gem, Footprints, CalendarCheck, PenLine, Brain, Shield, Heart
 } from 'lucide-react';
 import { toast } from 'sonner';
