@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, Music, ShoppingBag } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag } from 'lucide-react';
+import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 
 export function DesktopSidebar() {
   const { user, logout } = useAuthStore();
@@ -15,7 +16,7 @@ export function DesktopSidebar() {
     { path: '/team', label: 'Construir Equipo', icon: Users2, color: 'from-cyan-500 to-sky-600' },
     { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600' },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown, color: 'from-violet-600 to-fuchsia-600' },
-    { path: '/tiktok-shop', label: 'TikTok Shop', icon: Music, color: 'from-pink-500 to-rose-600' },
+    { path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600' },
     { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600' },
     { path: '/profile', label: 'Perfil', icon: User, color: 'from-pink-500 to-rose-600' },
   ];
@@ -28,7 +29,7 @@ export function DesktopSidebar() {
     { path: '/admin/commissions', label: 'Comisiones', icon: Zap },
     { path: '/admin/withdrawals', label: 'Retiros', icon: Wallet },
     { path: '/admin/transcribe', label: 'Transcribir', icon: FileText },
-    { path: '/admin/tiktok', label: 'TikTok Shop', icon: ShoppingBag },
+    { path: '/admin/tiktok', label: 'TikTok Shop', icon: TikTokShopIcon },
     { path: '/admin/network', label: 'Red Global', icon: Network },
   ];
 
