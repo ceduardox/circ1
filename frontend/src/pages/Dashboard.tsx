@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { programApi } from '@/services/api';
 import { useVipProStore } from '@/store/vipProStore';
+import { CountUp } from '@/components/CountUp';
 import {
   Flame, Trophy, ChevronRight, Users, BookOpen, Target, CheckCircle,
   Crown, Snowflake, Gem, Footprints, CalendarCheck, PenLine, Brain, Shield, Heart
@@ -128,8 +129,36 @@ export function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="space-y-6 animate-pulse">
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="space-y-2">
+            <div className="h-6 w-56 bg-gray-200 dark:bg-dark-700 rounded-lg" />
+            <div className="h-4 w-72 bg-gray-100 dark:bg-dark-700 rounded-lg" />
+          </div>
+          <div className="h-4 w-40 bg-gray-100 dark:bg-dark-700 rounded-lg" />
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Main content skeleton */}
+          <div className="flex-1 space-y-6">
+            <div className="h-[220px] bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+            <div className="grid grid-cols-3 gap-4">
+              <div className="h-20 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+              <div className="h-20 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+              <div className="h-20 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+            </div>
+            <div className="h-24 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+            <div className="h-32 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+          </div>
+
+          {/* Sidebar skeleton */}
+          <div className="w-full lg:w-72 space-y-4 shrink-0">
+            <div className="h-20 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+            <div className="h-40 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+            <div className="h-28 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -137,7 +166,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 animate-fade-up">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2">
             {getGreeting()}, {user?.firstName || 'Admin'} <span className="text-2xl">👋</span>
@@ -157,7 +186,7 @@ export function DashboardPage() {
         <div className="flex-1 space-y-6">
           {/* Hero: TU RUTA DE HOY */}
           {currentDay && (
-            <div className="relative rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden min-h-[220px]">
+            <div className="relative rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden min-h-[220px] animate-fade-up" style={{ animationDelay: '80ms' }}>
               {/* Background image */}
               <img
                 src="/images/escalera.png"
@@ -194,7 +223,7 @@ export function DashboardPage() {
                         className="text-primary-600 dark:text-primary-400 transition-[stroke-dashoffset] duration-700 ease-out" />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xl font-bold text-gray-900 dark:text-dark-100">{completedCount}</span>
+                      <span className="text-xl font-bold text-gray-900 dark:text-dark-100"><CountUp end={completedCount} /></span>
                       <span className="text-[10px] text-gray-400 dark:text-dark-500">de {totalItems}</span>
                     </div>
                   </div>
@@ -221,7 +250,7 @@ export function DashboardPage() {
           )}
 
           {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4 animate-fade-up" style={{ animationDelay: '160ms' }}>
             <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-900/20">
                 <Flame className="w-5 h-5 text-orange-500" />
@@ -229,7 +258,7 @@ export function DashboardPage() {
               <div>
                 <p className="text-[11px] text-gray-400 dark:text-dark-500">Racha</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-dark-100">
-                  {stats?.streak || 0} <span className="text-xs font-normal text-gray-400 dark:text-dark-500">días</span>
+                  <CountUp end={stats?.streak || 0} /> <span className="text-xs font-normal text-gray-400 dark:text-dark-500">días</span>
                 </p>
               </div>
             </div>
@@ -239,7 +268,7 @@ export function DashboardPage() {
               </div>
               <div>
                 <p className="text-[11px] text-gray-400 dark:text-dark-500">Puntos</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-dark-100">{stats?.points || 0}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-dark-100"><CountUp end={stats?.points || 0} /></p>
               </div>
             </div>
             <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 flex items-center gap-3">
@@ -248,13 +277,13 @@ export function DashboardPage() {
               </div>
               <div>
                 <p className="text-[11px] text-gray-400 dark:text-dark-500">Nivel</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-dark-100">{stats?.level || 1}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-dark-100"><CountUp end={stats?.level || 1} /></p>
               </div>
             </div>
           </div>
 
           {/* Tus caminos de crecimiento */}
-          <div>
+          <div className="animate-fade-up" style={{ animationDelay: '240ms' }}>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-3">Tus caminos de crecimiento</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Entrenamiento */}
@@ -323,7 +352,7 @@ export function DashboardPage() {
             if (!next) return null;
             const pct = next.target > 0 ? Math.round((next.progress / next.target) * 100) : 0;
             return (
-              <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+              <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 animate-fade-up" style={{ animationDelay: '320ms' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
@@ -350,7 +379,7 @@ export function DashboardPage() {
 
           {/* Logros */}
           {achievements.length > 0 && (
-            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
+            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5 animate-fade-up" style={{ animationDelay: '400ms' }}>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-gray-900 dark:text-dark-100">Logros</h2>
                 <span className="text-sm text-gray-500 dark:text-dark-400">{unlockedCount}/{achievements.length} desbloqueados</span>
@@ -426,7 +455,7 @@ export function DashboardPage() {
         <div className="w-full lg:w-72 space-y-4 shrink-0">
           {/* Plan Card */}
           {user?.role !== 'ADMIN' && status?.pack && (
-            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+            <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 animate-fade-up" style={{ animationDelay: '480ms' }}>
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
                   <Crown className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -444,7 +473,7 @@ export function DashboardPage() {
           )}
 
           {/* Tu avance esta semana */}
-          <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 animate-fade-up" style={{ animationDelay: '560ms' }}>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-3">Tu avance esta semana</h3>
             <div className="grid grid-cols-7 gap-1.5 text-center">
               {getWeekDays().map((day, i) => (
@@ -468,7 +497,7 @@ export function DashboardPage() {
           </div>
 
           {/* Streak Freeze */}
-          <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 animate-fade-up" style={{ animationDelay: '640ms' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
