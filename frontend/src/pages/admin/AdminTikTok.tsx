@@ -276,6 +276,59 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
         <SummaryCard label="Ventas totales" value={fmt(userTotal)} color="text-amber-600" bg="bg-amber-50" icon={DollarSign} />
       </div>
 
+      {/* Ajuste de pack (admin) */}
+      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 dark:text-dark-100 flex items-center gap-2">
+              <Package className="w-4 h-4 text-primary-600" /> Pack del usuario
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5">
+              {campaign
+                ? `Actual: Pack ${campaign.packType} · ${campaign.baseCreators} base + ${campaign.extraCreators} extra = ${maxCreators} espacios`
+                : 'Este usuario aún no tiene campaña activa.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              className="text-sm rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 px-3 py-2"
+              value={campaign ? String(campaign.packType) : '500'}
+              onChange={async (e) => {
+                const packType = Number(e.target.value);
+                const base = packType >= 1000 ? 10 : 5;
+                if (!campaign) {
+                  if (!confirm('¿Activar TikTok Shop para este usuario?')) return;
+                  await adminTiktokApi.activateCampaign(user.id);
+                }
+                await adminTiktokApi.updatePack(user.id, { packType, baseCreators: base });
+                toast.success(`Pack ${packType} (${base} creadores) asignado`);
+                const { data: fresh } = await adminTiktokApi.campaign(user.id);
+                onRefresh(fresh);
+              }}
+            >
+              <option value="500">Pack $500 (5 creadores)</option>
+              <option value="1000">Pack $1000 (10 creadores)</option>
+            </select>
+            <Input
+              type="number"
+              min="0"
+              className="!w-20 !px-2 !py-2 text-sm"
+              value={campaign?.extraCreators ?? 0}
+              onChange={async (e) => {
+                if (!campaign) return;
+                const extraCreators = Math.max(0, Number(e.target.value) || 0);
+                await adminTiktokApi.updatePack(user.id, { extraCreators });
+                toast.success(`Extras actualizados: ${extraCreators}`);
+                const { data: fresh } = await adminTiktokApi.campaign(user.id);
+                onRefresh(fresh);
+              }}
+              title="Creadores extra (comprados/pagados)"
+            />
+            <span className="text-xs text-gray-500 dark:text-dark-400">extras</span>
+          </div>
+        </div>
+      </div>
+
       {isOverLimit && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl text-sm text-red-700 dark:text-red-300">
           El usuario supera su límite de creadores ({creators.length}/{maxCreators}). Revisa los extras pagados.

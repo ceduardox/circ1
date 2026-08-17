@@ -94,6 +94,46 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     return { campaign };
   });
 
+  // ─── Ajustar pack del usuario manualmente (admin) ───
+  const updatePackSchema = z.object({
+    packType: z.number().int().positive().optional(),
+    baseCreators: z.number().int().min(0).max(100).optional(),
+    extraCreators: z.number().int().min(0).max(100).optional(),
+  });
+
+  app.put('/campaigns/:userId/pack', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { userId } = request.params as { userId: string };
+    const body = updatePackSchema.parse(request.body);
+
+    let campaign = await prisma.tikTokShopCampaign.findUnique({ where: { userId } });
+    if (!campaign) {
+      const { packType, baseCreators } = await resolvePackForUser(userId);
+      campaign = await prisma.tikTokShopCampaign.create({ data: { userId, packType, baseCreators } });
+    }
+
+    // Al elegir packType 500/1000 se sincroniza baseCreators con la regla por defecto,
+    // salvo que el admin indique un baseCreators explícito (caso excepción).
+    let base = body.baseCreators;
+    if (base === undefined && body.packType !== undefined) {
+      base = body.packType >= 1000 ? 10 : 5;
+    }
+
+    const updated = await prisma.tikTokShopCampaign.update({
+      where: { id: campaign.id },
+      data: {
+        ...(body.packType !== undefined ? { packType: body.packType } : {}),
+        ...(base !== undefined ? { baseCreators: base } : {}),
+        ...(body.extraCreators !== undefined ? { extraCreators: body.extraCreators } : {}),
+      },
+    });
+
+    // Si se redujo el límite y hay más creadores asignados, se avisa al admin en la respuesta.
+    const assigned = await prisma.tikTokCreator.count({ where: { campaignId: campaign.id } });
+    const max = updated.baseCreators + updated.extraCreators;
+
+    return { campaign: updated, assigned, maxCreators: max, overLimit: assigned > max };
+  });
+
   // ─── Asignar creador a la campaña ───
   const createCreatorSchema = z.object({
     name: z.string().min(1, 'El nombre del creador es obligatorio').max(255),
