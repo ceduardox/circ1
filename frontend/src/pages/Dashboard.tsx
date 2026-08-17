@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import { useMembershipStore } from '@/store/membershipStore';
 import { programApi, adminApi } from '@/services/api';
 import { useVipProStore } from '@/store/vipProStore';
 import {
   Home, Flame, Trophy, Lock, CheckCircle, Play, ChevronRight, Users, BookOpen, Target,
-  Clock, BarChart, Footprints, CalendarCheck, Crown, PenLine, Brain, Shield, Heart, Snowflake, Rocket, Users2, TrendingUp
+  Clock, BarChart, Footprints, CalendarCheck, Crown, PenLine, Brain, Shield, Heart, Snowflake, Rocket, Users2, TrendingUp, Gem
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,6 +26,7 @@ interface Achievement {
 
 export function DashboardPage() {
   const { user } = useAuthStore();
+  const { status, fetchStatus } = useMembershipStore();
   const [stats, setStats] = useState<any>(null);
   const [currentDay, setCurrentDay] = useState<any>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -36,6 +38,7 @@ export function DashboardPage() {
   useEffect(() => {
     loadDashboard();
     fetchModules();
+    if (user?.role !== 'ADMIN') fetchStatus();
   }, []);
 
   const loadDashboard = async () => {
@@ -110,13 +113,35 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-6 text-white shadow-lg shadow-primary-600/20">
-        <h1 className="text-2xl font-bold">
-          Bienvenido, {user?.firstName || 'Admin'}
-        </h1>
-        <p className="text-primary-100 mt-1">
-          {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </p>
-        <p className="text-primary-200 font-medium mt-1">Volver a empezar tu entrenamiento</p>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">
+              Bienvenido, {user?.firstName || 'Admin'}
+            </h1>
+            <p className="text-primary-100 mt-1">
+              {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+            <p className="text-primary-200 font-medium mt-1">Volver a empezar tu entrenamiento</p>
+          </div>
+
+          {/* Pack de membresía adquirido */}
+          {user?.role !== 'ADMIN' && status?.pack && (
+            <div className="shrink-0 inline-flex flex-col items-start gap-1 rounded-2xl bg-white/10 border border-white/20 backdrop-blur px-4 py-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary-100 flex items-center gap-1">
+                <Gem className="w-3 h-3" /> Tu pack de membresía
+              </span>
+              <div className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-300" />
+                <span className="text-lg font-black">
+                  {status.pack.packType === 1000 ? 'Élite $1,000' : 'Estándar $500'}
+                </span>
+              </div>
+              <span className="text-[11px] text-primary-100">
+                {status.pack.packType === 1000 ? '10 creadores de TikTok' : '5 creadores de TikTok'}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}

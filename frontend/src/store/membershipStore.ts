@@ -11,6 +11,14 @@ interface MembershipStatus {
   referralLink?: string | null;
   referrerId?: string | null;
   referralPlans?: string[];
+  pack?: {
+    planId?: string | null;
+    planName?: string | null;
+    price: number;
+    packType: number;
+    method?: string | null;
+    paidAt?: string | null;
+  } | null;
   settings: {
     membershipPrice: number;
     monthlyFee: number;

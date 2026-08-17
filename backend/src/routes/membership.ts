@@ -156,6 +156,22 @@ export async function membershipRoutes(app: FastifyInstance) {
     const settings = await getSettings((user.referralPlans as string[] | null) ?? undefined);
     const eff = effectiveMembership(user);
 
+    // Pack adquirido: del último pago de membresía aprobado (plan o monto).
+    const lastPaid = await prisma.membershipPayment.findFirst({
+      where: { userId, type: 'MEMBERSHIP', status: 'APPROVED' },
+      orderBy: { createdAt: 'desc' },
+    });
+    const pack = lastPaid
+      ? {
+          planId: lastPaid.planId,
+          planName: lastPaid.planName,
+          price: lastPaid.amount,
+          packType: lastPaid.planId === 'elite' || lastPaid.amount >= 1000 ? 1000 : 500,
+          method: lastPaid.method,
+          paidAt: lastPaid.processedAt ?? lastPaid.createdAt,
+        }
+      : null;
+
     return {
       status: eff.status,
       paidAt: user.membershipPaidAt,
@@ -166,6 +182,7 @@ export async function membershipRoutes(app: FastifyInstance) {
       referralLink: user.referralCode ? `${webBase}/register?ref=${user.referralCode}` : null,
       referrerId: user.referrerId,
       referralPlans: (user.referralPlans as string[] | null) ?? ['estandar', 'elite'],
+      pack,
       settings,
     };
   });
