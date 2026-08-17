@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
-import { resolvePackForUser, approveTikTokCommission } from '../utils/tiktok.js';
+import { resolvePackForUser, approveTikTokCommission, creditPackReferral } from '../utils/tiktok.js';
 import { sendWebPush } from '../utils/onesignal.js';
 
 interface JWTPayload { sub: string; email: string; role: string; type?: string; }
@@ -91,7 +91,16 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
 
     const { packType, baseCreators } = await resolvePackForUser(userId);
     const campaign = await prisma.tikTokShopCampaign.create({ data: { userId, packType, baseCreators } });
-    return { campaign };
+
+    // Si el usuario no pagó membresía real, el admin al activar el pack genera
+    // las comisiones de referido (25% L1 / 5% L2) para su red.
+    const adminUser = (request as any).user as JWTPayload;
+    const referral = await creditPackReferral(userId, packType, adminUser.sub).catch((err: any) => {
+      request.log.warn({ err }, 'No se pudo generar comisión de referido por pack');
+      return { level1: 0, level2: 0 };
+    });
+
+    return { campaign, referral };
   });
 
   // ─── Ajustar pack del usuario manualmente (admin) ───
@@ -106,6 +115,7 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     const body = updatePackSchema.parse(request.body);
 
     let campaign = await prisma.tikTokShopCampaign.findUnique({ where: { userId } });
+    const wasNewCampaign = !campaign;
     if (!campaign) {
       const { packType, baseCreators } = await resolvePackForUser(userId);
       campaign = await prisma.tikTokShopCampaign.create({ data: { userId, packType, baseCreators } });
@@ -118,6 +128,8 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
       base = body.packType >= 1000 ? 10 : 5;
     }
 
+    const packChanged = body.packType !== undefined && body.packType !== campaign.packType;
+
     const updated = await prisma.tikTokShopCampaign.update({
       where: { id: campaign.id },
       data: {
@@ -127,11 +139,23 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
       },
     });
 
+    // Genera comisión de referido cuando el admin asigna el pack por primera vez
+    // o lo sube de nivel (500->1000) a un usuario sin membresía real pagada.
+    // creditPackReferral ya evita duplicar si existe un pago MEMBERSHIP aprobado.
+    let referral: any = { level1: 0, level2: 0 };
+    if ((wasNewCampaign || packChanged) && body.packType !== undefined) {
+      const adminUser = (request as any).user as JWTPayload;
+      referral = await creditPackReferral(userId, body.packType, adminUser.sub).catch((err: any) => {
+        request.log.warn({ err }, 'No se pudo generar comisión de referido por pack');
+        return { level1: 0, level2: 0 };
+      });
+    }
+
     // Si se redujo el límite y hay más creadores asignados, se avisa al admin en la respuesta.
     const assigned = await prisma.tikTokCreator.count({ where: { campaignId: campaign.id } });
     const max = updated.baseCreators + updated.extraCreators;
 
-    return { campaign: updated, assigned, maxCreators: max, overLimit: assigned > max };
+    return { campaign: updated, assigned, maxCreators: max, overLimit: assigned > max, referral };
   });
 
   // ─── Asignar creador a la campaña ───

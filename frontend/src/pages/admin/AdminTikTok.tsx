@@ -296,14 +296,23 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
               onChange={async (e) => {
                 const packType = Number(e.target.value);
                 const base = packType >= 1000 ? 10 : 5;
-                if (!campaign) {
-                  if (!confirm('¿Activar TikTok Shop para este usuario?')) return;
-                  await adminTiktokApi.activateCampaign(user.id);
+                if (!campaign && !confirm('¿Activar TikTok Shop para este usuario?')) return;
+                try {
+                  const { data: res } = await adminTiktokApi.updatePack(user.id, { packType, baseCreators: base });
+                  const ref = res.referral;
+                  const msg = `Pack ${packType} (${base} creadores) asignado`;
+                  if (ref?.level1 || ref?.level2) {
+                    toast.success(`${msg}. Comisión de red: ${fmt(ref.level1)} (nivel 1)${ref.level2 ? ` + ${fmt(ref.level2)} (nivel 2)` : ''}`);
+                  } else if (ref?.skipped === 'already-paid') {
+                    toast.info(`${msg}. El usuario ya pagó membresía (comisión ya generada por ese pago).`);
+                  } else {
+                    toast.success(msg);
+                  }
+                  const { data: fresh } = await adminTiktokApi.campaign(user.id);
+                  onRefresh(fresh);
+                } catch (err: any) {
+                  toast.error(err.response?.data?.error || 'Error al asignar pack');
                 }
-                await adminTiktokApi.updatePack(user.id, { packType, baseCreators: base });
-                toast.success(`Pack ${packType} (${base} creadores) asignado`);
-                const { data: fresh } = await adminTiktokApi.campaign(user.id);
-                onRefresh(fresh);
               }}
             >
               <option value="500">Pack $500 (5 creadores)</option>
