@@ -144,10 +144,19 @@ export function DashboardPage() {
         <div className="flex-1 space-y-6">
           {/* Hero: TU RUTA DE HOY */}
           {currentDay && (
-            <div className="relative bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
-              <div className="flex flex-col sm:flex-row">
-                {/* Left: Content */}
-                <div className="flex-1 p-6">
+            <div className="relative rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden min-h-[220px]">
+              {/* Background image */}
+              <img
+                src="/images/escalera.png"
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/30 dark:from-dark-800/95 dark:via-dark-800/80 dark:to-dark-800/30" />
+
+              {/* Content */}
+              <div className="relative p-6 flex flex-col justify-between h-full min-h-[220px]">
+                <div>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
                     Tu ruta de hoy
                   </span>
@@ -157,51 +166,42 @@ export function DashboardPage() {
                   <p className="text-sm text-gray-500 dark:text-dark-400 mt-1">
                     Completa {totalItems} tareas para desbloquear el siguiente día.
                   </p>
-
-                  <div className="flex items-center gap-6 mt-5">
-                    {/* Circular progress */}
-                    <div className="relative w-20 h-20 shrink-0">
-                      <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-                        <circle cx="40" cy="40" r="35" fill="none" stroke="currentColor" strokeWidth="6"
-                          className="text-gray-100 dark:text-dark-700" />
-                        <circle cx="40" cy="40" r="35" fill="none" stroke="currentColor" strokeWidth="6"
-                          strokeDasharray={`${2 * Math.PI * 35}`}
-                          strokeDashoffset={`${2 * Math.PI * 35 * (1 - dayProgress / 100)}`}
-                          strokeLinecap="round"
-                          className="text-primary-600 dark:text-primary-400 transition-all duration-500" />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-xl font-bold text-gray-900 dark:text-dark-100">{completedCount}</span>
-                        <span className="text-[10px] text-gray-400 dark:text-dark-500">de {totalItems}</span>
-                      </div>
-                    </div>
-
-                    {/* CTA */}
-                    <div className="flex-1">
-                      <Link
-                        to={`/day/${currentDay.dayNumber}`}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 font-medium text-sm transition-all shadow-sm"
-                      >
-                        Continuar entrenamiento
-                        <ChevronRight className="w-4 h-4" />
-                      </Link>
-                      <Link
-                        to="/program"
-                        className="block mt-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
-                      >
-                        Ver programa completo
-                      </Link>
-                    </div>
-                  </div>
                 </div>
 
-                {/* Right: Stairs image */}
-                <div className="hidden sm:flex items-end justify-center p-6 w-56 shrink-0">
-                  <img
-                    src="/images/escalera.png"
-                    alt="Progreso"
-                    className="w-full h-auto object-contain max-h-40"
-                  />
+                <div className="flex items-center gap-6 mt-5">
+                  {/* Circular progress */}
+                  <div className="relative w-20 h-20 shrink-0">
+                    <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+                      <circle cx="40" cy="40" r="35" fill="none" stroke="currentColor" strokeWidth="6"
+                        className="text-gray-200/80 dark:text-dark-600/80" />
+                      <circle cx="40" cy="40" r="35" fill="none" stroke="currentColor" strokeWidth="6"
+                        strokeDasharray={`${2 * Math.PI * 35}`}
+                        strokeDashoffset={`${2 * Math.PI * 35 * (1 - dayProgress / 100)}`}
+                        strokeLinecap="round"
+                        className="text-primary-600 dark:text-primary-400 transition-all duration-500" />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-xl font-bold text-gray-900 dark:text-dark-100">{completedCount}</span>
+                      <span className="text-[10px] text-gray-400 dark:text-dark-500">de {totalItems}</span>
+                    </div>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="flex-1">
+                    <Link
+                      to={`/day/${currentDay.dayNumber}`}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 font-medium text-sm transition-all shadow-sm"
+                    >
+                      Continuar entrenamiento
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      to="/program"
+                      className="block mt-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                    >
+                      Ver programa completo
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
