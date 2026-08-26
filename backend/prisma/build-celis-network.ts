@@ -1,8 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { generateReferralCode } from '../src/utils/auth.js';
 
 const prisma = new PrismaClient();
+
+function generateReferralCode(username: string): string {
+  const base = username.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase();
+  const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
+  return base ? `${base}${suffix}` : `C1${suffix}`;
+}
 
 // ─── Configuración ───
 // Identifica a celis por username o parte del email.
