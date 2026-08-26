@@ -27,27 +27,20 @@ export function NetworkTree({ roots }: NetworkTreeProps) {
   return (
     <div className="overflow-x-auto py-4">
       <div className="flex justify-center min-w-max">
-        <div className="flex flex-col items-center">
-          {roots.map((root, i) => (
-            <RootColumn key={root.id} root={root} isLast={i === roots.length - 1} />
+        <div className="flex items-start justify-center gap-8">
+          {roots.map((root) => (
+            <div key={root.id} className="flex flex-col items-center">
+              <NodeCard node={root} depth={0} isRoot />
+              {root.children && root.children.length > 0 && (
+                <>
+                  <Connector isRoot />
+                  <ChildrenRow nodes={root.children} parentId={root.id} />
+                </>
+              )}
+            </div>
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-function RootColumn({ root, isLast }: { root: TreeMember; isLast: boolean }) {
-  return (
-    <div className="flex flex-col items-center">
-      <NodeCard node={root} depth={0} isRoot />
-      {root.children && root.children.length > 0 && (
-        <>
-          <Connector isRoot />
-          <ChildrenRow nodes={root.children} parentId={root.id} />
-        </>
-      )}
-      {!isLast && <div className="h-8 w-px bg-gray-200 dark:bg-dark-600" />}
     </div>
   );
 }

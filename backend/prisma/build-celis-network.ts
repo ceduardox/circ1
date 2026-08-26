@@ -30,12 +30,13 @@ const L1 = [
 ];
 
 // Red nivel 2: referidos de los L1. parent = username del L1.
+// Distribución natural: 2 bajo Juan, 2 bajo María, 1 bajo Carlos, el resto sin referidos.
 const L2 = [
   { username: 'red.sofia', email: 'red.rosa.ticona@ryztor.test', firstName: 'Rosa', lastName: 'Ticona', country: 'Bolivia', pack: 500, daysAgo: 20, parent: 'red.juan' },
+  { username: 'red.santiago', email: 'red.rodrigo.mendoza@ryztor.test', firstName: 'Rodrigo', lastName: 'Mendoza', country: 'Bolivia', pack: 500, daysAgo: 8, parent: 'red.juan' },
   { username: 'red.mateo', email: 'red.luis.huanca@ryztor.test', firstName: 'Luis', lastName: 'Huanca', country: 'Bolivia', pack: 500, daysAgo: 15, parent: 'red.maria' },
+  { username: 'red.fernanda', email: 'red.patricia.torrez@ryztor.test', firstName: 'Patricia', lastName: 'Torrez', country: 'Bolivia', pack: 500, daysAgo: 4, parent: 'red.maria' },
   { username: 'red.isabella', email: 'red.carmen.chipana@ryztor.test', firstName: 'Carmen', lastName: 'Chipana', country: 'Bolivia', pack: 1000, daysAgo: 12, parent: 'red.carlos' },
-  { username: 'red.santiago', email: 'red.rodrigo.mendoza@ryztor.test', firstName: 'Rodrigo', lastName: 'Mendoza', country: 'Bolivia', pack: 500, daysAgo: 8, parent: 'red.diego' },
-  { username: 'red.fernanda', email: 'red.patricia.torrez@ryztor.test', firstName: 'Patricia', lastName: 'Torrez', country: 'Bolivia', pack: 500, daysAgo: 4, parent: 'red.valentina' },
 ];
 
 // Creadores de TikTok Shop (2 influencers que le venden).
@@ -98,7 +99,14 @@ async function ensureActiveUser(user: {
   username: string; email: string; firstName: string; lastName: string; country: string; referrerId: string;
 }): Promise<{ user: any; created: boolean }> {
   let found = await prisma.user.findFirst({ where: { OR: [{ username: user.username }, { email: user.email }] } });
-  if (found) return { user: found, created: false };
+  if (found) {
+    // Si el usuario ya existe pero su padre cambió (corrección de distribución), lo movemos.
+    if (found.referrerId !== user.referrerId) {
+      found = await prisma.user.update({ where: { id: found.id }, data: { referrerId: user.referrerId } });
+      console.log(`   → movido a nuevo padre: ${found.firstName} ${found.lastName}`);
+    }
+    return { user: found, created: false };
+  }
   const passwordHash = await bcrypt.hash('chat1234', 10);
   const created = await prisma.user.create({
     data: {
