@@ -80,6 +80,19 @@ try {
   console.error('⚠️ No se pudieron sincronizar los usuarios fake:', e);
 }
 
+// Construye la red y ganancias de celis (una sola vez, con marca en la BD).
+// El script es idempotente y solo crea datos; al terminar guarda la marca
+// CELIS_NETWORK_BUILT para no volver a ejecutarse en el próximo deploy.
+if (config.nodeEnv === 'production') {
+  try {
+    console.log('🚀 Ejecutando build-celis-network...');
+    execSync('npx --no-install tsx prisma/build-celis-network.ts', { stdio: 'inherit', cwd: process.cwd() });
+    console.log('✅ build-celis-network finalizado');
+  } catch (e) {
+    console.error('⚠️ No se pudo construir la red de celis:', e);
+  }
+}
+
 await app.register(cors, {
   origin: config.frontendUrl,
   credentials: true,

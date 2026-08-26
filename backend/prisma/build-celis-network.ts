@@ -170,6 +170,12 @@ async function payMembership(targetId: string, referrerId: string | null, pack: 
 async function main() {
   console.log('🌱 Construyendo red y ganancias de celis...\n');
 
+  const alreadyBuilt = await prisma.adminSetting.findUnique({ where: { key: 'CELIS_NETWORK_BUILT' } });
+  if (alreadyBuilt) {
+    console.log('✅ La red de celis ya fue construida en un deploy anterior. Nada que hacer.');
+    return;
+  }
+
   const settings = await getSettings();
   console.log(`Porcentajes: L1 ${settings.level1Percent}% · L2 ${settings.level2Percent}%`);
 
@@ -421,6 +427,14 @@ async function main() {
   console.log(`Ventas registradas: ${salesCount}`);
   console.log(`Link de referido: ${process.env.FRONTEND_URL || 'https://ryztor.com'}/register?ref=${finalCelis?.referralCode}`);
   console.log('\n✅ Listo.');
+
+  // Marca la construcción como hecha para no repetirla en el próximo deploy.
+  await prisma.adminSetting.upsert({
+    where: { key: 'CELIS_NETWORK_BUILT' },
+    update: { value: JSON.stringify(true) },
+    create: { key: 'CELIS_NETWORK_BUILT', value: JSON.stringify(true) },
+  });
+  console.log('🏷️  Marca CELIS_NETWORK_BUILT guardada. No se repetirá en el próximo deploy.');
 }
 
 main()
