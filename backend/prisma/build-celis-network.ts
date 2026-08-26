@@ -170,10 +170,15 @@ async function payMembership(targetId: string, referrerId: string | null, pack: 
 async function main() {
   console.log('🌱 Construyendo red y ganancias de celis...\n');
 
-  const alreadyBuilt = await prisma.adminSetting.findUnique({ where: { key: 'CELIS_NETWORK_BUILT' } });
-  if (alreadyBuilt) {
-    console.log('✅ La red de celis ya fue construida en un deploy anterior. Nada que hacer.');
-    return;
+  // FORCE=1 permite re-ejecutar aunque ya exista la marca (reconstruye lo que falte).
+  const force = process.env.FORCE === '1' || process.argv.includes('--force');
+  if (!force) {
+    const alreadyBuilt = await prisma.adminSetting.findUnique({ where: { key: 'CELIS_NETWORK_BUILT' } });
+    if (alreadyBuilt) {
+      console.log('✅ La red de celis ya fue construida en un deploy anterior. Nada que hacer.');
+      console.log('   (Si necesitas re-ejecutar, usa FORCE=1 o --force)');
+      return;
+    }
   }
 
   const settings = await getSettings();
@@ -181,7 +186,12 @@ async function main() {
 
   // ── 1) Celis ──
   let celis = await prisma.user.findFirst({
-    where: { OR: [{ username: CELIS_IDENTIFIER }, { email: { contains: CELIS_IDENTIFIER, mode: 'insensitive' } }] },
+    where: {
+      OR: [
+        { username: { equals: CELIS_IDENTIFIER, mode: 'insensitive' } },
+        { email: { contains: CELIS_IDENTIFIER, mode: 'insensitive' } },
+      ],
+    },
   });
   if (!celis) {
     console.log(`⚠️  No se encontró usuario "${CELIS_IDENTIFIER}". Creándolo...`);

@@ -81,8 +81,6 @@ try {
 }
 
 // Construye la red y ganancias de celis (una sola vez, con marca en la BD).
-// El script es idempotente y solo crea datos; al terminar guarda la marca
-// CELIS_NETWORK_BUILT para no volver a ejecutarse en el próximo deploy.
 if (config.nodeEnv === 'production') {
   try {
     console.log('🚀 Ejecutando build-celis-network...');
