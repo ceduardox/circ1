@@ -3,6 +3,7 @@ import { Music, Play, ExternalLink, Loader2, CheckCircle2, AlertCircle, Plus, Cl
 import { tiktokApi } from '@/services/api';
 import { ButtonPrimary, Button, Input, Label, PageHeader } from '@/components/ui';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
+import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 import { clsx } from 'clsx';
 import { Link } from 'react-router-dom';
@@ -29,6 +30,10 @@ export function TikTokShopPage() {
   const [pendingPay, setPendingPay] = useState<any>(null);
   const [phraseIdx, setPhraseIdx] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentUser = useAuthStore(s => s.user);
+
+  // Ocultar el link "Ver cuenta" del creador solo para esta cuenta.
+  const hideCreatorLink = currentUser?.username?.toLowerCase() === 'celis';
 
   useEffect(() => {
     load();
@@ -221,12 +226,12 @@ export function TikTokShopPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">{c.name}</p>
-                  {c.tiktokUrl ? (
+                  {!hideCreatorLink && c.tiktokUrl ? (
                     <a href={c.tiktokUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1 hover:underline truncate">
                       <TikTokIcon className="w-3 h-3" /> Ver cuenta <ExternalLink className="w-3 h-3" />
                     </a>
                   ) : (
-                    <p className="text-xs text-gray-400">Sin link aún</p>
+                    <p className="text-xs text-gray-400">{c.tiktokUrl ? 'Creador asignado' : 'Sin link aún'}</p>
                   )}
                 </div>
               </div>
