@@ -247,34 +247,39 @@ export function NetworkPage() {
             <Crown className="w-4 h-4 shrink-0" />
             Plan que ven tus referidos
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {[
-              { id: 'estandar', label: 'Solo $500', desc: 'Plan Estándar' },
-              { id: 'elite', label: 'Solo $1000', desc: 'Plan Élite' },
-              { id: 'both', label: 'Ambos planes', desc: '$500 y $1000' },
-            ].map(opt => {
-              const active = opt.id === 'both'
-                ? selectedPlans.includes('estandar') && selectedPlans.includes('elite')
-                : selectedPlans.includes(opt.id) && selectedPlans.length === 1;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => {
-                    if (opt.id === 'both') void savePlans(['estandar', 'elite']);
-                    else void savePlans([opt.id]);
-                  }}
-                  disabled={savingPlans}
-                  className={`rounded-xl px-3 py-3 text-left transition-all border ${
-                    active
-                      ? 'bg-white text-primary-700 border-white shadow'
-                      : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
-                  }`}
-                >
-                  <p className={`text-sm font-bold ${active ? 'text-primary-700' : 'text-white'}`}>{opt.label}</p>
-                  <p className={`text-[11px] mt-0.5 ${active ? 'text-primary-500' : 'text-primary-100'}`}>{opt.desc}</p>
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {(() => {
+              const allPlans = status?.settings?.plans && status.settings.plans.length > 0
+                ? status.settings.plans
+                : [{ id: 'estandar', name: 'Estándar', price: status?.settings?.membershipPrice || 500 }];
+              const opts = [
+                ...allPlans.map((pl: any) => ({ id: pl.id, label: `Solo ${pl.price < 1000 ? '$' + pl.price : '$' + pl.price}`, desc: `Plan ${pl.name}` })),
+                { id: 'both', label: 'Todos los planes', desc: allPlans.map((pl: any) => pl.name).join(' + ') },
+              ];
+              return opts.map(opt => {
+                const active = opt.id === 'both'
+                  ? allPlans.every((pl: any) => selectedPlans.includes(pl.id))
+                  : selectedPlans.includes(opt.id) && selectedPlans.length === 1;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      if (opt.id === 'both') void savePlans(allPlans.map((pl: any) => pl.id));
+                      else void savePlans([opt.id]);
+                    }}
+                    disabled={savingPlans}
+                    className={`rounded-xl px-3 py-3 text-left transition-all border ${
+                      active
+                        ? 'bg-white text-primary-700 border-white shadow'
+                        : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    <p className={`text-sm font-bold ${active ? 'text-primary-700' : 'text-white'}`}>{opt.label}</p>
+                    <p className={`text-[11px] mt-0.5 ${active ? 'text-primary-500' : 'text-primary-100'}`}>{opt.desc}</p>
+                  </button>
+                );
+              });
+            })()}
           </div>
           <p className="text-primary-100 text-[11px] mt-3">
             Cuando alguien se registra con tu link, solo verá el plan (o planes) que elijas aquí.
