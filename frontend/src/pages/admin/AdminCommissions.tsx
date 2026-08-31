@@ -184,41 +184,58 @@ export function AdminCommissionsPage() {
             <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5 mb-3">
               El usuario elige el plan al activar su membresía. Las comisiones se calculan sobre el precio de cada plan.
             </p>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {(settings.plans || []).map((pl: any, idx: number) => (
-                <div key={pl.id} className="flex items-center gap-2">
-                  <Input
-                    value={pl.name}
-                    placeholder="Nombre del plan"
-                    className="flex-1"
-                    onChange={e => {
-                      const plans = [...settings.plans];
-                      plans[idx] = { ...pl, name: e.target.value };
-                      setSettings({ ...settings, plans });
-                    }}
-                  />
-                  <Input
-                    type="number"
-                    value={pl.price}
-                    min={0}
-                    placeholder="Precio USD"
-                    className="w-32"
-                    onChange={e => {
-                      const plans = [...settings.plans];
-                      plans[idx] = { ...pl, price: Number(e.target.value) };
-                      setSettings({ ...settings, plans });
-                    }}
-                  />
-                  {settings.plans.length > 1 && (
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      className="bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      onClick={() => setSettings({ ...settings, plans: settings.plans.filter((_: any, i: number) => i !== idx) })}
-                    >
-                      Eliminar
-                    </Button>
-                  )}
+                <div key={pl.id} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-gray-50 dark:bg-dark-700/40 border border-gray-200 dark:border-dark-600 rounded-xl p-3">
+                  <div className="flex flex-col sm:flex-row flex-1 min-w-0 gap-2">
+                    <Input
+                      value={pl.name}
+                      placeholder="Nombre del plan"
+                      className="flex-1 min-w-0"
+                      onChange={e => {
+                        const plans = [...settings.plans];
+                        plans[idx] = { ...pl, name: e.target.value };
+                        setSettings({ ...settings, plans });
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      value={pl.price}
+                      min={0}
+                      placeholder="Precio USD"
+                      className="w-full sm:w-32 shrink-0"
+                      onChange={e => {
+                        const plans = [...settings.plans];
+                        plans[idx] = { ...pl, price: Number(e.target.value) };
+                        setSettings({ ...settings, plans });
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-dark-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        className="accent-primary-600 w-4 h-4"
+                        checked={pl.tiktok !== false}
+                        onChange={e => {
+                          const plans = [...settings.plans];
+                          plans[idx] = { ...pl, tiktok: e.target.checked };
+                          setSettings({ ...settings, plans });
+                        }}
+                      />
+                      TikTok Shop
+                    </label>
+                    {settings.plans.length > 1 && (
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        className="bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={() => setSettings({ ...settings, plans: settings.plans.filter((_: any, i: number) => i !== idx) })}
+                      >
+                        Eliminar
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -227,7 +244,7 @@ export function AdminCommissionsPage() {
               className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
               onClick={() => setSettings({
                 ...settings,
-                plans: [...settings.plans, { id: `plan-${Date.now()}`, name: '', price: 0 }],
+                plans: [...settings.plans, { id: `plan-${Date.now()}`, name: '', price: 0, tiktok: false }],
               })}
             >
               + Añadir plan

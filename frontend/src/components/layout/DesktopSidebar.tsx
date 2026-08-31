@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
@@ -8,6 +9,10 @@ export function DesktopSidebar() {
   const { user, logout } = useAuthStore();
   const { isDark, toggle } = useTheme();
   const location = useLocation();
+  const memberStatus = useMembershipStore(s => s.status);
+
+  // TikTok Shop solo se muestra si el plan del usuario lo incluye (checkbox en config).
+  const hasTikTok = user?.role === 'ADMIN' || memberStatus?.pack?.tiktokAccess !== false;
 
   const navItems = [
     { path: '/dashboard', label: 'Mi Día', icon: Home, color: 'from-violet-500 to-purple-600' },
@@ -16,7 +21,7 @@ export function DesktopSidebar() {
     { path: '/team', label: 'Construir Equipo', icon: Users2, color: 'from-cyan-500 to-sky-600' },
     { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600' },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown, color: 'from-violet-600 to-fuchsia-600' },
-    { path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600' },
+    ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600' }] : []),
     { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600' },
     { path: '/profile', label: 'Perfil', icon: User, color: 'from-pink-500 to-rose-600' },
   ];

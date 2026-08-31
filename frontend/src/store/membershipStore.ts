@@ -18,6 +18,7 @@ interface MembershipStatus {
     packType: number;
     method?: string | null;
     paidAt?: string | null;
+    tiktokAccess?: boolean;
   } | null;
   settings: {
     membershipPrice: number;

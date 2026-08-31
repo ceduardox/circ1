@@ -48,8 +48,11 @@ async function getSettings(userPlans?: string[]) {
       if (Array.isArray(parsed) && parsed.length) plans = parsed;
     } catch { /* usar default */ }
   } else if (map.MEMBERSHIP_PRICE && Number(map.MEMBERSHIP_PRICE) !== 500) {
-    plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE) }];
+    plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE), tiktok: true }];
   }
+
+  // Por defecto los planes incluyen TikTok Shop salvo que el admin lo desmarque.
+  plans = plans.map((p: any) => ({ ...p, tiktok: p.tiktok !== false }));
 
   // Filtra los planes según los que el referidor asignó a este usuario.
   // userPlans ej: ["estandar","elite"] = ambos · ["estandar"] = solo 500 · ["elite"] = solo 1000
@@ -70,8 +73,8 @@ async function getSettings(userPlans?: string[]) {
 
 function defaultPlans() {
   return [
-    { id: 'estandar', name: 'Estándar', price: 500 },
-    { id: 'elite', name: 'Élite', price: 1000 },
+    { id: 'estandar', name: 'Estándar', price: 500, tiktok: true },
+    { id: 'elite', name: 'Élite', price: 1000, tiktok: true },
   ];
 }
 
@@ -172,6 +175,10 @@ export async function membershipRoutes(app: FastifyInstance) {
         }
       : null;
 
+    // Acceso a TikTok Shop: solo si el plan del usuario lo incluye (checkbox en config).
+    const plan = pack?.planId ? settings.plans.find((p: any) => p.id === pack.planId) : null;
+    const tiktokAccess = plan ? plan.tiktok !== false : true;
+
     return {
       status: eff.status,
       paidAt: user.membershipPaidAt,
@@ -182,7 +189,7 @@ export async function membershipRoutes(app: FastifyInstance) {
       referralLink: user.referralCode ? `${webBase}/register?ref=${user.referralCode}` : null,
       referrerId: user.referrerId,
       referralPlans: (user.referralPlans as string[] | null) ?? ['estandar', 'elite'],
-      pack,
+      pack: pack ? { ...pack, tiktokAccess } : null,
       settings,
     };
   });
