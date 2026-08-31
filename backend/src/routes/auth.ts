@@ -119,14 +119,24 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Qué plan(es) ven tus referidos al registrarse con tu link.
+  // Lee los planes activos de la config (ya no usa ids fijos).
   app.put('/referral-plans', { preHandler: authMiddleware }, async (request, reply) => {
     const userId = (request.user as JWTPayload).sub;
     const body = (request.body ?? {}) as { plans?: string[] };
-    const allPlanIds = ['estandar', 'elite'];
+
+    const setting = await prisma.adminSetting.findUnique({ where: { key: 'PLANS' } });
+    let activePlans: string[] = ['estandar', 'elite'];
+    if (setting) {
+      try {
+        const parsed = JSON.parse(setting.value as any);
+        if (Array.isArray(parsed) && parsed.length) activePlans = parsed.map((p: any) => p.id);
+      } catch { /* usar default */ }
+    }
+
     const plans = Array.isArray(body.plans)
-      ? body.plans.filter(p => allPlanIds.includes(p))
-      : allPlanIds;
-    const safe = plans.length > 0 ? plans : allPlanIds;
+      ? body.plans.filter(p => activePlans.includes(p))
+      : activePlans;
+    const safe = plans.length > 0 ? plans : activePlans;
 
     await prisma.user.update({
       where: { id: userId },

@@ -441,10 +441,10 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     // Al guardar los planes, sincroniza el referralPlans de todos los usuarios
-    // con los ids de los planes activos, para que los planes nuevos se vean.
+    // (incluido admin) con los ids de los planes activos, para que los planes nuevos se vean.
     if (body.plans) {
       const allPlanIds = body.plans.map((p: any) => p.id);
-      const users = await prisma.user.findMany({ where: { role: 'USER' }, select: { id: true } });
+      const users = await prisma.user.findMany({ select: { id: true } });
       for (const u of users) {
         await prisma.user.update({
           where: { id: u.id },
