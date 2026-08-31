@@ -367,17 +367,19 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     let plans = [
-      { id: 'estandar', name: 'Estándar', price: 500 },
-      { id: 'elite', name: 'Élite', price: 1000 },
+      { id: 'estandar', name: 'Estándar', price: 500, tiktok: true },
+      { id: 'elite', name: 'Élite', price: 1000, tiktok: true },
     ];
-    if (map.PLANS) {
+    const plansRaw = map.PLANS ?? map.plans;
+    if (plansRaw) {
       try {
-        const parsed = JSON.parse(map.PLANS);
+        const parsed = JSON.parse(plansRaw);
         if (Array.isArray(parsed) && parsed.length) plans = parsed;
       } catch { /* usar default */ }
-    } else if (map.MEMBERSHIP_PRICE && Number(map.MEMBERSHIP_PRICE) !== 500) {
-      plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE) }];
+    } else if (map.MEMBERSHIP_PRICE ?? map.membershipPrice) {
+      plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE ?? map.membershipPrice), tiktok: true }];
     }
+    plans = plans.map((p: any) => ({ ...p, tiktok: p.tiktok !== false }));
 
     return {
       membershipPrice: Number(map.MEMBERSHIP_PRICE ?? 500),
@@ -406,6 +408,7 @@ export async function adminRoutes(app: FastifyInstance) {
       id: z.string(),
       name: z.string().min(1),
       price: z.number().positive(),
+      tiktok: z.boolean().optional(),
     })).optional(),
   });
 
@@ -416,11 +419,17 @@ export async function adminRoutes(app: FastifyInstance) {
   app.put('/business/settings', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
     const body = settingsSchema.parse(request.body);
     const entries = Object.entries(body) as [string, any][];
-    // Mapea el nombre del campo a la key usada en la BD (REGISTER_OPEN en mayúsculas).
+    // Mapea el nombre del campo a la key usada en la BD (mayúsculas).
     const keyMap: Record<string, string> = {
       registerOpen: 'REGISTER_OPEN',
       tiktokExtraCreatorPrice: 'TIKTOK_EXTRA_CREATOR_PRICE',
       tiktokAutoApprove: 'TIKTOK_AUTO_APPROVE',
+      plans: 'PLANS',
+      membershipPrice: 'MEMBERSHIP_PRICE',
+      monthlyFee: 'MONTHLY_FEE',
+      level1Percent: 'LEVEL1_PERCENT',
+      level2Percent: 'LEVEL2_PERCENT',
+      paymentCurrency: 'PAYMENT_CURRENCY',
     };
     for (const [key, value] of entries) {
       const dbKey = keyMap[key] || key;
@@ -430,6 +439,20 @@ export async function adminRoutes(app: FastifyInstance) {
         create: { key: dbKey, value: JSON.stringify(value) },
       });
     }
+
+    // Al guardar los planes, sincroniza el referralPlans de todos los usuarios
+    // con los ids de los planes activos, para que los planes nuevos se vean.
+    if (body.plans) {
+      const allPlanIds = body.plans.map((p: any) => p.id);
+      const users = await prisma.user.findMany({ where: { role: 'USER' }, select: { id: true } });
+      for (const u of users) {
+        await prisma.user.update({
+          where: { id: u.id },
+          data: { referralPlans: allPlanIds },
+        });
+      }
+    }
+
     return getSettings();
   });
 

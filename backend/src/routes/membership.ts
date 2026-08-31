@@ -42,13 +42,14 @@ async function getSettings(userPlans?: string[]) {
   }
 
   let plans = defaultPlans();
-  if (map.PLANS) {
+  const plansRaw = map.PLANS ?? map.plans;
+  if (plansRaw) {
     try {
-      const parsed = JSON.parse(map.PLANS);
+      const parsed = JSON.parse(plansRaw);
       if (Array.isArray(parsed) && parsed.length) plans = parsed;
     } catch { /* usar default */ }
-  } else if (map.MEMBERSHIP_PRICE && Number(map.MEMBERSHIP_PRICE) !== 500) {
-    plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE), tiktok: true }];
+  } else if (map.MEMBERSHIP_PRICE ?? map.membershipPrice) {
+    plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE ?? map.membershipPrice), tiktok: true }];
   }
 
   // Por defecto los planes incluyen TikTok Shop salvo que el admin lo desmarque.
@@ -56,17 +57,18 @@ async function getSettings(userPlans?: string[]) {
 
   // Filtra los planes según los que el referidor asignó a este usuario.
   // userPlans ej: ["estandar","elite"] = ambos · ["estandar"] = solo 500 · ["elite"] = solo 1000
+  // Si el usuario no tiene referralPlans definidos (null), se muestran todos los planes.
   if (Array.isArray(userPlans) && userPlans.length > 0) {
     plans = plans.filter((p: any) => userPlans.includes(p.id));
     if (plans.length === 0) plans = defaultPlans();
   }
 
   return {
-    membershipPrice: Number(map.MEMBERSHIP_PRICE ?? defaults.MEMBERSHIP_PRICE),
-    monthlyFee: Number(map.MONTHLY_FEE ?? defaults.MONTHLY_FEE),
-    level1Percent: Number(map.LEVEL1_PERCENT ?? defaults.LEVEL1_PERCENT),
-    level2Percent: Number(map.LEVEL2_PERCENT ?? defaults.LEVEL2_PERCENT),
-    paymentCurrency: map.PAYMENT_CURRENCY || 'usdtbsc',
+    membershipPrice: Number(map.MEMBERSHIP_PRICE ?? map.membershipPrice ?? defaults.MEMBERSHIP_PRICE),
+    monthlyFee: Number(map.MONTHLY_FEE ?? map.monthlyFee ?? defaults.MONTHLY_FEE),
+    level1Percent: Number(map.LEVEL1_PERCENT ?? map.level1Percent ?? defaults.LEVEL1_PERCENT),
+    level2Percent: Number(map.LEVEL2_PERCENT ?? map.level2Percent ?? defaults.LEVEL2_PERCENT),
+    paymentCurrency: (map.PAYMENT_CURRENCY ?? map.paymentCurrency) || 'usdtbsc',
     plans,
   };
 }
