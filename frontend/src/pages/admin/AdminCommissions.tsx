@@ -16,6 +16,7 @@ export function AdminCommissionsPage() {
     plans: [
       { id: 'estandar', name: 'Estándar', price: 500 },
       { id: 'elite', name: 'Élite', price: 1000 },
+      { id: 'start', name: 'Start', price: 200 },
     ],
   });
   const [payments, setPayments] = useState<any[]>([]);
