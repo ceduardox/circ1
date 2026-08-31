@@ -51,7 +51,8 @@ export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesti
   const [showMethods, setShowMethods] = useState(false);
   const [manualMsg, setManualMsg] = useState<string | null>(null);
   const [showBank, setShowBank] = useState(false);
-  const { payment, paid, start, checkNow } = usePaymentFlow();
+  const [switchingMethod, setSwitchingMethod] = useState(false);
+  const { payment, paid, start, checkNow, reset } = usePaymentFlow();
   const { fetchPendingPayment } = useMembershipStore();
 
   const isMonthly = variant === 'monthly';
@@ -93,6 +94,9 @@ export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesti
     setErrorMsg(null);
     setManualMsg(null);
     setShowMethods(false);
+    setSwitchingMethod(false);
+    // Si venía de un pago cripto pendiente, limpia el estado del flujo.
+    reset();
     if (!onRequestManualPayment) {
       setErrorMsg('El método de pago no está disponible en este momento.');
       return;
@@ -302,6 +306,13 @@ export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesti
                     <RefreshCw className="w-4 h-4" />
                     Verificar estado del pago
                   </button>
+                  <button
+                    onClick={() => { setSwitchingMethod(true); setShowMethods(true); }}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-dark-700 border border-indigo-200 dark:border-indigo-700 text-sm font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-dark-600 transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Cambiar método de pago
+                  </button>
                 </div>
               </div>
             ) : (
@@ -377,7 +388,7 @@ export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesti
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
           <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 shadow-2xl overflow-hidden animate-enter-up">
             <button
-              onClick={() => setShowMethods(false)}
+              onClick={() => { setShowMethods(false); setSwitchingMethod(false); }}
               className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
               aria-label="Cerrar"
             >
@@ -389,19 +400,26 @@ export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesti
               </h3>
               <p className="text-sm text-gray-500 dark:text-dark-400 mb-5">Elige cómo quieres pagar tu membresía.</p>
               <div className="space-y-3">
-                <button
-                  onClick={() => { setShowMethods(false); setErrorMsg(null); handleRequest(); }}
-                  disabled={requesting}
-                  className="w-full flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 hover:border-primary-400 dark:hover:border-primary-700 transition-all text-left"
-                >
-                  <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                    <Zap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">Pagar con USDT (cripto)</p>
-                    <p className="text-xs text-gray-500 dark:text-dark-400">Activación automática al confirmarse el pago.</p>
-                  </div>
-                </button>
+                {!switchingMethod && (
+                  <button
+                    onClick={() => { setShowMethods(false); setErrorMsg(null); handleRequest(); }}
+                    disabled={requesting}
+                    className="w-full flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 hover:border-primary-400 dark:hover:border-primary-700 transition-all text-left"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+                      <Zap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">Pagar con USDT (cripto)</p>
+                      <p className="text-xs text-gray-500 dark:text-dark-400">Activación automática al confirmarse el pago.</p>
+                    </div>
+                  </button>
+                )}
+                {switchingMethod && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-3">
+                    El pago con USDT quedó pendiente. Elige otro método y tu pago anterior se cancelará automáticamente.
+                  </p>
+                )}
                 <button
                   onClick={() => handleManualMethod('whop')}
                   disabled={requesting}

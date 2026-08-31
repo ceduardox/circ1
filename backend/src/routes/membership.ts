@@ -224,6 +224,16 @@ export async function membershipRoutes(app: FastifyInstance) {
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
     if (user.membershipStatus === 'ACTIVE') return reply.code(400).send({ error: 'Tu membresía ya está activa' });
 
+    // Métodos manuales (tarjeta Whop / banco): si hay un pago pendiente anterior
+    // (ej. el usuario intentó cripto y quiere cambiar), se cancela para poder crear el nuevo.
+    const isManualMethod = body.method === 'whop' || body.method === 'bank';
+    if (isManualMethod) {
+      await prisma.membershipPayment.updateMany({
+        where: { userId, status: 'PENDING', type: { in: ['MEMBERSHIP', 'MONTHLY'] } },
+        data: { status: 'REJECTED', reference: 'cambiado-de-metodo' },
+      });
+    }
+
     const activePending = await getActivePendingPayment(userId);
     if (activePending) {
       const remainingMin = Math.ceil((activePending.expiresAt.getTime() - Date.now()) / 60000);
@@ -259,7 +269,6 @@ export async function membershipRoutes(app: FastifyInstance) {
     let invoiceUrl: string | null = null;
     // Pagos manuales (tarjeta Whop / transferencia bancaria): se registran como PENDING
     // sin invoice de NowPayments. El admin los aprueba manualmente desde el panel.
-    const isManualMethod = body.method === 'whop' || body.method === 'bank';
     if (!isManualMethod && config.nowpayments.apiKey) {
       try {
         const payCurrency = settings.paymentCurrency === 'usd' ? undefined : settings.paymentCurrency;

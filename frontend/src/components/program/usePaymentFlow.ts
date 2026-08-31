@@ -69,5 +69,13 @@ export function usePaymentFlow() {
     }
   }, [checkPayment, payment, fetchStatus]);
 
-  return { payment, paid, start, checkNow };
+  // Limpia el estado del flujo (cuando el usuario cambia de método de pago).
+  const reset = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = null;
+    setPayment(null);
+    setPaid(false);
+  }, []);
+
+  return { payment, paid, start, checkNow, reset };
 }
