@@ -416,6 +416,7 @@ export async function adminRoutes(app: FastifyInstance) {
     })).optional(),
   });
 
+  // Obtener configuración del negocio y planes activos
   app.get('/business/settings', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
     return getSettings();
   });
