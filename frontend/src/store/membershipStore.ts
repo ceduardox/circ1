@@ -26,7 +26,15 @@ interface MembershipStatus {
     level1Percent: number;
     level2Percent: number;
     paymentCurrency?: string;
-    plans?: { id: string; name: string; price: number }[];
+    plans?: { id: string; name: string; price: number; tiktok?: boolean; whopUrl?: string }[];
+    bankDetails?: {
+      holder: string;
+      routing: string;
+      account: string;
+      accountType: string;
+      bank: string;
+      address: string;
+    };
   };
 }
 
@@ -46,6 +54,7 @@ interface MembershipState {
   checkingPayment: boolean;
   fetchStatus: () => Promise<void>;
   requestPayment: (planId?: string) => Promise<PaymentInfo | null>;
+  requestManualPayment: (method: 'whop' | 'bank', planId: string) => Promise<PaymentInfo | null>;
   requestMonthlyPayment: () => Promise<PaymentInfo | null>;
   checkPayment: (paymentId: string) => Promise<PaymentInfo>;
   fetchPendingPayment: () => Promise<PaymentInfo | null>;
@@ -83,6 +92,22 @@ export const useMembershipStore = create<MembershipState>((set, get) => ({
       };
     } finally {
       set({ requestingPayment: false });
+    }
+  },
+
+  requestManualPayment: async (method: 'whop' | 'bank', planId: string) => {
+    try {
+      const { data } = await membershipApi.requestPayment({ method, planId });
+      return {
+        id: data.payment.id,
+        status: data.payment.status,
+        invoiceUrl: data.invoiceUrl ?? data.payment.npInvoiceUrl,
+        npStatus: data.payment.npStatus,
+        amount: data.payment.amount,
+        type: data.payment.type,
+      };
+    } catch (e: any) {
+      throw e;
     }
   },
 

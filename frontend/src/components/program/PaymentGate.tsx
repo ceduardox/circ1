@@ -1,18 +1,27 @@
 import { useEffect, useState } from 'react';
-import { ButtonPrimary } from '@/components/ui';
-import { Crown, Zap, Rocket, Shield, Infinity as InfinityIcon, ChevronRight, Loader2, ExternalLink, CheckCircle2, RefreshCw, Store, Globe2, Repeat2, Clock, X } from 'lucide-react';
+import { Button, ButtonPrimary } from '@/components/ui';
+import { Crown, Zap, Rocket, Shield, Infinity as InfinityIcon, ChevronRight, Loader2, ExternalLink, CheckCircle2, RefreshCw, Store, Globe2, Repeat2, Clock, X, CreditCard, Landmark } from 'lucide-react';
 import { PaymentInfo } from '@/store/membershipStore';
 import { usePaymentFlow } from './usePaymentFlow';
 import { useMembershipStore } from '@/store/membershipStore';
 
 interface PaymentGateProps {
   onRequestPayment: (planId?: string) => Promise<PaymentInfo | null>;
+  onRequestManualPayment?: (method: 'whop' | 'bank', planId: string) => Promise<PaymentInfo | null>;
   requesting?: boolean;
   variant?: 'membership' | 'monthly';
-  plans?: { id: string; name: string; price: number }[];
+  plans?: { id: string; name: string; price: number; tiktok?: boolean; whopUrl?: string }[];
   level1Percent?: number;
   level2Percent?: number;
   paymentCurrency?: string;
+  bankDetails?: {
+    holder: string;
+    routing: string;
+    account: string;
+    accountType: string;
+    bank: string;
+    address: string;
+  };
 }
 
 const phrases = [
@@ -35,10 +44,13 @@ const franchiseStats = [
   { icon: <Repeat2 className="w-6 h-6" />, number: '2', label: 'fuentes de ingreso: ventas + tu red' },
 ];
 
-export function PaymentGate({ onRequestPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5, paymentCurrency = 'usdtbep20' }: PaymentGateProps) {
+export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5, paymentCurrency = 'usdtbep20', bankDetails }: PaymentGateProps) {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pendingPay, setPendingPay] = useState<PaymentInfo & { remainingMin?: number; expiresAt?: string } | null>(null);
+  const [showMethods, setShowMethods] = useState(false);
+  const [manualMsg, setManualMsg] = useState<string | null>(null);
+  const [showBank, setShowBank] = useState(false);
   const { payment, paid, start, checkNow } = usePaymentFlow();
   const { fetchPendingPayment } = useMembershipStore();
 
@@ -72,6 +84,35 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
       await start(() => onRequestPayment(isMonthly ? undefined : selectedPlan.id), win);
     } catch (e: any) {
       setErrorMsg(e?.response?.data?.error || 'No se pudo iniciar el pago. Inténtalo de nuevo.');
+    }
+  };
+
+  // Método manual: tarjeta (Whop) o transferencia bancaria. Registra el pago PENDING
+  // (el admin lo aprueba) y redirige/abre el flujo correspondiente.
+  const handleManualMethod = async (method: 'whop' | 'bank') => {
+    setErrorMsg(null);
+    setManualMsg(null);
+    setShowMethods(false);
+    if (!onRequestManualPayment) {
+      setErrorMsg('El método de pago no está disponible en este momento.');
+      return;
+    }
+    try {
+      const info = await onRequestManualPayment(method, selectedPlan.id);
+      if (method === 'whop') {
+        const whopUrl = selectedPlan.whopUrl;
+        if (whopUrl) {
+          window.open(whopUrl, '_blank', 'noopener,noreferrer');
+        }
+        setManualMsg(whopUrl
+          ? 'Te redirigimos a la página de pago con tarjeta. Al completar la compra, el administrador activará tu membresía.'
+          : 'Link de tarjeta no configurado para este plan. El administrador activará tu membresía al confirmar tu pago.');
+      } else {
+        setShowBank(true);
+      }
+      void info;
+    } catch (e: any) {
+      setErrorMsg(e?.response?.data?.error || 'No se pudo registrar el pago. Inténtalo de nuevo.');
     }
   };
 
@@ -306,7 +347,7 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                   </div>
                 )}
                 <ButtonPrimary
-                  onClick={handleRequest}
+                  onClick={() => setShowMethods(true)}
                   disabled={requesting}
                   className="w-full py-4 text-base font-bold relative overflow-hidden group"
                 >
@@ -318,13 +359,138 @@ export function PaymentGate({ onRequestPayment, requesting, variant = 'membershi
                   </span>
                 </ButtonPrimary>
                 <p className="text-center text-xs text-gray-400 dark:text-dark-500">
-                  Pago en {currencyLabel} (NowPayments) · Activación automática
+                  Elige cómo pagar: USDT, tarjeta o transferencia bancaria
                 </p>
+                {manualMsg && (
+                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-700 dark:text-emerald-300 text-center">
+                    {manualMsg}
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Modal: elegir método de pago */}
+      {showMethods && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 shadow-2xl overflow-hidden animate-enter-up">
+            <button
+              onClick={() => setShowMethods(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+              aria-label="Cerrar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="p-6 sm:p-8">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-dark-100 mb-1">
+                {selectedPlan.name} · {isCrypto ? `${selectedPlan.price} ${currencyShort}` : `$${selectedPlan.price}`}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-dark-400 mb-5">Elige cómo quieres pagar tu membresía.</p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => { setShowMethods(false); setErrorMsg(null); handleRequest(); }}
+                  disabled={requesting}
+                  className="w-full flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 hover:border-primary-400 dark:hover:border-primary-700 transition-all text-left"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+                    <Zap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">Pagar con USDT (cripto)</p>
+                    <p className="text-xs text-gray-500 dark:text-dark-400">Activación automática al confirmarse el pago.</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleManualMethod('whop')}
+                  disabled={requesting}
+                  className="w-full flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 hover:border-pink-400 dark:hover:border-pink-700 transition-all text-left"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-pink-50 dark:bg-pink-900/30 flex items-center justify-center shrink-0">
+                    <CreditCard className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">Pagar con tarjeta</p>
+                    <p className="text-xs text-gray-500 dark:text-dark-400">Visa, Mastercard, Amex · Pago seguro con Whop.</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleManualMethod('bank')}
+                  disabled={requesting}
+                  className="w-full flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 hover:border-amber-400 dark:hover:border-amber-700 transition-all text-left"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                    <Landmark className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">Pagar a cuenta bancaria</p>
+                    <p className="text-xs text-gray-500 dark:text-dark-400">Transferencia a banco en USA. Aprobación manual.</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: datos bancarios */}
+      {showBank && (() => {
+        const bank = bankDetails;
+        if (!bank) return null;
+        return (
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-dark-800 border border-amber-200 dark:border-amber-700 shadow-2xl overflow-hidden animate-enter-up">
+              <button
+                onClick={() => setShowBank(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="p-6 sm:p-8">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-dark-100 mb-1 flex items-center gap-2">
+                  <Landmark className="w-5 h-5 text-amber-500" /> Pago a cuenta bancaria
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-dark-400 mb-4">
+                  Realiza la transferencia y el administrador activará tu membresía al confirmarla.
+                </p>
+                <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-4 space-y-2 text-sm">
+                  <Row label="Titular" value={bank.holder} />
+                  <Row label="Número de ruta" value={bank.routing} />
+                  <Row label="Número de cuenta" value={bank.account} />
+                  <Row label="Tipo de cuenta" value={bank.accountType} />
+                  <Row label="Banco" value={bank.bank} />
+                  <Row label="Dirección" value={bank.address} />
+                </div>
+                <div className="mt-4 flex flex-col-reverse sm:flex-row gap-2">
+                  <Button
+                    onClick={() => setShowBank(false)}
+                    className="border border-gray-200 dark:border-dark-600 text-gray-700 dark:text-dark-200 w-full sm:w-auto"
+                  >
+                    Cerrar
+                  </Button>
+                  <ButtonPrimary
+                    onClick={() => { navigator.clipboard?.writeText(`Titular: ${bank.holder}\nRuta: ${bank.routing}\nCuenta: ${bank.account}\nTipo: ${bank.accountType}\nBanco: ${bank.bank}\nDirección: ${bank.address}`).catch(() => {}); }}
+                    className="w-full sm:w-auto"
+                  >
+                    Copiar datos
+                  </ButtonPrimary>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-amber-700 dark:text-amber-300 text-xs font-medium shrink-0">{label}</span>
+      <span className="text-gray-900 dark:text-dark-100 text-right text-xs font-semibold break-all">{value}</span>
     </div>
   );
 }

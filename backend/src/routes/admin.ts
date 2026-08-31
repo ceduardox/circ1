@@ -357,6 +357,14 @@ export async function adminRoutes(app: FastifyInstance) {
     plans: { id: string; name: string; price: number }[];
     tiktokExtraCreatorPrice: number;
     tiktokAutoApprove: boolean;
+    bankDetails: {
+      holder: string;
+      routing: string;
+      account: string;
+      accountType: string;
+      bank: string;
+      address: string;
+    };
   }
 
   async function getSettings(): Promise<SettingsResult> {
@@ -395,6 +403,14 @@ export async function adminRoutes(app: FastifyInstance) {
       tiktokExtraCreatorPrice: Number(map.TIKTOK_EXTRA_CREATOR_PRICE ?? 50),
       tiktokAutoApprove: map.TIKTOK_AUTO_APPROVE !== undefined ? map.TIKTOK_AUTO_APPROVE !== false : false,
       plans,
+      bankDetails: map.BANK_DETAILS ?? {
+        holder: 'Jose Eduardo Callau Silva',
+        routing: '101019644',
+        account: '218557388248',
+        accountType: 'Checking (Corriente o Cheques)',
+        bank: 'Lead Bank',
+        address: '1801 Main St., Kansas City, MO 64108',
+      },
     };
   }
 
@@ -413,7 +429,16 @@ export async function adminRoutes(app: FastifyInstance) {
       name: z.string().min(1),
       price: z.number().positive(),
       tiktok: z.boolean().optional(),
+      whopUrl: z.string().optional(),
     })).optional(),
+    bankDetails: z.object({
+      holder: z.string(),
+      routing: z.string(),
+      account: z.string(),
+      accountType: z.string(),
+      bank: z.string(),
+      address: z.string(),
+    }).optional(),
   });
 
   // Obtener configuración del negocio y planes activos

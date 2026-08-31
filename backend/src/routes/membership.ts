@@ -74,6 +74,14 @@ async function getSettings(userPlans?: string[]) {
     level2Percent: Number(map.LEVEL2_PERCENT ?? map.level2Percent ?? defaults.LEVEL2_PERCENT),
     paymentCurrency: (map.PAYMENT_CURRENCY ?? map.paymentCurrency) || 'usdtbsc',
     plans,
+    bankDetails: map.BANK_DETAILS ?? {
+      holder: 'Jose Eduardo Callau Silva',
+      routing: '101019644',
+      account: '218557388248',
+      accountType: 'Checking (Corriente o Cheques)',
+      bank: 'Lead Bank',
+      address: '1801 Main St., Kansas City, MO 64108',
+    },
   };
 }
 
@@ -249,7 +257,10 @@ export async function membershipRoutes(app: FastifyInstance) {
     // Si la moneda configurada es USDT (bep20/polygon), el monto es EXACTO en USDT
     // (500 USDT / 1000 USDT) y no depende del tipo de cambio.
     let invoiceUrl: string | null = null;
-    if (config.nowpayments.apiKey) {
+    // Pagos manuales (tarjeta Whop / transferencia bancaria): se registran como PENDING
+    // sin invoice de NowPayments. El admin los aprueba manualmente desde el panel.
+    const isManualMethod = body.method === 'whop' || body.method === 'bank';
+    if (!isManualMethod && config.nowpayments.apiKey) {
       try {
         const payCurrency = settings.paymentCurrency === 'usd' ? undefined : settings.paymentCurrency;
         const invoice = await createInvoice({

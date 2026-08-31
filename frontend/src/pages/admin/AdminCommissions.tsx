@@ -14,9 +14,8 @@ export function AdminCommissionsPage() {
   const [settings, setSettings] = useState<any>({
     membershipPrice: 500, monthlyFee: 50, level1Percent: 25, level2Percent: 5, registerOpen: true,
     plans: [
-      { id: 'estandar', name: 'Estándar', price: 500 },
-      { id: 'elite', name: 'Élite', price: 1000 },
-      { id: 'start', name: 'Start', price: 200 },
+      { id: 'estandar', name: 'Estándar', price: 500, tiktok: true },
+      { id: 'elite', name: 'Élite', price: 1000, tiktok: true },
     ],
   });
   const [payments, setPayments] = useState<any[]>([]);
@@ -211,6 +210,16 @@ export function AdminCommissionsPage() {
                         setSettings({ ...settings, plans });
                       }}
                     />
+                    <Input
+                      value={pl.whopUrl || ''}
+                      placeholder="Link tarjeta (Whop)"
+                      className="flex-1 min-w-0"
+                      onChange={e => {
+                        const plans = [...settings.plans];
+                        plans[idx] = { ...pl, whopUrl: e.target.value };
+                        setSettings({ ...settings, plans });
+                      }}
+                    />
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-dark-300 cursor-pointer select-none">
@@ -245,7 +254,7 @@ export function AdminCommissionsPage() {
               className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
               onClick={() => setSettings({
                 ...settings,
-                plans: [...settings.plans, { id: `plan-${Date.now()}`, name: '', price: 0, tiktok: false }],
+                plans: [...settings.plans, { id: `plan-${Date.now()}`, name: '', price: 0, tiktok: false, whopUrl: '' }],
               })}
             >
               + Añadir plan

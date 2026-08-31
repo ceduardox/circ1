@@ -14,7 +14,7 @@ export function MembershipGate({ children }: MembershipGateProps) {
   const { user } = useAuthStore();
   const {
     status, loadingStatus, fetchStatus,
-    requestPayment, requestMonthlyPayment, requestingPayment,
+    requestPayment, requestMonthlyPayment, requestingPayment, requestManualPayment,
   } = useMembershipStore();
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export function MembershipGate({ children }: MembershipGateProps) {
 
   // Sin membresía (nunca activó): paywall de membresía
   if (!memberStatus || memberStatus === 'INACTIVE' || memberStatus === 'REVOKED') {
-    return <PaymentGate onRequestPayment={requestPayment} requesting={requestingPayment} variant="membership" plans={status?.settings?.plans} level1Percent={status?.settings?.level1Percent} level2Percent={status?.settings?.level2Percent} paymentCurrency={status?.settings?.paymentCurrency} />;
+    return <PaymentGate onRequestPayment={requestPayment} onRequestManualPayment={requestManualPayment} requesting={requestingPayment} variant="membership" plans={status?.settings?.plans} level1Percent={status?.settings?.level1Percent} level2Percent={status?.settings?.level2Percent} paymentCurrency={status?.settings?.paymentCurrency} bankDetails={status?.settings?.bankDetails} />;
   }
 
   // Expirado: bloqueado, solo pantalla de renovación $50
