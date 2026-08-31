@@ -72,13 +72,10 @@ export async function authRoutes(app: FastifyInstance) {
       }
     }
 
-    // Planes que verá este usuario: los que el referidor eligió, o ambos por defecto.
-    // Ej: ["estandar", "elite"] = ambos · ["estandar"] = solo 500 · ["elite"] = solo 1000
-    const allPlanIds = ['estandar', 'elite'];
-    let referralPlans: string[] = allPlanIds;
-    if (referrer?.referralPlans && Array.isArray(referrer.referralPlans)) {
-      const valid = (referrer.referralPlans as string[]).filter(p => allPlanIds.includes(p));
-      if (valid.length > 0) referralPlans = valid;
+    // Planes que verá este usuario: los que el referidor eligió, o todos por defecto.
+    let referralPlans: any = null;
+    if (referrer?.referralPlans && Array.isArray(referrer.referralPlans) && referrer.referralPlans.length > 0) {
+      referralPlans = referrer.referralPlans;
     }
 
     const user = await prisma.user.create({
@@ -126,11 +123,15 @@ export async function authRoutes(app: FastifyInstance) {
 
     const setting = await prisma.adminSetting.findUnique({ where: { key: 'PLANS' } });
     let activePlans: string[] = ['estandar', 'elite'];
-    if (setting) {
-      try {
-        const parsed = JSON.parse(setting.value as any);
-        if (Array.isArray(parsed) && parsed.length) activePlans = parsed.map((p: any) => p.id);
-      } catch { /* usar default */ }
+    if (setting?.value) {
+      if (Array.isArray(setting.value)) {
+        activePlans = (setting.value as any[]).map((p: any) => p.id);
+      } else if (typeof setting.value === 'string') {
+        try {
+          const parsed = JSON.parse(setting.value);
+          if (Array.isArray(parsed) && parsed.length) activePlans = parsed.map((p: any) => p.id);
+        } catch { /* usar default */ }
+      }
     }
 
     const plans = Array.isArray(body.plans)

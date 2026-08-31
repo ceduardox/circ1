@@ -44,10 +44,14 @@ async function getSettings(userPlans?: string[]) {
   let plans = defaultPlans();
   const plansRaw = map.PLANS ?? map.plans;
   if (plansRaw) {
-    try {
-      const parsed = JSON.parse(plansRaw);
-      if (Array.isArray(parsed) && parsed.length) plans = parsed;
-    } catch { /* usar default */ }
+    if (Array.isArray(plansRaw) && plansRaw.length) {
+      plans = plansRaw;
+    } else if (typeof plansRaw === 'string') {
+      try {
+        const parsed = JSON.parse(plansRaw);
+        if (Array.isArray(parsed) && parsed.length) plans = parsed;
+      } catch { /* usar default */ }
+    }
   } else if (map.MEMBERSHIP_PRICE ?? map.membershipPrice) {
     plans = [{ id: 'plan', name: 'Membresía', price: Number(map.MEMBERSHIP_PRICE ?? map.membershipPrice), tiktok: true }];
   }
@@ -59,8 +63,8 @@ async function getSettings(userPlans?: string[]) {
   // userPlans ej: ["estandar","elite"] = ambos · ["estandar"] = solo 500 · ["elite"] = solo 1000
   // Si el usuario no tiene referralPlans definidos (null), se muestran todos los planes.
   if (Array.isArray(userPlans) && userPlans.length > 0) {
-    plans = plans.filter((p: any) => userPlans.includes(p.id));
-    if (plans.length === 0) plans = defaultPlans();
+    const filtered = plans.filter((p: any) => userPlans.includes(p.id));
+    if (filtered.length > 0) plans = filtered;
   }
 
   return {
