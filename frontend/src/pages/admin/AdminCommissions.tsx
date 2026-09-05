@@ -139,21 +139,33 @@ export function AdminCommissionsPage() {
             </div>
             <h2 className="font-semibold text-gray-900 dark:text-dark-100">Configuración del negocio</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="mfee">Cuota mensual (USD)</Label>
-              <Input id="mfee" type="number" value={settings.monthlyFee} min={0}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-1">Comisiones por referido</h3>
+            <p className="text-xs text-gray-500 dark:text-dark-400 mb-3">Porcentaje que gana el referidor cuando su invitado paga un pack.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="l1">Comisión nivel 1 (%)</Label>
+                <Input id="l1" type="number" value={settings.level1Percent} min={0} max={100} placeholder="Ej: 25"
+                  onChange={e => setSettings({ ...settings, level1Percent: Number(e.target.value) })} />
+                <p className="text-[11px] text-gray-400 mt-1">Directo (quien invitó)</p>
+              </div>
+              <div>
+                <Label htmlFor="l2">Comisión nivel 2 (%)</Label>
+                <Input id="l2" type="number" value={settings.level2Percent} min={0} max={100} placeholder="Ej: 5"
+                  onChange={e => setSettings({ ...settings, level2Percent: Number(e.target.value) })} />
+                <p className="text-[11px] text-gray-400 mt-1">Indirecto (abuelo)</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-1">Cuota mensual por defecto</h3>
+            <p className="text-xs text-gray-500 dark:text-dark-400 mb-3">Se usa cuando un pack <b>no</b> tiene cuota propia (abajo). Si todos los packs tienen su cuota, este valor no se usa.</p>
+            <div className="max-w-xs">
+              <Label htmlFor="mfee">Cuota mensual global (USD)</Label>
+              <Input id="mfee" type="number" value={settings.monthlyFee} min={0} placeholder="Ej: 50"
                 onChange={e => setSettings({ ...settings, monthlyFee: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label htmlFor="l1">Comisión nivel 1 (%)</Label>
-              <Input id="l1" type="number" value={settings.level1Percent} min={0} max={100}
-                onChange={e => setSettings({ ...settings, level1Percent: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label htmlFor="l2">Comisión nivel 2 (%)</Label>
-              <Input id="l2" type="number" value={settings.level2Percent} min={0} max={100}
-                onChange={e => setSettings({ ...settings, level2Percent: Number(e.target.value) })} />
+              <p className="text-[11px] text-gray-400 mt-1">Fallback: planes sin cuota propia usan este valor</p>
             </div>
           </div>
 
@@ -180,9 +192,29 @@ export function AdminCommissionsPage() {
           </div>
 
           <div className="mt-6">
-            <Label>Planes de membresía</Label>
-            <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5 mb-3">
-              El usuario elige el plan al activar su membresía. Las comisiones se calculan sobre el precio de cada plan.
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-1">Biblioteca de apps (reutilizable)</h3>
+            <p className="text-xs text-gray-500 dark:text-dark-400 mb-3">Guarda apps con nombre, logo y link. Luego las seleccionas en cada pack con un click.</p>
+            <div className="space-y-2 mb-4">
+              {(settings.appLibrary || []).map((app: any, idx: number) => (
+                <div key={app.id} className="flex flex-col sm:flex-row gap-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg p-2">
+                  <Input value={app.name} placeholder="Nombre app" className="flex-1" onChange={e => { const lib=[...(settings.appLibrary||[])]; lib[idx]={...app, name:e.target.value}; setSettings({...settings, appLibrary: lib}); }} />
+                  <div className="flex items-center gap-2 flex-1">
+                    <Input value={app.logo || ''} placeholder="Logo URL" className="flex-1" onChange={e => { const lib=[...(settings.appLibrary||[])]; lib[idx]={...app, logo:e.target.value}; setSettings({...settings, appLibrary: lib}); }} />
+                    <label className="shrink-0 px-2 py-1.5 rounded-lg border bg-white text-xs cursor-pointer hover:bg-gray-50">Subir<input type="file" accept="image/*" className="hidden" onChange={async (e) => { const file=(e.target as HTMLInputElement).files?.[0]; if(!file) return; const fd=new FormData(); fd.append('file',file); try{ const {data}=await import('@/services/api').then(m=>m.api.post('/admin/upload/app-logo',fd,{headers:{'Content-Type':'multipart/form-data'}})); const lib=[...(settings.appLibrary||[])]; lib[idx]={...app, logo:data.url}; setSettings({...settings, appLibrary: lib}); toast.success('Logo subido'); }catch(err:any){ toast.error(err.response?.data?.error||'Error'); } (e.target as HTMLInputElement).value=''; }} /></label>
+                    {app.logo && <img src={app.logo} alt={app.name} className="w-6 h-6 rounded object-cover border" />}
+                  </div>
+                  <Input value={app.url || ''} placeholder="Link URL (opcional)" className="flex-1" onChange={e => { const lib=[...(settings.appLibrary||[])]; lib[idx]={...app, url:e.target.value}; setSettings({...settings, appLibrary: lib}); }} />
+                  <button type="button" onClick={() => setSettings({...settings, appLibrary: (settings.appLibrary||[]).filter((_:any,i:number)=>i!==idx)})} className="text-xs text-red-600 hover:underline shrink-0">Quitar</button>
+                </div>
+              ))}
+              <button type="button" onClick={() => setSettings({...settings, appLibrary: [...(settings.appLibrary||[]), { id:`app-${Date.now()}`, name:'', logo:'', url:'' }]})} className="text-xs text-primary-600 hover:underline">+ Añadir app a biblioteca</button>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-1">Planes de membresía</h3>
+            <p className="text-xs text-gray-500 dark:text-dark-400 mb-3">
+              Cada pack define su precio, link de tarjeta, si incluye TikTok Shop, su ganancia diaria y su <b>cuota mensual propia</b> (si la dejas vacía, usa la global de arriba).
             </p>
             <div className="space-y-3">
               {(settings.plans || []).map((pl: any, idx: number) => (
@@ -199,28 +231,42 @@ export function AdminCommissionsPage() {
                           setSettings({ ...settings, plans });
                         }}
                       />
-                      <Input
-                        type="number"
-                        value={pl.price}
-                        min={0}
-                        placeholder="Precio USD"
-                        className="w-full sm:w-32 shrink-0"
-                        onChange={e => {
-                          const plans = [...settings.plans];
-                          plans[idx] = { ...pl, price: Number(e.target.value) };
-                          setSettings({ ...settings, plans });
-                        }}
-                      />
-                      <Input
-                        value={pl.whopUrl || ''}
-                        placeholder="Link tarjeta (Whop)"
-                        className="flex-1 min-w-0"
-                        onChange={e => {
-                          const plans = [...settings.plans];
-                          plans[idx] = { ...pl, whopUrl: e.target.value };
-                          setSettings({ ...settings, plans });
-                        }}
-                      />
+                    <Input
+                      type="number"
+                      value={pl.price}
+                      min={0}
+                      placeholder="Precio USD"
+                      className="w-full sm:w-28 shrink-0"
+                      onChange={e => {
+                        const plans = [...settings.plans];
+                        plans[idx] = { ...pl, price: Number(e.target.value) };
+                        setSettings({ ...settings, plans });
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      value={pl.monthlyFee ?? ''}
+                      min={0}
+                      placeholder={`Cuota (def. $${settings.monthlyFee})`}
+                      title="Cuota mensual de este pack. Vacío = usa la global"
+                      className="w-full sm:w-28 shrink-0"
+                      onChange={e => {
+                        const v = e.target.value === '' ? undefined : Number(e.target.value);
+                        const plans = [...settings.plans];
+                        plans[idx] = { ...pl, monthlyFee: v };
+                        setSettings({ ...settings, plans });
+                      }}
+                    />
+                    <Input
+                      value={pl.whopUrl || ''}
+                      placeholder="Link tarjeta (Whop)"
+                      className="flex-1 min-w-0"
+                      onChange={e => {
+                        const plans = [...settings.plans];
+                        plans[idx] = { ...pl, whopUrl: e.target.value };
+                        setSettings({ ...settings, plans });
+                      }}
+                    />
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-dark-300 cursor-pointer select-none">
@@ -264,20 +310,61 @@ export function AdminCommissionsPage() {
                       Ganancia diaria
                     </label>
                     {pl.dailyYield?.enabled && (
-                      <div className="flex flex-col gap-2 w-full">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.min} placeholder="Min %" className="w-24" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, min:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
-                          <span className="text-xs text-gray-500">—</span>
-                          <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.max} placeholder="Max %" className="w-24" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, max:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
-                          <span className="text-xs text-gray-500">% / día</span>
-                          <span className="text-gray-300">|</span>
-                          <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.bonusPerReferral ?? 0.02} placeholder="+ por referido" className="w-24" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusPerReferral:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
-                          <span className="text-xs text-gray-500">+ por referido</span>
-                          <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.bonusCap ?? 0.1} placeholder="Tope" className="w-24" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusCap:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
-                          <span className="text-xs text-gray-500">tope</span>
+                      <div className="flex flex-col gap-3 w-full bg-white dark:bg-dark-800 border border-emerald-100 dark:border-emerald-900/30 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Rango diario y boost</p>
+                          <button type="button" onClick={() => { const el=document.getElementById(`help-${pl.id}`); if(el) el.classList.toggle('hidden'); }} className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-bold hover:bg-emerald-200" title="Ver ayuda">?</button>
+                        </div>
+                        <div id={`help-${pl.id}`} className="hidden p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-xs leading-relaxed">
+                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">+ por referido:</p>
+                          <p className="text-gray-600 dark:text-dark-300">Extra que se suma a su % base por cada referido directo <b>ACTIVE</b>. Ej: base 0.15% + 3 referidos × 0.02% = 0.21% ese día.</p>
+                          <p className="font-semibold text-emerald-800 dark:text-emerald-300 mt-2">Tope boost:</p>
+                          <p className="text-gray-600 dark:text-dark-300">Máximo extra acumulable. Ej: tope 0.10% → con 5 referidos ya no sube más (5×0.02=0.10). Con 10 seguiría en 0.10.</p>
+                          <p className="text-gray-500 mt-2">Fórmula: <code className="bg-white dark:bg-dark-700 px-1 rounded">% final = random(min,max) + min(referidos×bonus, tope)</code></p>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-600 dark:text-dark-300">% Mínimo / día</label>
+                            <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.min} placeholder="0.10" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, min:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                            <p className="text-[10px] text-gray-400 mt-1">Ej: 0.10 = 0.10%</p>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-600 dark:text-dark-300">% Máximo / día</label>
+                            <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.max} placeholder="0.40" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, max:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                            <p className="text-[10px] text-gray-400 mt-1">Ej: 0.40 = 0.40%</p>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-600 dark:text-dark-300">+ por referido</label>
+                            <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.bonusPerReferral ?? 0.02} placeholder="0.02" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusPerReferral:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                            <p className="text-[10px] text-gray-400 mt-1">Extra por cada directo activo</p>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-600 dark:text-dark-300">Tope boost</label>
+                            <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.bonusCap ?? 0.1} placeholder="0.10" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusCap:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                            <p className="text-[10px] text-gray-400 mt-1">Máximo acumulado</p>
+                          </div>
                         </div>
                         <div className="space-y-2">
-                          <p className="text-xs font-medium text-gray-600 dark:text-dark-300">Apps que generan el rendimiento (opcional link)</p>
+                          <p className="text-xs font-medium text-gray-600 dark:text-dark-300">Apps que generan el rendimiento (opcional link) — elige de la biblioteca o crea una nueva</p>
+                          {(settings.appLibrary || []).length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800">
+                              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 w-full">Biblioteca:</span>
+                              {(settings.appLibrary || []).map((libApp: any) => {
+                                const selected = (pl.dailyYield.apps || []).some((a: any) => a.name === libApp.name);
+                                return (
+                                  <button key={libApp.id} type="button" onClick={() => {
+                                    const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])];
+                                    if (selected) { const i=apps.findIndex((a:any)=>a.name===libApp.name); if(i>=0) apps.splice(i,1); }
+                                    else apps.push({ name: libApp.name, logo: libApp.logo, url: libApp.url });
+                                    plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans});
+                                  }} className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs ${selected ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-600 hover:border-emerald-300'}`}>
+                                    {libApp.logo ? <img src={libApp.logo} alt={libApp.name} className="w-4 h-4 rounded-full object-cover" /> : null}
+                                    {libApp.name} {selected ? '✓' : '+'}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                           {(pl.dailyYield.apps || []).map((app: any, aIdx: number) => (
                             <div key={aIdx} className="flex flex-col sm:flex-row gap-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg p-2">
                               <Input value={app.name} placeholder="Nombre app" className="flex-1" onChange={e => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps[aIdx]={...app, name:e.target.value}; plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} />
@@ -303,7 +390,7 @@ export function AdminCommissionsPage() {
                               <button type="button" onClick={() => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps.splice(aIdx,1); plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} className="text-xs text-red-600 hover:underline shrink-0">Quitar</button>
                             </div>
                           ))}
-                          <button type="button" onClick={() => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps.push({name:'', logo:'', url:''}); plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} className="text-xs text-primary-600 hover:underline">+ Añadir app</button>
+                          <button type="button" onClick={() => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps.push({name:'', logo:'', url:''}); plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} className="text-xs text-primary-600 hover:underline">+ Añadir app manual</button>
                         </div>
                       </div>
                     )}

@@ -10,10 +10,11 @@ interface PaymentGateProps {
   onRequestManualPayment?: (method: 'whop' | 'bank', planId: string) => Promise<PaymentInfo | null>;
   requesting?: boolean;
   variant?: 'membership' | 'monthly';
-  plans?: { id: string; name: string; price: number; tiktok?: boolean; whopUrl?: string }[];
+  plans?: { id: string; name: string; price: number; monthlyFee?: number; tiktok?: boolean; whopUrl?: string }[];
   level1Percent?: number;
   level2Percent?: number;
   paymentCurrency?: string;
+  monthlyFee?: number;
   bankDetails?: {
     holder: string;
     routing: string;
@@ -44,7 +45,7 @@ const franchiseStats = [
   { icon: <Repeat2 className="w-6 h-6" />, number: '2', label: 'fuentes de ingreso: ventas + tu red' },
 ];
 
-export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5, paymentCurrency = 'usdtbep20', bankDetails }: PaymentGateProps) {
+export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesting, variant = 'membership', plans, level1Percent = 25, level2Percent = 5, paymentCurrency = 'usdtbep20', monthlyFee, bankDetails }: PaymentGateProps) {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pendingPay, setPendingPay] = useState<PaymentInfo & { remainingMin?: number; expiresAt?: string } | null>(null);
@@ -135,7 +136,8 @@ export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesti
     : 'USD';
   const currencyShort = isCrypto ? 'USDT' : 'USD';
 
-  const price = isMonthly ? (isCrypto ? '50' : '$50') : (isCrypto ? `${selectedPlan.price}` : `$${selectedPlan.price}`);
+  const monthlyPrice = monthlyFee ?? 50;
+  const price = isMonthly ? (isCrypto ? `${monthlyPrice}` : `$${monthlyPrice}`) : (isCrypto ? `${selectedPlan.price}` : `$${selectedPlan.price}`);
   const priceLabel = isMonthly ? `/ mes` : (isCrypto ? currencyShort : 'USD');
   const subLabel = isMonthly
     ? 'Mantenimiento mensual de tu membresía'

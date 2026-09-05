@@ -39,9 +39,11 @@ export function MembershipGate({ children }: MembershipGateProps) {
     return <PaymentGate onRequestPayment={requestPayment} onRequestManualPayment={requestManualPayment} requesting={requestingPayment} variant="membership" plans={status?.settings?.plans} level1Percent={status?.settings?.level1Percent} level2Percent={status?.settings?.level2Percent} paymentCurrency={status?.settings?.paymentCurrency} bankDetails={status?.settings?.bankDetails} />;
   }
 
-  // Expirado: bloqueado, solo pantalla de renovación $50
+  // Expirado: bloqueado, solo pantalla de renovación (cuota del plan del usuario)
   if (memberStatus === 'EXPIRED') {
-    return <PaymentGate onRequestPayment={requestMonthlyPayment} requesting={requestingPayment} variant="monthly" paymentCurrency={status?.settings?.paymentCurrency} />;
+    const planForFee = (status?.pack as any)?.planId ? status?.settings?.plans?.find((p: any) => p.id === (status?.pack as any).planId) : null;
+    const fee = (planForFee as any)?.monthlyFee ?? status?.settings?.monthlyFee ?? 50;
+    return <PaymentGate onRequestPayment={requestMonthlyPayment} requesting={requestingPayment} variant="monthly" paymentCurrency={status?.settings?.paymentCurrency} monthlyFee={fee} />;
   }
 
   // En gracia: accede al contenido pero muestra modal para pagar la cuota

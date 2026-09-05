@@ -326,10 +326,17 @@ export async function membershipRoutes(app: FastifyInstance) {
       });
     }
 
+    const lastPaidForFee = await prisma.membershipPayment.findFirst({
+      where: { userId, type: 'MEMBERSHIP', status: 'APPROVED' },
+      orderBy: { createdAt: 'desc' },
+    });
+    const planForFee = lastPaidForFee?.planId ? settings.plans.find((p: any) => p.id === lastPaidForFee.planId) : null;
+    const monthlyAmount = (planForFee as any)?.monthlyFee != null ? Number((planForFee as any).monthlyFee) : Number(settings.monthlyFee);
+
     const payment = await prisma.membershipPayment.create({
       data: {
         userId,
-        amount: settings.monthlyFee,
+        amount: monthlyAmount,
         type: 'MONTHLY',
         status: 'PENDING',
         method: body.method,

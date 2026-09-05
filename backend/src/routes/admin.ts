@@ -356,7 +356,8 @@ export async function adminRoutes(app: FastifyInstance) {
     level2Percent: number;
     paymentCurrency: string;
     registerOpen: boolean;
-    plans: { id: string; name: string; price: number; tiktok?: boolean; whopUrl?: string; dailyYield?: { enabled: boolean; min: number; max: number; bonusPerReferral?: number; bonusCap?: number; apps?: { name: string; logo?: string; url?: string }[] } | null }[];
+    plans: { id: string; name: string; price: number; monthlyFee?: number; tiktok?: boolean; whopUrl?: string; dailyYield?: { enabled: boolean; min: number; max: number; bonusPerReferral?: number; bonusCap?: number; apps?: { name: string; logo?: string; url?: string }[] } | null }[];
+    appLibrary: { id: string; name: string; logo?: string; url?: string }[];
     tiktokExtraCreatorPrice: number;
     tiktokAutoApprove: boolean;
     bankDetails: {
@@ -395,6 +396,29 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     plans = plans.map((p: any) => ({ ...p, tiktok: p.tiktok !== false }));
 
+    let appLibrary: any[] = [];
+    const appRaw = map.APP_LIBRARY ?? map.appLibrary ?? map.APP_LIBRARY;
+    if (appRaw) {
+      try {
+        const parsed = typeof appRaw === 'string' ? JSON.parse(appRaw) : appRaw;
+        if (Array.isArray(parsed)) appLibrary = parsed;
+      } catch {}
+    }
+    if (appLibrary.length === 0) {
+      appLibrary = [
+        { id: 'app-1', name: 'Wolai', logo: 'https://www.google.com/s2/favicons?domain=wolai.com&sz=64', url: 'https://www.wolai.com' },
+        { id: 'app-2', name: 'Flomo', logo: 'https://www.google.com/s2/favicons?domain=flomoapp.com&sz=64', url: 'https://flomoapp.com' },
+        { id: 'app-3', name: 'MiaoJi', logo: 'https://www.google.com/s2/favicons?domain=miaoji.com&sz=64', url: 'https://www.miaoji.com' },
+        { id: 'app-4', name: 'Excalidraw', logo: 'https://www.google.com/s2/favicons?domain=excalidraw.com&sz=64', url: 'https://excalidraw.com' },
+        { id: 'app-5', name: 'Tldraw', logo: 'https://www.google.com/s2/favicons?domain=tldraw.com&sz=64', url: 'https://www.tldraw.com' },
+        { id: 'app-6', name: 'FlowNote', logo: 'https://cdn-icons-png.flaticon.com/512/5968/5968528.png', url: '' },
+        { id: 'app-7', name: 'QuickBite', logo: 'https://cdn-icons-png.flaticon.com/512/3128/3128311.png', url: '' },
+        { id: 'app-8', name: 'ZenTask', logo: 'https://cdn-icons-png.flaticon.com/512/906/906334.png', url: '' },
+        { id: 'app-9', name: 'SnapVault', logo: 'https://cdn-icons-png.flaticon.com/512/732/732084.png', url: '' },
+        { id: 'app-10', name: 'PulseFit', logo: 'https://cdn-icons-png.flaticon.com/512/3048/3048122.png', url: '' },
+      ];
+    }
+
     return {
       membershipPrice: Number(map.MEMBERSHIP_PRICE ?? 500),
       monthlyFee: Number(map.MONTHLY_FEE ?? 50),
@@ -405,6 +429,7 @@ export async function adminRoutes(app: FastifyInstance) {
       tiktokExtraCreatorPrice: Number(map.TIKTOK_EXTRA_CREATOR_PRICE ?? 50),
       tiktokAutoApprove: map.TIKTOK_AUTO_APPROVE !== undefined ? map.TIKTOK_AUTO_APPROVE !== false : false,
       plans,
+      appLibrary,
       bankDetails: map.BANK_DETAILS ?? {
         holder: 'Jose Eduardo Callau Silva',
         routing: '101019644',
@@ -426,10 +451,12 @@ export async function adminRoutes(app: FastifyInstance) {
     registerOpen: z.boolean().optional(),
     tiktokExtraCreatorPrice: z.number().positive().optional(),
     tiktokAutoApprove: z.boolean().optional(),
+    appLibrary: z.array(z.object({ id: z.string(), name: z.string().min(1), logo: z.string().optional(), url: z.string().optional() })).optional(),
     plans: z.array(z.object({
       id: z.string(),
       name: z.string().min(1),
       price: z.number().positive(),
+      monthlyFee: z.number().min(0).max(1000).optional(),
       tiktok: z.boolean().optional(),
       whopUrl: z.string().optional(),
       dailyYield: z.object({
@@ -469,6 +496,7 @@ export async function adminRoutes(app: FastifyInstance) {
       tiktokExtraCreatorPrice: 'TIKTOK_EXTRA_CREATOR_PRICE',
       tiktokAutoApprove: 'TIKTOK_AUTO_APPROVE',
       plans: 'PLANS',
+      appLibrary: 'APP_LIBRARY',
       membershipPrice: 'MEMBERSHIP_PRICE',
       monthlyFee: 'MONTHLY_FEE',
       level1Percent: 'LEVEL1_PERCENT',
