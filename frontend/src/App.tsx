@@ -19,6 +19,7 @@ import { ProgramPage } from '@/pages/Program';
 import { NetworkPage } from '@/pages/Network';
 import { TeamPage } from '@/pages/Team';
 import { EarningsPage } from '@/pages/Earnings';
+import { DailyEarningsPage } from '@/pages/DailyEarnings';
 import { NotificationsPage } from '@/pages/Notifications';
 import { VipProPage } from '@/pages/VipPro';
 import { TikTokShopPage } from '@/pages/TikTokShop';
@@ -91,6 +92,7 @@ function App() {
             <Route path="/network" element={<NetworkPage />} />
             <Route path="/team" element={<TeamPage />} />
             <Route path="/earnings" element={<EarningsPage />} />
+            <Route path="/earnings/daily" element={<DailyEarningsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/vip-pro" element={<VipProPage />} />
             <Route path="/tiktok-shop" element={<TikTokShopPage />} />

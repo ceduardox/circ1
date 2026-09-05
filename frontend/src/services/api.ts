@@ -111,6 +111,8 @@ export const membershipApi = {
   deletePayoutAccount: (id: string) => api.delete(`/membership/payout-accounts/${id}`),
   notifications: () => api.get('/membership/notifications'),
   markNotificationsRead: () => api.post('/membership/notifications/read'),
+  dailySummary: () => api.get('/membership/daily-earnings/summary'),
+  dailyHistory: (page?: number) => api.get('/membership/daily-earnings/history', { params: { page } }),
 };
 
 export const vipProApi = {
@@ -159,6 +161,8 @@ export const adminBusinessApi = {
   approveWithdrawal: (id: string, data?: any) => api.post(`/admin/business/withdrawals/${id}/approve`, data),
   rejectWithdrawal: (id: string) => api.post(`/admin/business/withdrawals/${id}/reject`),
   balanceLog: (userId: string) => api.get(`/admin/business/balance-log/${userId}`),
+  runDailyEarnings: (date?: string) => api.post('/admin/business/daily-earnings/run', { date }),
+  dailyEarnings: (page?: number) => api.get('/admin/business/daily-earnings', { params: { page } }),
 };
 
 export const adminApi = {

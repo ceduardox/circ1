@@ -186,64 +186,126 @@ export function AdminCommissionsPage() {
             </p>
             <div className="space-y-3">
               {(settings.plans || []).map((pl: any, idx: number) => (
-                <div key={pl.id} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-gray-50 dark:bg-dark-700/40 border border-gray-200 dark:border-dark-600 rounded-xl p-3">
-                  <div className="flex flex-col sm:flex-row flex-1 min-w-0 gap-2">
-                    <Input
-                      value={pl.name}
-                      placeholder="Nombre del plan"
-                      className="flex-1 min-w-0"
-                      onChange={e => {
-                        const plans = [...settings.plans];
-                        plans[idx] = { ...pl, name: e.target.value };
-                        setSettings({ ...settings, plans });
-                      }}
-                    />
-                    <Input
-                      type="number"
-                      value={pl.price}
-                      min={0}
-                      placeholder="Precio USD"
-                      className="w-full sm:w-32 shrink-0"
-                      onChange={e => {
-                        const plans = [...settings.plans];
-                        plans[idx] = { ...pl, price: Number(e.target.value) };
-                        setSettings({ ...settings, plans });
-                      }}
-                    />
-                    <Input
-                      value={pl.whopUrl || ''}
-                      placeholder="Link tarjeta (Whop)"
-                      className="flex-1 min-w-0"
-                      onChange={e => {
-                        const plans = [...settings.plans];
-                        plans[idx] = { ...pl, whopUrl: e.target.value };
-                        setSettings({ ...settings, plans });
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-dark-300 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        className="accent-primary-600 w-4 h-4"
-                        checked={pl.tiktok !== false}
+                <div key={pl.id} className="flex flex-col gap-3 bg-gray-50 dark:bg-dark-700/40 border border-gray-200 dark:border-dark-600 rounded-xl p-3">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex flex-col sm:flex-row flex-1 min-w-0 gap-2">
+                      <Input
+                        value={pl.name}
+                        placeholder="Nombre del plan"
+                        className="flex-1 min-w-0"
                         onChange={e => {
                           const plans = [...settings.plans];
-                          plans[idx] = { ...pl, tiktok: e.target.checked };
+                          plans[idx] = { ...pl, name: e.target.value };
                           setSettings({ ...settings, plans });
                         }}
                       />
-                      TikTok Shop
+                      <Input
+                        type="number"
+                        value={pl.price}
+                        min={0}
+                        placeholder="Precio USD"
+                        className="w-full sm:w-32 shrink-0"
+                        onChange={e => {
+                          const plans = [...settings.plans];
+                          plans[idx] = { ...pl, price: Number(e.target.value) };
+                          setSettings({ ...settings, plans });
+                        }}
+                      />
+                      <Input
+                        value={pl.whopUrl || ''}
+                        placeholder="Link tarjeta (Whop)"
+                        className="flex-1 min-w-0"
+                        onChange={e => {
+                          const plans = [...settings.plans];
+                          plans[idx] = { ...pl, whopUrl: e.target.value };
+                          setSettings({ ...settings, plans });
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-dark-300 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          className="accent-primary-600 w-4 h-4"
+                          checked={pl.tiktok !== false}
+                          onChange={e => {
+                            const plans = [...settings.plans];
+                            plans[idx] = { ...pl, tiktok: e.target.checked };
+                            setSettings({ ...settings, plans });
+                          }}
+                        />
+                        TikTok Shop
+                      </label>
+                      {settings.plans.length > 1 && (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          className="bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          onClick={() => setSettings({ ...settings, plans: settings.plans.filter((_: any, i: number) => i !== idx) })}
+                        >
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-dark-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        className="accent-emerald-600 w-4 h-4"
+                        checked={!!pl.dailyYield?.enabled}
+                        onChange={e => {
+                          const plans = [...settings.plans];
+                          const cur = pl.dailyYield || { enabled: false, min: 0.1, max: 0.4 };
+                          plans[idx] = { ...pl, dailyYield: e.target.checked ? { ...cur, enabled: true } : { ...cur, enabled: false } };
+                          setSettings({ ...settings, plans });
+                        }}
+                      />
+                      Ganancia diaria
                     </label>
-                    {settings.plans.length > 1 && (
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        className="bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        onClick={() => setSettings({ ...settings, plans: settings.plans.filter((_: any, i: number) => i !== idx) })}
-                      >
-                        Eliminar
-                      </Button>
+                    {pl.dailyYield?.enabled && (
+                      <div className="flex flex-col gap-2 w-full">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.min} placeholder="Min %" className="w-24" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, min:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                          <span className="text-xs text-gray-500">—</span>
+                          <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.max} placeholder="Max %" className="w-24" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, max:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                          <span className="text-xs text-gray-500">% / día</span>
+                          <span className="text-gray-300">|</span>
+                          <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.bonusPerReferral ?? 0.02} placeholder="+ por referido" className="w-24" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusPerReferral:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                          <span className="text-xs text-gray-500">+ por referido</span>
+                          <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.bonusCap ?? 0.1} placeholder="Tope" className="w-24" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusCap:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                          <span className="text-xs text-gray-500">tope</span>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-gray-600 dark:text-dark-300">Apps que generan el rendimiento (opcional link)</p>
+                          {(pl.dailyYield.apps || []).map((app: any, aIdx: number) => (
+                            <div key={aIdx} className="flex flex-col sm:flex-row gap-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg p-2">
+                              <Input value={app.name} placeholder="Nombre app" className="flex-1" onChange={e => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps[aIdx]={...app, name:e.target.value}; plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} />
+                              <div className="flex items-center gap-2 flex-1">
+                                <Input value={app.logo || ''} placeholder="Logo URL (opcional)" className="flex-1" onChange={e => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps[aIdx]={...app, logo:e.target.value}; plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} />
+                                <label className="shrink-0 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-xs cursor-pointer hover:bg-gray-50">
+                                  Subir
+                                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                    if (!file) return;
+                                    const fd = new FormData();
+                                    fd.append('file', file);
+                                    try {
+                                      const { data } = await import('@/services/api').then(m => m.api.post('/admin/upload/app-logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } }));
+                                      const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps[aIdx]={...app, logo: data.url}; plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); toast.success('Logo subido');
+                                    } catch (err: any) { toast.error(err.response?.data?.error || 'Error al subir logo'); }
+                                    (e.target as HTMLInputElement).value='';
+                                  }} />
+                                </label>
+                                {app.logo && <img src={app.logo} alt={app.name} className="w-6 h-6 rounded object-cover border" />}
+                              </div>
+                              <Input value={app.url || ''} placeholder="Link URL (opcional)" className="flex-1" onChange={e => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps[aIdx]={...app, url:e.target.value}; plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} />
+                              <button type="button" onClick={() => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps.splice(aIdx,1); plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} className="text-xs text-red-600 hover:underline shrink-0">Quitar</button>
+                            </div>
+                          ))}
+                          <button type="button" onClick={() => { const plans=[...settings.plans]; const apps=[...(pl.dailyYield.apps||[])]; apps.push({name:'', logo:'', url:''}); plans[idx]={...pl, dailyYield:{...pl.dailyYield, apps}}; setSettings({...settings, plans}); }} className="text-xs text-primary-600 hover:underline">+ Añadir app</button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -254,7 +316,7 @@ export function AdminCommissionsPage() {
               className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
               onClick={() => setSettings({
                 ...settings,
-                plans: [...settings.plans, { id: `plan-${Date.now()}`, name: '', price: 0, tiktok: false, whopUrl: '' }],
+                plans: [...settings.plans, { id: `plan-${Date.now()}`, name: '', price: 0, tiktok: false, whopUrl: '', dailyYield: { enabled: false, min: 0.1, max: 0.4, bonusPerReferral: 0.02, bonusCap: 0.1 } }],
               })}
             >
               + Añadir plan

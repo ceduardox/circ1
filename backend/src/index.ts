@@ -23,6 +23,7 @@ import { adminTiktokRoutes } from './routes/adminTiktok.js';
 import { syncDayVideos } from './utils/dayVideos.js';
 import { syncFakeUsers } from './utils/fakeUsers.js';
 import { scheduleDailyReminder } from './utils/dailyReminder.js';
+import { scheduleDailyEarnings } from './utils/dailyEarnings.js';
 import { ZodError } from 'zod';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -172,6 +173,7 @@ try {
 
   // Recordatorio diario de tarea (8:00 AM).
   scheduleDailyReminder();
+  scheduleDailyEarnings();
 } catch (err) {
   app.log.error(err);
   process.exit(1);

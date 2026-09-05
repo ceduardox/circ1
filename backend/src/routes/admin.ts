@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { randomUUID } from 'crypto';
+import { mkdir, writeFile } from 'fs/promises';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
@@ -354,7 +356,7 @@ export async function adminRoutes(app: FastifyInstance) {
     level2Percent: number;
     paymentCurrency: string;
     registerOpen: boolean;
-    plans: { id: string; name: string; price: number }[];
+    plans: { id: string; name: string; price: number; tiktok?: boolean; whopUrl?: string; dailyYield?: { enabled: boolean; min: number; max: number; bonusPerReferral?: number; bonusCap?: number; apps?: { name: string; logo?: string; url?: string }[] } | null }[];
     tiktokExtraCreatorPrice: number;
     tiktokAutoApprove: boolean;
     bankDetails: {
@@ -430,6 +432,18 @@ export async function adminRoutes(app: FastifyInstance) {
       price: z.number().positive(),
       tiktok: z.boolean().optional(),
       whopUrl: z.string().optional(),
+      dailyYield: z.object({
+        enabled: z.boolean(),
+        min: z.number().min(0).max(100),
+        max: z.number().min(0).max(100),
+        bonusPerReferral: z.number().min(0).max(5).optional(),
+        bonusCap: z.number().min(0).max(5).optional(),
+        apps: z.array(z.object({
+          name: z.string().min(1),
+          logo: z.string().optional(),
+          url: z.string().optional(),
+        })).optional(),
+      }).optional().nullable(),
     })).optional(),
     bankDetails: z.object({
       holder: z.string(),
@@ -484,6 +498,27 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     return getSettings();
+  });
+
+  app.post('/business/daily-earnings/run', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const body = (request.body as any) || {};
+    const dateStr = body.date as string | undefined;
+    const targetDate = dateStr ? new Date(dateStr) : undefined;
+    const { generateDailyEarningsForDate } = await import('../utils/dailyEarnings.js');
+    const result = await generateDailyEarningsForDate(targetDate);
+    return result;
+  });
+
+  app.get('/business/daily-earnings', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const query = request.query as any;
+    const page = Math.max(1, parseInt(query.page || '1', 10) || 1);
+    const take = 30;
+    const [rows, total] = await Promise.all([
+      prisma.dailyEarning.findMany({ orderBy: { date: 'desc' }, skip: (page - 1) * take, take, include: { user: { select: { username: true, firstName: true, lastName: true } } } }),
+      prisma.dailyEarning.count(),
+    ]);
+    const totalAmount = await prisma.dailyEarning.aggregate({ _sum: { amount: true } });
+    return { rows, total, page, totalPages: Math.ceil(total / take), totalAmount: totalAmount._sum.amount ?? 0 };
   });
 
   // Pagos (membresía)
@@ -730,6 +765,21 @@ export async function adminRoutes(app: FastifyInstance) {
       data: { status: 'REJECTED', processedAt: new Date(), processedBy: adminUser.sub },
     });
     return { success: true };
+  });
+
+  app.post('/upload/app-logo', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    let data: any;
+    try { data = await request.file(); } catch { return reply.code(400).send({ error: 'Archivo no válido' }); }
+    if (!data) return reply.code(400).send({ error: 'Debes enviar una imagen' });
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!allowed.includes(data.mimetype)) return reply.code(400).send({ error: 'Formato no permitido. Usa JPG, PNG, WEBP, GIF o SVG' });
+    const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/svg+xml': 'svg' };
+    const filename = `app-logo-${randomUUID()}.${extMap[data.mimetype] || 'png'}`;
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads', 'app-logos');
+    await mkdir(uploadsDir, { recursive: true });
+    await writeFile(path.join(uploadsDir, filename), await data.toBuffer());
+    const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3001}`;
+    return { url: `${baseUrl}/uploads/app-logos/${filename}` };
   });
 
   // Historial de balance de un usuario

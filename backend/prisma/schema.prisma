@@ -127,6 +127,7 @@ model User {
   socialPosts       SocialPost[]
   tiktokCampaign    TikTokShopCampaign?
   tiktokCommissions TikTokCommission[]
+  dailyEarnings     DailyEarning[]
 
   @@map("users")
 }
@@ -491,4 +492,21 @@ model TikTokCommission {
   user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("tiktok_commissions")
+}
+
+model DailyEarning {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  planId        String?  @map("plan_id")
+  date          DateTime @map("date") @db.Date
+  percent       Float
+  amount        Float
+  priceSnapshot Float    @map("price_snapshot")
+  breakdown     Json?    @map("breakdown")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_earnings")
 }

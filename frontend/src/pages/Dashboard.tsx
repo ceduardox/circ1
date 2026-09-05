@@ -7,9 +7,10 @@ import { useVipProStore } from '@/store/vipProStore';
 import { CountUp } from '@/components/CountUp';
 import {
   Flame, Trophy, ChevronRight, Users, BookOpen, Target, CheckCircle,
-  Crown, Snowflake, Gem, Footprints, CalendarCheck, PenLine, Brain, Shield, Heart
+  Crown, Snowflake, Gem, Footprints, CalendarCheck, PenLine, Brain, Shield, Heart, DollarSign, TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { membershipApi } from '@/services/api';
 
 const iconMap: Record<string, any> = {
   Footprints, CalendarCheck, Flame, Crown, PenLine, Brain, Shield, Heart, Trophy,
@@ -35,11 +36,15 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [freezing, setFreezing] = useState(false);
   const { modules, fetchModules } = useVipProStore();
+  const [daily, setDaily] = useState<any>(null);
 
   useEffect(() => {
     loadDashboard();
     fetchModules();
-    if (user?.role !== 'ADMIN') fetchStatus();
+    if (user?.role !== 'ADMIN') {
+      fetchStatus();
+      membershipApi.dailySummary().then(r => setDaily(r.data)).catch(() => {});
+    }
   }, []);
 
   const loadDashboard = async () => {
@@ -281,6 +286,93 @@ export function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {daily && daily.count > 0 && (
+            <Link to="/earnings/daily" className="block bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 rounded-2xl shadow-lg shadow-indigo-500/25 p-[1px] hover:shadow-xl hover:shadow-indigo-500/30 transition-all animate-fade-up overflow-hidden">
+              <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 rounded-2xl p-4 text-white relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-xl bg-white/20 backdrop-blur"><Crown className="w-5 h-5 text-amber-300" /></div>
+                      <div>
+                        <p className="text-[11px] text-violet-200 uppercase tracking-wider font-bold">Boost activo</p>
+                        <p className="text-xs text-white/80">{(() => {
+                          const directActive = (daily as any).directActive ?? 0;
+                          const bonusPerRef = (daily as any).bonusPerReferral ?? 0.02;
+                          const bonusCap = (daily as any).bonusCap ?? 0.1;
+                          const boost = Math.min(directActive * bonusPerRef, bonusCap);
+                          return boost > 0 ? `+${boost.toFixed(2)}% por ${directActive} referido${directActive!==1?'s':''}` : 'Invita para activar boost';
+                        })()}</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-bold">Nv {Math.min(3, Math.floor(((daily as any).directActive ?? 0)/2)+1)}</span>
+                  </div>
+                  {(() => {
+                    const directActive = (daily as any).directActive ?? 0;
+                    const bonusPerRef = (daily as any).bonusPerReferral ?? 0.02;
+                    const bonusCap = (daily as any).bonusCap ?? 0.1;
+                    const progress = bonusCap > 0 ? Math.min(directActive * bonusPerRef / bonusCap * 100, 100) : 0;
+                    const nextNeed = Math.ceil((bonusCap - Math.min(directActive * bonusPerRef, bonusCap)) / bonusPerRef);
+                    return (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between text-[11px] text-violet-200 mb-1">
+                          <span>Progreso boost</span><span>{progress.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-2 bg-black/20 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-amber-300 to-yellow-400 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
+                        </div>
+                        <p className="text-[11px] text-violet-200 mt-1">{directActive >= 5 ? '¡Tope alcanzado!' : `Faltan ${nextNeed} referido${nextNeed!==1?'s':''} para el siguiente nivel`}</p>
+                      </div>
+                    );
+                  })()}
+                  <div className="flex items-center gap-1.5 mb-3">
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const active = i < ((daily as any).directActive ?? 0);
+                      const user = (daily as any).referrals?.[i];
+                      return (
+                        <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${active ? 'bg-white text-indigo-600 border-white' : 'bg-white/20 text-white/60 border-white/30 border-dashed'}`}>
+                          {active && user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" /> : active ? (user?.firstName?.[0] || '✓') : '+'}
+                        </div>
+                      );
+                    })}
+                    <span className="text-xs text-violet-200 ml-1">{(daily as any).directActive ?? 0}/5 referidos</span>
+                  </div>
+                  {(() => {
+                    const price = (daily as any).last7?.[0]?.priceSnapshot || 80;
+                    const cap = (daily as any).bonusCap ?? 0.1;
+                    const filled = price * cap / 100;
+                    return <p className="text-[11px] text-amber-200 mb-3">Si llenas 5/5 → <b>+${filled.toFixed(2)}/día extra</b> (se suma a tu base)</p>;
+                  })()}
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-xs text-violet-200">Ganancia diaria</p>
+                      <p className="text-lg font-black">${Number(daily.total || 0).toFixed(2)} <span className="text-xs font-normal text-violet-200">total</span></p>
+                    </div>
+                    <span className="text-xs font-bold bg-white/20 backdrop-blur px-2 py-1 rounded-full">Hoy ${Number(daily.today || 0).toFixed(2)}</span>
+                  </div>
+                  {daily.apps && daily.apps.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {daily.apps.map((app: any, i: number) => (
+                        <span key={i} className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 backdrop-blur border border-white/20 text-xs text-white">
+                          {app.logo ? <img src={app.logo} alt={app.name} className="w-4 h-4 rounded-full object-cover" /> : <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[9px] font-bold">{app.name[0]}</span>}
+                          {app.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-end gap-1 h-8 opacity-80">
+                    {(daily.last7 || []).map((d: any, i: number) => {
+                      const max = Math.max(...(daily.last7 || []).map((x: any) => x.amount), 1);
+                      const h = Math.max(4, Math.round(d.amount / max * 28));
+                      return <div key={i} className="flex-1 rounded-sm bg-white/40" style={{ height: h }} />;
+                    })}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
 
           {/* Tus caminos de crecimiento */}
           <div className="animate-fade-up" style={{ animationDelay: '240ms' }}>

@@ -509,10 +509,13 @@ export async function membershipRoutes(app: FastifyInstance) {
       where: { userId, status: 'PAID', payment: { status: 'PENDING' } },
       _sum: { amount: true },
     });
+    const dailyAgg = await prisma.dailyEarning.aggregate({ where: { userId }, _sum: { amount: true } });
+    const dailyTotal = dailyAgg._sum.amount ?? 0;
 
     return {
       balance: user?.balance ?? 0,
-      totalEarned: totalEarned._sum.amount ?? 0,
+      totalEarned: (totalEarned._sum.amount ?? 0) + dailyTotal,
+      dailyTotal,
       pendingApproval: pending._sum.amount ?? 0,
       retainedTotal: retainedTotal._sum.amount ?? 0,
       commissions,
@@ -678,5 +681,56 @@ export async function membershipRoutes(app: FastifyInstance) {
     if (!account) return reply.code(404).send({ error: 'Cuenta no encontrada' });
     await prisma.payoutAccount.delete({ where: { id } });
     return { ok: true };
+  });
+
+  app.get('/daily-earnings/summary', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    const agg = await prisma.dailyEarning.aggregate({ where: { userId }, _sum: { amount: true }, _count: true });
+    const last7 = await prisma.dailyEarning.findMany({ where: { userId }, orderBy: { date: 'desc' }, take: 7 });
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const today = await prisma.dailyEarning.findFirst({ where: { userId, date: new Date(todayStr) } });
+    // Apps y boost del plan del usuario
+    let apps: any[] = [];
+    let bonusPerReferral = 0.02;
+    let bonusCap = 0.1;
+    try {
+      const lastPaid = await prisma.membershipPayment.findFirst({ where: { userId, type: 'MEMBERSHIP', status: 'APPROVED' }, orderBy: { createdAt: 'desc' } });
+      if (lastPaid?.planId) {
+        const row = await prisma.adminSetting.findUnique({ where: { key: 'PLANS' } });
+        if (row) {
+          const plans = JSON.parse(row.value as any);
+          const plan = Array.isArray(plans) ? plans.find((p: any) => p.id === lastPaid.planId) : null;
+          if (plan?.dailyYield?.apps) apps = plan.dailyYield.apps;
+          if (plan?.dailyYield?.bonusPerReferral != null) bonusPerReferral = Number(plan.dailyYield.bonusPerReferral);
+          if (plan?.dailyYield?.bonusCap != null) bonusCap = Number(plan.dailyYield.bonusCap);
+        }
+      }
+    } catch {}
+    const directActive = await prisma.user.count({ where: { referrerId: userId, membershipStatus: 'ACTIVE' } });
+    const referrals = await prisma.user.findMany({ where: { referrerId: userId, membershipStatus: 'ACTIVE' }, select: { firstName: true, lastName: true, username: true, avatarUrl: true }, take: 5 });
+    return {
+      total: agg._sum.amount ?? 0,
+      count: agg._count,
+      today: today?.amount ?? 0,
+      todayPercent: today?.percent ?? 0,
+      last7: last7.reverse(),
+      apps,
+      directActive,
+      referrals,
+      bonusPerReferral,
+      bonusCap,
+    };
+  });
+
+  app.get('/daily-earnings/history', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    const query = request.query as any;
+    const page = Math.max(1, parseInt(query.page || '1', 10) || 1);
+    const take = 30;
+    const [rows, total] = await Promise.all([
+      prisma.dailyEarning.findMany({ where: { userId }, orderBy: { date: 'desc' }, skip: (page - 1) * take, take }),
+      prisma.dailyEarning.count({ where: { userId } }),
+    ]);
+    return { rows, total, page, totalPages: Math.ceil(total / take) };
   });
 }
