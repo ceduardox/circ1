@@ -325,25 +325,44 @@ export function AdminCommissionsPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           <div>
                             <label className="text-[11px] font-medium text-gray-600 dark:text-dark-300">% Mínimo / día</label>
-                            <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.min} placeholder="0.10" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, min:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
-                            <p className="text-[10px] text-gray-400 mt-1">Ej: 0.10 = 0.10%</p>
+                            <Input type="number" step="0.0001" min={0} max={5} value={pl.dailyYield.min} placeholder="0.1000" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, min:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                            <p className="text-[10px] text-gray-400 mt-1">Ej: 0.0001 = 0.0001%</p>
                           </div>
                           <div>
                             <label className="text-[11px] font-medium text-gray-600 dark:text-dark-300">% Máximo / día</label>
-                            <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.max} placeholder="0.40" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, max:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
-                            <p className="text-[10px] text-gray-400 mt-1">Ej: 0.40 = 0.40%</p>
+                            <Input type="number" step="0.0001" min={0} max={5} value={pl.dailyYield.max} placeholder="0.4000" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, max:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                            <p className="text-[10px] text-gray-400 mt-1">Ej: 0.4000 = 0.4000%</p>
                           </div>
                           <div>
                             <label className="text-[11px] font-medium text-gray-600 dark:text-dark-300">+ por referido</label>
-                            <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.bonusPerReferral ?? 0.02} placeholder="0.02" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusPerReferral:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                            <Input type="number" step="0.0001" min={0} max={5} value={pl.dailyYield.bonusPerReferral ?? 0.02} placeholder="0.0200" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusPerReferral:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
                             <p className="text-[10px] text-gray-400 mt-1">Extra por cada directo activo</p>
                           </div>
                           <div>
                             <label className="text-[11px] font-medium text-gray-600 dark:text-dark-300">Tope boost</label>
-                            <Input type="number" step="0.01" min={0} max={5} value={pl.dailyYield.bonusCap ?? 0.1} placeholder="0.10" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusCap:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
+                            <Input type="number" step="0.0001" min={0} max={5} value={pl.dailyYield.bonusCap ?? 0.1} placeholder="0.1000" className="mt-1 w-full" onChange={e => { const plans=[...settings.plans]; plans[idx]={...pl, dailyYield:{...pl.dailyYield, bonusCap:Number(e.target.value)}}; setSettings({...settings, plans}); }} />
                             <p className="text-[10px] text-gray-400 mt-1">Máximo acumulado</p>
                           </div>
                         </div>
+                        {(() => {
+                          const price = Number(pl.price) || 0;
+                          const min = Number(pl.dailyYield.min) || 0;
+                          const max = Number(pl.dailyYield.max) || 0;
+                          const avg = (min + max) / 2;
+                          const minDay = price * min / 100;
+                          const maxDay = price * max / 100;
+                          const avgDay = price * avg / 100;
+                          const minMonth = minDay * 30;
+                          const maxMonth = maxDay * 30;
+                          const avgMonth = avgDay * 30;
+                          return (
+                            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-xs">
+                              <p className="font-semibold text-emerald-800 dark:text-emerald-300">Calculadora: ${price} × {min}%-{max}%</p>
+                              <p className="text-gray-600 dark:text-dark-300 mt-1">Por día: <b>${minDay.toFixed(2)} - ${maxDay.toFixed(2)}</b> · Promedio <b>${avgDay.toFixed(2)}/día</b></p>
+                              <p className="text-gray-600 dark:text-dark-300">Al mes (30d): <b>${minMonth.toFixed(2)} - ${maxMonth.toFixed(2)}</b> · Promedio <b>${avgMonth.toFixed(2)}/mes</b></p>
+                            </div>
+                          );
+                        })()}
                         <div className="space-y-2">
                           <p className="text-xs font-medium text-gray-600 dark:text-dark-300">Apps que generan el rendimiento (opcional link) — elige de la biblioteca o crea una nueva</p>
                           {(settings.appLibrary || []).length > 0 && (
