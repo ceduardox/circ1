@@ -13,6 +13,7 @@ interface DayOverview {
   completedCount: number;
   totalRequired: number;
   completedRequired: number;
+  completedContentIds: string[];
   isUnlocked: boolean;
   isCompleted: boolean;
   contents: { id: string; title: string; type: string; isRequired: boolean }[];
@@ -105,8 +106,8 @@ export function ProgramPage() {
 
                   {/* Content list */}
                   <div className="flex flex-wrap gap-1.5 mb-4">
-                    {day.contents.map((content, i) => {
-                      const contentCompleted = i < day.completedCount;
+                    {day.contents.map((content) => {
+                      const contentCompleted = (day.completedContentIds || []).includes(content.id);
                       return (
                         <span
                           key={content.id}

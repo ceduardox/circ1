@@ -65,7 +65,7 @@ export function DayViewPage() {
   const totalContents = contents.length;
 
   const dayProgress = progress.filter((p: any) => p.dayId === day.id);
-  const completedRequired = dayProgress.filter((p: any) => p.content.isRequired && p.status === 'COMPLETED').length;
+  const completedRequired = dayProgress.filter((p: any) => p.content?.isRequired && p.status === 'COMPLETED').length;
   const totalRequired = contents.filter((c: any) => c.isRequired).length;
   const canUnlockNext = completedRequired === totalRequired && totalRequired > 0;
 
@@ -75,6 +75,8 @@ export function DayViewPage() {
   const currentContentCompleted = currentContent ? isContentCompleted(currentContent.id) : true;
   const currentIsRequired = currentContent?.isRequired ?? false;
   const canGoNext = currentContentCompleted || !currentIsRequired;
+  const canAccessStep = (i: number) =>
+    contents.slice(0, i).filter((c: any) => c.isRequired).every((c: any) => isContentCompleted(c.id));
 
   return (
     <div className="min-h-[calc(100vh-5rem)] flex flex-col">
@@ -112,15 +114,19 @@ export function DayViewPage() {
           {contents.map((content: any, i: number) => {
             const isCompleted = isContentCompleted(content.id);
             const isCurrent = i === currentStep;
+            const locked = !canAccessStep(i) && !isCurrent;
             return (
               <button
                 key={content.id}
-                onClick={() => setCurrentStep(i)}
+                onClick={() => { if (!locked) setCurrentStep(i); }}
+                disabled={locked}
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                   isCurrent
                     ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30 scale-110'
                     : isCompleted
                     ? 'bg-primary-100 text-primary-700'
+                    : locked
+                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                     : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                 }`}
               >

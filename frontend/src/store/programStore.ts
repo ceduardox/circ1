@@ -111,9 +111,9 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       } else {
         updatedProgress.push(completedProgress);
       }
-      const completedRequired = updatedProgress.filter(p => p.content.isRequired && p.status === 'COMPLETED').length;
+      const completedRequired = updatedProgress.filter(p => p.content?.isRequired && p.status === 'COMPLETED').length;
       const totalRequired = currentDay.contents.filter(c => c.isRequired).length;
-      set({ progress: updatedProgress, completedRequired, canUnlockNext: completedRequired === totalRequired });
+      set({ progress: updatedProgress, completedRequired, canUnlockNext: totalRequired > 0 && completedRequired === totalRequired });
     }
   },
 

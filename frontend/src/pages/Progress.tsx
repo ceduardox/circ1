@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useProgramStore } from '@/store/programStore';
+import { programApi } from '@/services/api';
 import { Card, CardContent, CardHeader } from '@/components/ui';
 import { ButtonGhost } from '@/components/ui';
 import { ChevronLeft, CheckCircle, BookOpen, Clock, Target } from 'lucide-react';
@@ -10,15 +11,27 @@ import { useNavigate } from 'react-router-dom';
 export function ProgressPage() {
   const { fetchProgress, progress, reflections } = useProgramStore();
   const navigate = useNavigate();
+  const [fullyDoneDays, setFullyDoneDays] = useState<number | null>(null);
 
   useEffect(() => { fetchProgress(); }, [fetchProgress]);
 
-  const daysCompleted = [...new Set(progress.filter(p => p.status === 'COMPLETED').map(p => p.dayId))].length;
-  const totalContents = progress.length;
-  const completedContents = progress.filter(p => p.status === 'COMPLETED').length;
-  const pendingContents = progress.filter(p => p.status === 'PENDING').length;
+  useEffect(() => {
+    programApi.getDays()
+      .then(({ data }) => {
+        const done = (data.days || []).filter((d: any) => d.totalRequired > 0 && d.completedRequired === d.totalRequired).length;
+        setFullyDoneDays(done);
+      })
+      .catch(() => {});
+  }, []);
 
-  const progressByDay = progress.reduce((acc, p) => {
+  const validProgress = progress.filter(p => p.dayId && p.day && p.content);
+  const fallbackDays = [...new Set(validProgress.filter(p => p.status === 'COMPLETED').map(p => p.dayId))].length;
+  const daysCompleted = fullyDoneDays ?? fallbackDays;
+  const totalContents = validProgress.length;
+  const completedContents = validProgress.filter(p => p.status === 'COMPLETED').length;
+  const pendingContents = validProgress.filter(p => p.status === 'PENDING').length;
+
+  const progressByDay = validProgress.reduce((acc, p) => {
     if (!acc[p.dayId]) acc[p.dayId] = { day: p.day, contents: [] };
     acc[p.dayId].contents.push(p);
     return acc;

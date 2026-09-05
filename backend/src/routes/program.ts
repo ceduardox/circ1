@@ -128,6 +128,26 @@ export async function programRoutes(app: FastifyInstance) {
     });
     if (!content) return reply.code(404).send({ error: 'Contenido no encontrado' });
 
+    // El día del contenido debe estar desbloqueado para este usuario.
+    const maxUnlocked = await getMaxUnlockedDay(userId);
+    if (content.day.dayNumber > maxUnlocked) {
+      return reply.code(403).send({ error: 'Día bloqueado. Completa todas las tareas obligatorias del día anterior.' });
+    }
+
+    // Orden secuencial dentro del día: exige los obligatorios anteriores.
+    const previousRequired = await prisma.dayContent.findMany({
+      where: { dayId: content.dayId, isRequired: true, orderIndex: { lt: content.orderIndex } },
+      select: { id: true },
+    });
+    if (previousRequired.length > 0) {
+      const donePrev = await prisma.userProgress.count({
+        where: { userId, dayId: content.dayId, status: 'COMPLETED', contentId: { in: previousRequired.map(c => c.id) } },
+      });
+      if (donePrev < previousRequired.length) {
+        return reply.code(400).send({ error: 'Completa los ejercicios anteriores primero.' });
+      }
+    }
+
     const existingProgress = await prisma.userProgress.findUnique({
       where: { userId_contentId: { userId, contentId } },
       select: { status: true },
@@ -367,9 +387,11 @@ export async function programRoutes(app: FastifyInstance) {
 
     const daysWithProgress = days.map(day => {
       const dayProgress = allProgress.filter(p => p.dayId === day.id);
-      const completedCount = dayProgress.filter(p => p.status === 'COMPLETED').length;
+      const completed = dayProgress.filter(p => p.status === 'COMPLETED');
+      const completedCount = completed.length;
+      const completedContentIds = completed.map(p => p.contentId);
       const requiredContents = day.contents.filter(c => c.isRequired);
-      const completedRequired = dayProgress.filter(p => p.status === 'COMPLETED' && requiredContents.some(c => c.id === p.contentId)).length;
+      const completedRequired = completed.filter(p => requiredContents.some(c => c.id === p.contentId)).length;
       const isUnlocked = day.dayNumber <= maxUnlockedDay;
 
       return {
@@ -378,8 +400,9 @@ export async function programRoutes(app: FastifyInstance) {
         completedCount,
         totalRequired: requiredContents.length,
         completedRequired,
+        completedContentIds,
         isUnlocked,
-        isCompleted: completedCount === day.contents.length && day.contents.length > 0,
+        isCompleted: requiredContents.length > 0 && completedRequired === requiredContents.length,
       };
     });
 
