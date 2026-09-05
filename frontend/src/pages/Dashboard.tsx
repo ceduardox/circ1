@@ -288,7 +288,7 @@ export function DashboardPage() {
           </div>
 
           {daily && daily.count > 0 && (
-            <Link to="/earnings/daily" className="block bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 rounded-2xl shadow-lg shadow-indigo-500/25 p-[1px] hover:shadow-xl hover:shadow-indigo-500/30 transition-all animate-fade-up overflow-hidden">
+            <Link to="/earnings/daily" className="block bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 rounded-2xl shadow-lg shadow-indigo-500/25 p-[1px] hover:shadow-xl transition-all animate-fade-up overflow-hidden">
               <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 rounded-2xl p-4 text-white relative overflow-hidden">
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
                 <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
@@ -309,24 +309,6 @@ export function DashboardPage() {
                     </div>
                     <span className="px-2 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-bold">Nv {Math.min(3, Math.floor(((daily as any).directActive ?? 0)/2)+1)}</span>
                   </div>
-                  {(() => {
-                    const directActive = (daily as any).directActive ?? 0;
-                    const bonusPerRef = (daily as any).bonusPerReferral ?? 0.02;
-                    const bonusCap = (daily as any).bonusCap ?? 0.1;
-                    const progress = bonusCap > 0 ? Math.min(directActive * bonusPerRef / bonusCap * 100, 100) : 0;
-                    const nextNeed = Math.ceil((bonusCap - Math.min(directActive * bonusPerRef, bonusCap)) / bonusPerRef);
-                    return (
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between text-[11px] text-violet-200 mb-1">
-                          <span>Progreso boost</span><span>{progress.toFixed(0)}%</span>
-                        </div>
-                        <div className="h-2 bg-black/20 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-amber-300 to-yellow-400 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
-                        </div>
-                        <p className="text-[11px] text-violet-200 mt-1">{directActive >= 5 ? '¡Tope alcanzado!' : `Faltan ${nextNeed} referido${nextNeed!==1?'s':''} para el siguiente nivel`}</p>
-                      </div>
-                    );
-                  })()}
                   <div className="flex items-center gap-1.5 mb-3">
                     {Array.from({ length: 5 }).map((_, i) => {
                       const active = i < ((daily as any).directActive ?? 0);
@@ -339,12 +321,6 @@ export function DashboardPage() {
                     })}
                     <span className="text-xs text-violet-200 ml-1">{(daily as any).directActive ?? 0}/5 referidos</span>
                   </div>
-                  {(() => {
-                    const price = (daily as any).last7?.[0]?.priceSnapshot || 80;
-                    const cap = (daily as any).bonusCap ?? 0.1;
-                    const filled = price * cap / 100;
-                    return <p className="text-[11px] text-amber-200 mb-3">Si llenas 5/5 → <b>+${filled.toFixed(2)}/día extra</b> (se suma a tu base)</p>;
-                  })()}
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="text-xs text-violet-200">Ganancia diaria</p>
@@ -352,16 +328,6 @@ export function DashboardPage() {
                     </div>
                     <span className="text-xs font-bold bg-white/20 backdrop-blur px-2 py-1 rounded-full">Hoy ${Number(daily.today || 0).toFixed(2)}</span>
                   </div>
-                  {daily.apps && daily.apps.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {daily.apps.map((app: any, i: number) => (
-                        <span key={i} className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 backdrop-blur border border-white/20 text-xs text-white">
-                          {app.logo ? <img src={app.logo} alt={app.name} className="w-4 h-4 rounded-full object-cover" /> : <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[9px] font-bold">{app.name[0]}</span>}
-                          {app.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                   <div className="flex items-end gap-1 h-8 opacity-80">
                     {(daily.last7 || []).map((d: any, i: number) => {
                       const max = Math.max(...(daily.last7 || []).map((x: any) => x.amount), 1);
@@ -371,6 +337,28 @@ export function DashboardPage() {
                   </div>
                 </div>
               </div>
+            </Link>
+          )}
+          {daily && daily.count === 0 && (
+            <Link to="/network" className="block bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-800 dark:to-dark-700 rounded-2xl border-2 border-dashed border-gray-300 dark:border-dark-600 p-6 text-center hover:border-violet-400 hover:from-violet-50 hover:to-indigo-50 dark:hover:from-violet-900/20 dark:hover:to-indigo-900/20 transition-all animate-fade-up group">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-dark-600 dark:to-dark-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <span className="text-xl">🔒</span>
+              </div>
+              <p className="text-sm font-black text-gray-900 dark:text-dark-100">Desbloquea tu ganancia diaria</p>
+              <p className="text-xs text-gray-500 dark:text-dark-400 mt-1">Tu pack <b>Militar $80</b> ya tiene <span className="text-emerald-600 font-bold">0.1-0.4%/día</span> — solo falta <b>1 referido</b>.</p>
+              <div className="mt-3 p-2 rounded-xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 flex items-center gap-2 text-left">
+                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-xs">+0.08</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-gray-900 dark:text-dark-100">Si invitas hoy → $0.08/día desde mañana</p>
+                  <p className="text-[11px] text-gray-500">Se suma a tu balance y es retirable</p>
+                </div>
+              </div>
+              <div className="flex justify-center gap-1.5 mt-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300 dark:border-dark-600 flex items-center justify-center text-gray-400 bg-white dark:bg-dark-800">+</div>
+                ))}
+              </div>
+              <span className="inline-flex items-center gap-1 mt-3 px-3 py-1.5 rounded-full bg-violet-600 text-white text-xs font-bold group-hover:bg-violet-700 transition-colors">Ir a Mi Red <ChevronRight className="w-3 h-3" /></span>
             </Link>
           )}
 

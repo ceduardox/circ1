@@ -81,12 +81,15 @@ export async function generateDailyEarningsForDate(targetDate?: Date) {
     const max = Number(plan.dailyYield.max);
     if (!(min >= 0 && max >= 0 && max >= min)) { skipped++; continue; }
 
+    // Requiere al menos 1 referido directo ACTIVE para empezar a generar
+    const directActiveForCheck = await prisma.user.count({ where: { referrerId: u.id, membershipStatus: 'ACTIVE' } });
+    if (directActiveForCheck === 0) { skipped++; continue; }
+
     let pct = randomPercent(min, max);
     const bonusPerRef = Number(plan.dailyYield.bonusPerReferral ?? 0.02);
     const bonusCap = Number(plan.dailyYield.bonusCap ?? 0.1);
     if (bonusPerRef > 0) {
-      const directActive = await prisma.user.count({ where: { referrerId: u.id, membershipStatus: 'ACTIVE' } });
-      const bonus = Math.min(directActive * bonusPerRef, bonusCap);
+      const bonus = Math.min(directActiveForCheck * bonusPerRef, bonusCap);
       pct = Math.round((pct + bonus) * 10000) / 10000;
     }
     const price = Number(lastPaid.amount) || Number(plan.price);

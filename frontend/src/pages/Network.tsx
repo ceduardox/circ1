@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitBranch, Sparkles, UserPlus2, Users2, BadgePercent, Crown, Loader2 } from 'lucide-react';
 import { membershipApi, authApi } from '@/services/api';
 import { useMembershipStore } from '@/store/membershipStore';
+import { useAuthStore } from '@/store/authStore';
 import { NetworkTree, TreeMember } from '@/components/program/NetworkTree';
 import { PageHeader } from '@/components/ui';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ export function NetworkPage() {
   const [view, setView] = useState<'list' | 'tree'>('list');
   const [selectedPlans, setSelectedPlans] = useState<string[]>(['estandar', 'elite']);
   const [savingPlans, setSavingPlans] = useState(false);
+  const currentUser = useAuthStore(s => s.user);
 
   // Sincroniza la selección con lo que el servidor dice que verán tus referidos.
   useEffect(() => {
@@ -384,7 +386,7 @@ export function NetworkPage() {
               Aún no tienes referidos. ¡Comparte tu link para empezar a construir tu árbol!
             </div>
           ) : (
-            <NetworkTree roots={treeRoots} />
+            <NetworkTree roots={treeRoots} currentUser={currentUser} />
           )}
         </div>
       )}
