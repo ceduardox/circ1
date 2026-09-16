@@ -37,42 +37,86 @@ export function NetworkTree({ roots, currentUser }: NetworkTreeProps) {
       }
     : null;
 
+  const MIN_SCALE = 0.4;
+  const MAX_SCALE = 2.5;
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const lastDistRef = useRef(0);
-  const isDraggingRef = useRef(false);
-  const lastPosRef = useRef({ x: 0, y: 0 });
+
+  // Gestos táctiles: 1 dedo = mover, 2 dedos = zoom (pellizco).
+  const pinchRef = useRef({ active: false, startDist: 0, startScale: 1 });
+  const panTouchRef = useRef({ active: false, lastX: 0, lastY: 0 });
+  const dragMouseRef = useRef({ active: false, lastX: 0, lastY: 0 });
+
+  const clampScale = (v: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, v));
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setScale(s => Math.min(2, Math.max(0.5, s - e.deltaY * 0.002)));
+    setScale(s => clampScale(s - e.deltaY * 0.002));
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
-      lastDistRef.current = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      pinchRef.current = {
+        active: true,
+        startDist: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY),
+        startScale: scale,
+      };
+      panTouchRef.current.active = false;
+    } else if (e.touches.length === 1) {
+      panTouchRef.current = { active: true, lastX: e.touches[0].clientX, lastY: e.touches[0].clientY };
     }
   };
+
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
+    if (e.touches.length === 2 && pinchRef.current.active) {
       const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      if (lastDistRef.current) {
-        const delta = (dist - lastDistRef.current) * 0.01;
-        setScale(s => Math.min(2, Math.max(0.5, s + delta)));
+      if (pinchRef.current.startDist > 0) {
+        setScale(clampScale(pinchRef.current.startScale * (dist / pinchRef.current.startDist)));
       }
-      lastDistRef.current = dist;
+    } else if (e.touches.length === 1 && panTouchRef.current.active) {
+      const t = e.touches[0];
+      const dx = t.clientX - panTouchRef.current.lastX;
+      const dy = t.clientY - panTouchRef.current.lastY;
+      panTouchRef.current.lastX = t.clientX;
+      panTouchRef.current.lastY = t.clientY;
+      setOffset(o => ({ x: o.x + dx, y: o.y + dy }));
     }
   };
-  const handleTouchEnd = () => { lastDistRef.current = 0; };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      pinchRef.current.active = false;
+      panTouchRef.current.active = false;
+    } else if (e.touches.length === 1) {
+      // Al soltar un dedo del pellizco, continúa como arrastre.
+      pinchRef.current.active = false;
+      panTouchRef.current = { active: true, lastX: e.touches[0].clientX, lastY: e.touches[0].clientY };
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    dragMouseRef.current = { active: true, lastX: e.clientX, lastY: e.clientY };
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragMouseRef.current.active) return;
+    const dx = e.clientX - dragMouseRef.current.lastX;
+    const dy = e.clientY - dragMouseRef.current.lastY;
+    dragMouseRef.current.lastX = e.clientX;
+    dragMouseRef.current.lastY = e.clientY;
+    setOffset(o => ({ x: o.x + dx, y: o.y + dy }));
+  };
+  const endMouseDrag = () => { dragMouseRef.current.active = false; };
+
+  const resetView = () => { setScale(1); setOffset({ x: 0, y: 0 }); };
 
   return (
     <div className="relative">
       <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg p-1 shadow-sm">
-        <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-dark-700 rounded text-sm">−</button>
+        <button onClick={() => setScale(s => Math.max(MIN_SCALE, s - 0.1))} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-dark-700 rounded text-sm">−</button>
         <span className="text-xs w-10 text-center">{Math.round(scale * 100)}%</span>
-        <button onClick={() => setScale(s => Math.min(2, s + 0.1))} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-dark-700 rounded text-sm">+</button>
+        <button onClick={() => setScale(s => Math.min(MAX_SCALE, s + 0.1))} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-dark-700 rounded text-sm">+</button>
+        <button onClick={resetView} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-dark-700 rounded text-xs" title="Centrar">⤾</button>
       </div>
       <div
         className="overflow-hidden py-4 touch-manipulation select-none"
@@ -80,13 +124,13 @@ export function NetworkTree({ roots, currentUser }: NetworkTreeProps) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onMouseDown={(e) => { isDraggingRef.current = true; lastPosRef.current = { x: e.clientX - offset.x, y: e.clientY - offset.y }; }}
-        onMouseMove={(e) => { if (!isDraggingRef.current) return; setOffset({ x: e.clientX - lastPosRef.current.x, y: e.clientY - lastPosRef.current.y }); }}
-        onMouseUp={() => { isDraggingRef.current = false; }}
-        onMouseLeave={() => { isDraggingRef.current = false; }}
-        style={{ touchAction: 'none', cursor: isDraggingRef.current ? 'grabbing' : scale > 1 ? 'grab' : 'default', overscrollBehavior: 'contain' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={endMouseDrag}
+        onMouseLeave={endMouseDrag}
+        style={{ touchAction: 'none', cursor: dragMouseRef.current.active ? 'grabbing' : scale > 1 ? 'grab' : 'default', overscrollBehavior: 'contain' }}
       >
-        <div className="flex justify-center min-w-max transition-transform duration-150" style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: 'top center' }}>
+        <div className="flex justify-center min-w-max" style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: 'top center' }}>
           <div className="flex flex-col items-center gap-2">
             {me && (
               <>
@@ -113,7 +157,7 @@ export function NetworkTree({ roots, currentUser }: NetworkTreeProps) {
           </div>
         </div>
       </div>
-      <p className="text-[11px] text-center text-gray-400 mt-1">Pellizca para zoom en móvil • Ctrl+rueda en PC</p>
+      <p className="text-[11px] text-center text-gray-400 mt-1">Arrastra para mover · Pellizca para zoom · Botones − / + / ⤾ para centrar</p>
     </div>
   );
 }
