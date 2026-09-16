@@ -187,13 +187,13 @@ export function EarningsPage() {
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-dark-700">
             {earnings.commissions.map((c: any) => (
-              <div key={c.id} className="p-4 flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+              <div key={c.id} className="p-4 flex flex-wrap items-center gap-3">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 ${
                   c.level === 1 ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gradient-to-br from-purple-500 to-purple-700'
                 }`}>
                   {(c.sourceUser?.firstName?.[0] || c.sourceUser?.username?.[0] || '?').toUpperCase()}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-[160px]">
                   <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
                     Comisión nivel {c.level} — {c.sourceUser?.firstName || c.sourceUser?.username || 'Miembro'}
                   </p>
@@ -202,7 +202,7 @@ export function EarningsPage() {
                     {' '}· {c.percent}% sobre {fmt(c.payment?.amount ?? 0)}
                   </p>
                 </div>
-                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+{fmt(c.amount)}</span>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 ml-auto shrink-0 whitespace-nowrap">+{fmt(c.amount)}</span>
               </div>
             ))}
           </div>
@@ -212,7 +212,7 @@ export function EarningsPage() {
       {/* Comisiones perdidas (no estabas al día) */}
       {(earnings.retained?.length > 0) && (
         <div className="bg-white dark:bg-dark-800 rounded-2xl border border-red-200 dark:border-red-900/40 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-red-200 dark:border-red-900/40 flex items-center justify-between bg-red-50 dark:bg-red-900/10">
+          <div className="p-5 border-b border-red-200 dark:border-red-900/40 flex flex-wrap items-center justify-between gap-3 bg-red-50 dark:bg-red-900/10">
             <div>
               <h2 className="font-semibold text-gray-900 dark:text-dark-100 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400" /> Comisiones perdidas
@@ -227,11 +227,11 @@ export function EarningsPage() {
           </div>
           <div className="divide-y divide-gray-100 dark:divide-dark-700">
             {earnings.retained.map((c: any) => (
-              <div key={c.id} className="p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white text-sm font-bold">
+              <div key={c.id} className="p-4 flex flex-wrap items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
                   {(c.sourceUser?.firstName?.[0] || c.sourceUser?.username?.[0] || '?').toUpperCase()}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-[160px]">
                   <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
                     Comisión nivel {c.level} perdida — {c.sourceUser?.firstName || c.sourceUser?.username || 'Miembro'}
                   </p>
@@ -240,7 +240,7 @@ export function EarningsPage() {
                     {' '}· {c.percent}% sobre {fmt(c.payment?.amount ?? 0)} · podrías haber ganado esto.
                   </p>
                 </div>
-                <span className="text-sm font-bold text-red-500 dark:text-red-400">-{fmt(c.amount)}</span>
+                <span className="text-sm font-bold text-red-500 dark:text-red-400 ml-auto shrink-0 whitespace-nowrap">-{fmt(c.amount)}</span>
               </div>
             ))}
           </div>
