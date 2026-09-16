@@ -539,7 +539,7 @@ export async function membershipRoutes(app: FastifyInstance) {
       where: { referrerId: userId },
       select: {
         id: true, firstName: true, lastName: true, username: true, country: true, avatarUrl: true,
-        membershipStatus: true, createdAt: true,
+        membershipStatus: true, createdAt: true, email: true, referralCode: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -550,7 +550,7 @@ export async function membershipRoutes(app: FastifyInstance) {
           where: { referrerId: { in: directIds } },
           select: {
             id: true, firstName: true, lastName: true, username: true, country: true, avatarUrl: true,
-            membershipStatus: true, createdAt: true, referrerId: true,
+            membershipStatus: true, createdAt: true, referrerId: true, email: true, referralCode: true,
           },
           orderBy: { createdAt: 'desc' },
         })

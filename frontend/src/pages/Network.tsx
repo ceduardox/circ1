@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitBranch, Sparkles, UserPlus2, Users2, BadgePercent, Crown, Loader2 } from 'lucide-react';
+import { Link as LinkIcon, Copy, Check, Users, Share2, Globe, Shield, List, GitBranch, Sparkles, UserPlus2, Users2, BadgePercent, Crown, Loader2, Mail } from 'lucide-react';
 import { membershipApi, authApi } from '@/services/api';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useAuthStore } from '@/store/authStore';
 import { NetworkTree, TreeMember } from '@/components/program/NetworkTree';
 import { PageHeader } from '@/components/ui';
+import { countryFlag } from '@/lib/utils';
+import 'flag-icons/css/flag-icons.min.css';
 import { toast } from 'sonner';
 
 const statusStyles: Record<string, { label: string; classes: string }> = {
@@ -85,32 +87,80 @@ export function NetworkPage() {
 
   const MemberRow = ({ member, level }: { member: any; level: number }) => {
     const st = statusStyles[member.membershipStatus] || statusStyles.INACTIVE;
+    const flag = countryFlag(member.country);
+    const [copied, setCopied] = useState(false);
+    const refLink = member.referralCode ? `${window.location.origin}/register?ref=${member.referralCode}` : null;
+    const copyRef = async () => {
+      if (!refLink) return;
+      try {
+        await navigator.clipboard.writeText(refLink);
+        setCopied(true);
+        toast.success('Link de referido copiado');
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        toast.error('No se pudo copiar el link');
+      }
+    };
     return (
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 rounded-xl border border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800">
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ${
-          level === 1 ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gradient-to-br from-purple-500 to-purple-700'
-        }`}>
-          {(member.firstName?.[0] || member.username?.[0] || '?').toUpperCase()}
+      <div className="p-3 rounded-xl border border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ${
+            level === 1 ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gradient-to-br from-purple-500 to-purple-700'
+          }`}>
+            {(member.firstName?.[0] || member.username?.[0] || '?').toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-[150px]">
+            <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
+              {member.firstName || member.username} {member.lastName || ''}
+              {!member.firstName && <span className="text-gray-400 font-normal"> ({member.username})</span>}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-dark-400 flex items-center gap-1 flex-wrap">
+              {flag
+                ? <span className={`fi fi-${flag} shrink-0 rounded-sm shadow-sm`} style={{ width: '1rem', height: '0.72rem', backgroundSize: 'cover' }} aria-hidden="true" />
+                : <Globe className="w-3 h-3 shrink-0" />}
+              <span className="truncate max-w-[160px]">{member.country || 'Sin país'}</span>
+              <span className="text-gray-300 dark:text-dark-600">•</span>
+              <span className="shrink-0">Nivel {level}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            {member.earned > 0 && (
+              <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full whitespace-nowrap">
+                Ganaste {fmt(member.earned)}
+              </span>
+            )}
+            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${st.classes}`}>{st.label}</span>
+          </div>
         </div>
-        <div className="flex-1 min-w-[150px]">
-          <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
-            {member.firstName || member.username} {member.lastName || ''}
-            {!member.firstName && <span className="text-gray-400 font-normal"> ({member.username})</span>}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-dark-400 flex items-center gap-1 flex-wrap">
-            <Globe className="w-3 h-3 shrink-0" /> <span className="truncate max-w-[160px]">{member.country || 'Sin país'}</span>
-            <span className="text-gray-300 dark:text-dark-600">•</span>
-            <span className="shrink-0">Nivel {level}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 ml-auto">
-          {member.earned > 0 && (
-            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full whitespace-nowrap">
-              Ganaste {fmt(member.earned)}
-            </span>
-          )}
-          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${st.classes}`}>{st.label}</span>
-        </div>
+        {(member.email || refLink) && (
+          <div className="mt-2 sm:pl-12 space-y-1.5">
+            {member.email && (
+              <p className="text-xs text-gray-500 dark:text-dark-400 flex items-center gap-1.5 min-w-0">
+                <Mail className="w-3 h-3 shrink-0" />
+                <span className="truncate">{member.email}</span>
+              </p>
+            )}
+            {refLink && (
+              <div className="flex items-center gap-2">
+                <code className="flex-1 min-w-0 truncate text-[11px] text-primary-600 dark:text-primary-400 bg-gray-50 dark:bg-dark-700/40 px-2 py-1 rounded-lg">
+                  {refLink}
+                </code>
+                <button
+                  type="button"
+                  onClick={copyRef}
+                  className={`shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                    copied
+                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                      : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40'
+                  }`}
+                >
+                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied ? 'Copiado' : 'Copiar'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
