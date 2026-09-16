@@ -86,29 +86,31 @@ export function NetworkPage() {
   const MemberRow = ({ member, level }: { member: any; level: number }) => {
     const st = statusStyles[member.membershipStatus] || statusStyles.INACTIVE;
     return (
-      <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800">
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 rounded-xl border border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800">
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ${
           level === 1 ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gradient-to-br from-purple-500 to-purple-700'
         }`}>
           {(member.firstName?.[0] || member.username?.[0] || '?').toUpperCase()}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-[150px]">
           <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
             {member.firstName || member.username} {member.lastName || ''}
             {!member.firstName && <span className="text-gray-400 font-normal"> ({member.username})</span>}
           </p>
-          <p className="text-xs text-gray-500 dark:text-dark-400 flex items-center gap-1">
-            <Globe className="w-3 h-3" /> {member.country || 'Sin país'}
+          <p className="text-xs text-gray-500 dark:text-dark-400 flex items-center gap-1 flex-wrap">
+            <Globe className="w-3 h-3 shrink-0" /> <span className="truncate max-w-[160px]">{member.country || 'Sin país'}</span>
             <span className="text-gray-300 dark:text-dark-600">•</span>
-            Nivel {level}
+            <span className="shrink-0">Nivel {level}</span>
           </p>
         </div>
-        {member.earned > 0 && (
-          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full">
-            Ganaste {fmt(member.earned)}
-          </span>
-        )}
-        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${st.classes}`}>{st.label}</span>
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          {member.earned > 0 && (
+            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full whitespace-nowrap">
+              Ganaste {fmt(member.earned)}
+            </span>
+          )}
+          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${st.classes}`}>{st.label}</span>
+        </div>
       </div>
     );
   };
