@@ -140,10 +140,11 @@ export function NetworkPage() {
                 <span className="truncate">{member.email}</span>
               </p>
             )}
-            {refLink && (
+            {member.referralCode && (
               <div className="flex items-center gap-2">
-                <code className="flex-1 min-w-0 truncate text-[11px] text-primary-600 dark:text-primary-400 bg-gray-50 dark:bg-dark-700/40 px-2 py-1 rounded-lg">
-                  {refLink}
+                <span className="text-[11px] text-gray-400 dark:text-dark-500 shrink-0">Código:</span>
+                <code className="flex-1 min-w-0 truncate text-[11px] font-semibold text-primary-600 dark:text-primary-400 bg-gray-50 dark:bg-dark-700/40 px-2 py-1 rounded-lg">
+                  {member.referralCode}
                 </code>
                 <button
                   type="button"
