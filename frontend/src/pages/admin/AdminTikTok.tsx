@@ -16,6 +16,23 @@ const creatorStatusMeta: Record<string, { label: string; classes: string }> = {
 
 type Tab = 'usuarios' | 'productos' | 'comisiones';
 
+// Creadores base por pack, configurables en /admin/commissions.
+// Fallbacks = defaults actuales (500 → 3, 1000 → 5).
+function usePackBaseDefaults() {
+  const [base, setBase] = useState({ base500: 3, base1000: 5 });
+  useEffect(() => {
+    adminBusinessApi.settings()
+      .then(({ data }) => {
+        setBase({
+          base500: Number(data.tiktokBaseCreators500 ?? 5) || 0,
+          base1000: Number(data.tiktokBaseCreators1000 ?? 10) || 0,
+        });
+      })
+      .catch(() => {});
+  }, []);
+  return base;
+}
+
 export function AdminTikTokPage() {
   const [tab, setTab] = useState<Tab>('usuarios');
 
@@ -70,6 +87,7 @@ function UsersTab() {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<any>(null);
   const [packBusy, setPackBusy] = useState<string | null>(null);
+  const { base500, base1000 } = usePackBaseDefaults();
 
   const load = async (targetPage = page, term = search) => {
     setLoading(true);
@@ -97,7 +115,7 @@ function UsersTab() {
   };
 
   const assignPack = async (u: any, packType: number) => {
-    const base = packType >= 1000 ? 10 : 5;
+    const base = packType >= 1000 ? base1000 : base500;
     if (!u.tiktokCampaign && !confirm(`¿Activar TikTok Shop para ${u.firstName || u.username} con Pack $${packType}? Se activará su membresía y se repartirán comisiones de red.`)) return;
     setPackBusy(u.id);
     try {
@@ -204,7 +222,7 @@ function UsersTab() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <PackSelect user={u} busy={packBusy === u.id} onAssign={assignPack} />
+                        <PackSelect user={u} busy={packBusy === u.id} onAssign={assignPack} base500={base500} base1000={base1000} />
                       </td>
                     </tr>
                   ))}
@@ -215,7 +233,7 @@ function UsersTab() {
 
           {/* Lista (móvil: cards desplegables) */}
           <div className="lg:hidden space-y-3">
-            {users.map(u => <MobileUserCard key={u.id} user={u} busy={packBusy === u.id} onSelect={() => selectUser(u)} onAssign={assignPack} />)}
+            {users.map(u => <MobileUserCard key={u.id} user={u} busy={packBusy === u.id} onSelect={() => selectUser(u)} onAssign={assignPack} base500={base500} base1000={base1000} />)}
           </div>
 
           {users.length === 0 && !loading && (
@@ -268,7 +286,7 @@ function MembershipBadge({ status }: { status: string }) {
   );
 }
 
-function PackSelect({ user, busy, onAssign }: { user: any; busy: boolean; onAssign: (u: any, packType: number) => void }) {
+function PackSelect({ user, busy, onAssign, base500, base1000 }: { user: any; busy: boolean; onAssign: (u: any, packType: number) => void; base500: number; base1000: number }) {
   const current = user.tiktokCampaign?.packType;
   return (
     <div className="inline-flex items-center gap-2">
@@ -283,15 +301,15 @@ function PackSelect({ user, busy, onAssign }: { user: any; busy: boolean; onAssi
         }}
       >
         <option value="0">{current ? 'Pack activo' : '— Sin pack —'}</option>
-        <option value="500">Pack $500 (5)</option>
-        <option value="1000">Pack $1000 (10)</option>
+        <option value="500">Pack $500 ({base500})</option>
+        <option value="1000">Pack $1000 ({base1000})</option>
       </select>
       {busy && <Loader2 className="w-4 h-4 animate-spin text-primary-600" />}
     </div>
   );
 }
 
-function MobileUserCard({ user, busy, onSelect, onAssign }: { user: any; busy: boolean; onSelect: () => void; onAssign: (u: any, packType: number) => void }) {
+function MobileUserCard({ user, busy, onSelect, onAssign, base500, base1000 }: { user: any; busy: boolean; onSelect: () => void; onAssign: (u: any, packType: number) => void; base500: number; base1000: number }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
@@ -330,7 +348,7 @@ function MobileUserCard({ user, busy, onSelect, onAssign }: { user: any; busy: b
             >
               <Users className="w-3.5 h-3.5" /> Ver campaña
             </button>
-            <PackSelect user={user} busy={busy} onAssign={onAssign} />
+            <PackSelect user={user} busy={busy} onAssign={onAssign} base500={base500} base1000={base1000} />
           </div>
         </div>
       )}
@@ -345,6 +363,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   const [submitting, setSubmitting] = useState(false);
   const [saleForm, setSaleForm] = useState({ creatorId: '', productId: '', quantity: 1, saleDate: new Date().toISOString().slice(0, 10), notes: '' });
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const { base500, base1000 } = usePackBaseDefaults();
 
   const { user, campaign, creators, sales, products, pendingCommissions, maxCreators } = data;
 
@@ -469,7 +488,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
               value={campaign ? String(campaign.packType) : '500'}
               onChange={async (e) => {
                 const packType = Number(e.target.value);
-                const base = packType >= 1000 ? 10 : 5;
+                const base = packType >= 1000 ? base1000 : base500;
                 if (!campaign && !confirm('¿Activar TikTok Shop para este usuario?')) return;
                 try {
                   const { data: res } = await adminTiktokApi.updatePack(user.id, { packType, baseCreators: base });
@@ -489,8 +508,8 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                 }
               }}
             >
-              <option value="500">Pack $500 (5 creadores)</option>
-              <option value="1000">Pack $1000 (10 creadores)</option>
+              <option value="500">Pack $500 ({base500} creadores)</option>
+              <option value="1000">Pack $1000 ({base1000} creadores)</option>
             </select>
             <Input
               type="number"

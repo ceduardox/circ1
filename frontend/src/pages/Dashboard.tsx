@@ -545,7 +545,7 @@ export function DashboardPage() {
                     Plan {status.pack.packType === 1000 ? 'Élite' : 'Estándar'} · ${status.pack.packType.toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-dark-400">
-                    {status.pack.packType === 1000 ? '10 creadores incluidos' : '5 creadores incluidos'}
+                    {status.pack.baseCreators != null ? `${status.pack.baseCreators} creadores incluidos` : (status.pack.packType === 1000 ? '10 creadores incluidos' : '5 creadores incluidos')}
                   </p>
                 </div>
               </div>

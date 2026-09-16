@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
-import { resolvePackForUser, approveTikTokCommission, creditPackReferral } from '../utils/tiktok.js';
+import { resolvePackForUser, approveTikTokCommission, creditPackReferral, getPackBaseCreators } from '../utils/tiktok.js';
 import { sendWebPush } from '../utils/onesignal.js';
 
 interface JWTPayload { sub: string; email: string; role: string; type?: string; }
@@ -131,7 +131,8 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     // salvo que el admin indique un baseCreators explícito (caso excepción).
     let base = body.baseCreators;
     if (base === undefined && body.packType !== undefined) {
-      base = body.packType >= 1000 ? 10 : 5;
+      const { base500, base1000 } = await getPackBaseCreators();
+      base = body.packType >= 1000 ? base1000 : base500;
     }
 
     const packChanged = body.packType !== undefined && body.packType !== campaign.packType;

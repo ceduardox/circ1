@@ -169,6 +169,25 @@ export function AdminCommissionsPage() {
             </div>
           </div>
 
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-1">TikTok Shop: creadores base por pack</h3>
+            <p className="text-xs text-gray-500 dark:text-dark-400 mb-3">Cuántos creadores se asignan al activar cada pack. Solo aplica a campañas nuevas.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <div>
+                <Label htmlFor="base500">Pack $500 (Estándar)</Label>
+                <Input id="base500" type="number" value={settings.tiktokBaseCreators500 ?? 5} min={0} max={100} placeholder="Ej: 5"
+                  onChange={e => setSettings({ ...settings, tiktokBaseCreators500: Math.max(0, Number(e.target.value) || 0) })} />
+                <p className="text-[11px] text-gray-400 mt-1">Creadores base del pack $500</p>
+              </div>
+              <div>
+                <Label htmlFor="base1000">Pack $1000 (Élite)</Label>
+                <Input id="base1000" type="number" value={settings.tiktokBaseCreators1000 ?? 10} min={0} max={100} placeholder="Ej: 10"
+                  onChange={e => setSettings({ ...settings, tiktokBaseCreators1000: Math.max(0, Number(e.target.value) || 0) })} />
+                <p className="text-[11px] text-gray-400 mt-1">Creadores base del pack $1000</p>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-gray-200 dark:border-dark-600 p-4 bg-gray-50 dark:bg-dark-700/40">
             <div>
               <Label>Registro por fuera (login)</Label>

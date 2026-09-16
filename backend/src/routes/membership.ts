@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { config } from '../config/index.js';
 import { createInvoice, getPaymentStatus, verifyWebhookSignature } from '../utils/nowpayments.js';
 import { activateMembership } from '../utils/activation.js';
-import { activateCreatorExtra } from '../utils/tiktok.js';
+import { activateCreatorExtra, getPackBaseCreators } from '../utils/tiktok.js';
 import { sendWebPush } from '../utils/onesignal.js';
 import { validateWithdrawalInput } from '../utils/withdrawals.js';
 
@@ -192,6 +192,7 @@ export async function membershipRoutes(app: FastifyInstance) {
     // Acceso a TikTok Shop: solo si el plan del usuario lo incluye (checkbox en config).
     const plan = pack?.planId ? settings.plans.find((p: any) => p.id === pack.planId) : null;
     const tiktokAccess = plan ? plan.tiktok !== false : true;
+    const { base500, base1000 } = await getPackBaseCreators();
 
     return {
       status: eff.status,
@@ -203,7 +204,7 @@ export async function membershipRoutes(app: FastifyInstance) {
       referralLink: user.referralCode ? `${webBase}/register?ref=${user.referralCode}` : null,
       referrerId: user.referrerId,
       referralPlans: (user.referralPlans as string[] | null) ?? ['estandar', 'elite'],
-      pack: pack ? { ...pack, tiktokAccess } : null,
+      pack: pack ? { ...pack, tiktokAccess, baseCreators: pack.packType === 1000 ? base1000 : base500 } : null,
       settings,
     };
   });

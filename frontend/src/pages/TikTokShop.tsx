@@ -200,7 +200,7 @@ export function TikTokShopPage() {
               <Users className="w-4 h-4 text-primary-600" /> Tus creadores de contenido
             </h2>
             <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5">
-              {data.campaign.packType === 1000 ? 'Pack Élite (10 creadores)' : 'Pack Estándar (5 creadores)'}
+              {data.campaign.packType === 1000 ? 'Pack Élite' : 'Pack Estándar'} ({data.campaign.baseCreators ?? (data.campaign.packType === 1000 ? 10 : 5)} creadores)
               {data.campaign.extraCreators > 0 && <> · +{data.campaign.extraCreators} extra pagados</>}
             </p>
           </div>
@@ -385,11 +385,11 @@ function Landing({ data, activating, onActivate }: { data: any; activating: bool
                 <span className="text-amber-300 font-black">
                   {data.campaign ? data.campaign.baseCreators : ''}
                 </span>{' '}
-                {data.campaign?.baseCreators === 10 ? 'creadores' : 'creadores'} de contenido
+                {data.campaign?.packType === 1000 ? 'creadores' : 'creadores'} de contenido
               </span>
             </div>
             <p className="text-[11px] text-gray-500 mt-2">
-              Pack de {data.campaign?.baseCreators === 10 ? '$1,000' : '$500'}: {data.campaign?.baseCreators === 10 ? '10' : '5'} creadores · Agrega más por {fmt(data.extraCreatorPrice)} c/u.
+              Pack de {data.campaign?.packType === 1000 ? '$1,000' : '$500'}: {data.campaign?.baseCreators ?? (data.campaign?.packType === 1000 ? 10 : 5)} creadores · Agrega más por {fmt(data.extraCreatorPrice)} c/u.
             </p>
           </div>
 

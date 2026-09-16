@@ -18,6 +18,24 @@ async function getCommissionSettings() {
   };
 }
 
+// Creadores base por pack, configurables desde el admin
+// (TIKTOK_BASE_CREATORS_500 default 5, TIKTOK_BASE_CREATORS_1000 default 10).
+export async function getPackBaseCreators(): Promise<{ base500: number; base1000: number }> {
+  const read = async (key: string, fallback: number) => {
+    const row = await prisma.adminSetting.findUnique({ where: { key } });
+    if (!row) return fallback;
+    try {
+      const v = Number(JSON.parse(row.value as any));
+      return Number.isFinite(v) && v >= 0 ? Math.floor(v) : fallback;
+    } catch { return fallback; }
+  };
+  const [base500, base1000] = await Promise.all([
+    read('TIKTOK_BASE_CREATORS_500', 5),
+    read('TIKTOK_BASE_CREATORS_1000', 10),
+  ]);
+  return { base500, base1000 };
+}
+
 // Notificación in-app + web push respetando las preferencias del usuario.
 async function notifyWithPush(userId: string, title: string, message: string, pref: 'pushCommissions' | 'pushPayments' | 'pushChat') {
   try {
@@ -39,7 +57,8 @@ export async function resolvePackForUser(userId: string): Promise<{ packType: nu
     orderBy: { createdAt: 'desc' },
   });
   const elite = lastPaid?.planId === 'elite' || (lastPaid?.amount ?? 0) >= 1000;
-  return elite ? { packType: 1000, baseCreators: 10 } : { packType: 500, baseCreators: 5 };
+  const { base500, base1000 } = await getPackBaseCreators();
+  return elite ? { packType: 1000, baseCreators: base1000 } : { packType: 500, baseCreators: base500 };
 }
 
 // Total de slots disponibles: base del pack + creadores extra pagados.

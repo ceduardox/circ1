@@ -360,6 +360,8 @@ export async function adminRoutes(app: FastifyInstance) {
     appLibrary: { id: string; name: string; logo?: string; url?: string }[];
     tiktokExtraCreatorPrice: number;
     tiktokAutoApprove: boolean;
+    tiktokBaseCreators500: number;
+    tiktokBaseCreators1000: number;
     bankDetails: {
       holder: string;
       routing: string;
@@ -428,6 +430,8 @@ export async function adminRoutes(app: FastifyInstance) {
       registerOpen: map.REGISTER_OPEN === undefined ? true : map.REGISTER_OPEN !== false,
       tiktokExtraCreatorPrice: Number(map.TIKTOK_EXTRA_CREATOR_PRICE ?? 50),
       tiktokAutoApprove: map.TIKTOK_AUTO_APPROVE !== undefined ? map.TIKTOK_AUTO_APPROVE !== false : false,
+      tiktokBaseCreators500: Number(map.TIKTOK_BASE_CREATORS_500 ?? 5),
+      tiktokBaseCreators1000: Number(map.TIKTOK_BASE_CREATORS_1000 ?? 10),
       plans,
       appLibrary,
       bankDetails: map.BANK_DETAILS ?? {
@@ -451,6 +455,8 @@ export async function adminRoutes(app: FastifyInstance) {
     registerOpen: z.boolean().optional(),
     tiktokExtraCreatorPrice: z.number().positive().optional(),
     tiktokAutoApprove: z.boolean().optional(),
+    tiktokBaseCreators500: z.number().int().min(0).max(100).optional(),
+    tiktokBaseCreators1000: z.number().int().min(0).max(100).optional(),
     appLibrary: z.array(z.object({ id: z.string(), name: z.string().min(1), logo: z.string().optional(), url: z.string().optional() })).optional(),
     plans: z.array(z.object({
       id: z.string(),
@@ -495,6 +501,8 @@ export async function adminRoutes(app: FastifyInstance) {
       registerOpen: 'REGISTER_OPEN',
       tiktokExtraCreatorPrice: 'TIKTOK_EXTRA_CREATOR_PRICE',
       tiktokAutoApprove: 'TIKTOK_AUTO_APPROVE',
+      tiktokBaseCreators500: 'TIKTOK_BASE_CREATORS_500',
+      tiktokBaseCreators1000: 'TIKTOK_BASE_CREATORS_1000',
       plans: 'PLANS',
       appLibrary: 'APP_LIBRARY',
       membershipPrice: 'MEMBERSHIP_PRICE',

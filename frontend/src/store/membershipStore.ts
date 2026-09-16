@@ -19,6 +19,7 @@ interface MembershipStatus {
     method?: string | null;
     paidAt?: string | null;
     tiktokAccess?: boolean;
+    baseCreators?: number;
   } | null;
   settings: {
     membershipPrice: number;
