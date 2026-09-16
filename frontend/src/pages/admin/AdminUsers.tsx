@@ -5,10 +5,40 @@ import { adminBusinessApi } from '@/services/api';
 import { Card, CardContent, PageHeader } from '@/components/ui';
 import { ButtonGhost, Input, Label, ButtonPrimary } from '@/components/ui';
 import { CountrySelect } from '@/components/ui/CountrySelect';
-import { ChevronLeft, ChevronRight, Search, User, Download, Plus, ChevronDown, Mail, MapPin, Calendar, Shield, Pencil, Wallet, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, User, Download, Plus, ChevronDown, Mail, MapPin, Calendar, Shield, Pencil, Wallet, Loader2, Copy, Check, Link2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui';
 import { toast } from 'sonner';
+
+function RefCode({ code }: { code?: string | null }) {
+  const [copied, setCopied] = useState(false);
+  if (!code) return <span className="text-gray-400">-</span>;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/register?ref=${code}`);
+      setCopied(true);
+      toast.success('Link de referido copiado');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('No se pudo copiar el link');
+    }
+  };
+  return (
+    <div className="inline-flex items-center gap-2">
+      <code className="text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-1 rounded-lg whitespace-nowrap">{code}</code>
+      <button
+        type="button"
+        onClick={copy}
+        title="Copiar link de referido"
+        className={`p-1.5 rounded-lg transition-colors ${
+          copied ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400 hover:text-primary-600 hover:bg-primary-50'
+        }`}
+      >
+        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+      </button>
+    </div>
+  );
+}
 
 export function AdminUsersPage() {
   const { users, fetchUsers, loading, createUser, updateUser } = useAdminStore();
@@ -213,6 +243,10 @@ export function AdminUsersPage() {
                 <Calendar className="w-4 h-4" />
                 <span>{new Date(u.createdAt).toLocaleDateString()}</span>
               </div>
+              <div className="flex items-center gap-2 text-gray-500 col-span-2">
+                <Link2 className="w-4 h-4 shrink-0" />
+                <RefCode code={u.referralCode} />
+              </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>Completados:</span>
@@ -343,6 +377,7 @@ export function AdminUsersPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">País</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completados</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registrado</th>
@@ -367,6 +402,7 @@ export function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4 text-gray-700">{u.email}</td>
                       <td className="px-6 py-4 text-gray-700">{u.country || '-'}</td>
+                      <td className="px-6 py-4"><RefCode code={u.referralCode} /></td>
                       <td className="px-6 py-4">{roleBadge(u.role)}</td>
                       <td className="px-6 py-4 text-gray-700 font-medium">{u.completedCount}</td>
                       <td className="px-6 py-4 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
