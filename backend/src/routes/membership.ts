@@ -701,6 +701,11 @@ export async function membershipRoutes(app: FastifyInstance) {
     let apps: any[] = [];
     let bonusPerReferral = 0.02;
     let bonusCap = 0.1;
+    let planEnabled = false;
+    let planName: string | null = null;
+    let dayMin: number | null = null;
+    let dayMax: number | null = null;
+    let price = 0;
     try {
       const lastPaid = await prisma.membershipPayment.findFirst({ where: { userId, type: 'MEMBERSHIP', status: 'APPROVED' }, orderBy: { createdAt: 'desc' } });
       if (lastPaid?.planId) {
@@ -708,9 +713,16 @@ export async function membershipRoutes(app: FastifyInstance) {
         if (row) {
           const plans = JSON.parse(row.value as any);
           const plan = Array.isArray(plans) ? plans.find((p: any) => p.id === lastPaid.planId) : null;
-          if (plan?.dailyYield?.apps) apps = plan.dailyYield.apps;
-          if (plan?.dailyYield?.bonusPerReferral != null) bonusPerReferral = Number(plan.dailyYield.bonusPerReferral);
-          if (plan?.dailyYield?.bonusCap != null) bonusCap = Number(plan.dailyYield.bonusCap);
+          if (plan) {
+            planName = plan.name ?? null;
+            price = Number(plan.price) || Number(lastPaid.amount) || 0;
+            if (plan.dailyYield?.apps) apps = plan.dailyYield.apps;
+            if (plan.dailyYield?.bonusPerReferral != null) bonusPerReferral = Number(plan.dailyYield.bonusPerReferral);
+            if (plan.dailyYield?.bonusCap != null) bonusCap = Number(plan.dailyYield.bonusCap);
+            if (plan.dailyYield?.min != null) dayMin = Number(plan.dailyYield.min);
+            if (plan.dailyYield?.max != null) dayMax = Number(plan.dailyYield.max);
+            planEnabled = plan.dailyYield?.enabled === true && dayMin != null && dayMax != null;
+          }
         }
       }
     } catch {}
@@ -727,6 +739,11 @@ export async function membershipRoutes(app: FastifyInstance) {
       referrals,
       bonusPerReferral,
       bonusCap,
+      enabled: planEnabled,
+      planName,
+      min: dayMin,
+      max: dayMax,
+      price,
     };
   });
 

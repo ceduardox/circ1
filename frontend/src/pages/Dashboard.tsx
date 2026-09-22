@@ -339,28 +339,34 @@ export function DashboardPage() {
               </div>
             </Link>
           )}
-          {daily && daily.count === 0 && (
-            <Link to="/network" className="block bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-800 dark:to-dark-700 rounded-2xl border-2 border-dashed border-gray-300 dark:border-dark-600 p-6 text-center hover:border-violet-400 hover:from-violet-50 hover:to-indigo-50 dark:hover:from-violet-900/20 dark:hover:to-indigo-900/20 transition-all animate-fade-up group">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-dark-600 dark:to-dark-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <span className="text-xl">🔒</span>
-              </div>
-              <p className="text-sm font-black text-gray-900 dark:text-dark-100">Desbloquea tu ganancia diaria</p>
-              <p className="text-xs text-gray-500 dark:text-dark-400 mt-1">Tu pack <b>Militar $80</b> ya tiene <span className="text-emerald-600 font-bold">0.1-0.4%/día</span> — solo falta <b>1 referido</b>.</p>
-              <div className="mt-3 p-2 rounded-xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 flex items-center gap-2 text-left">
-                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-xs">+0.08</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-gray-900 dark:text-dark-100">Si invitas hoy → $0.08/día desde mañana</p>
-                  <p className="text-[11px] text-gray-500">Se suma a tu balance y es retirable</p>
+          {daily && daily.count === 0 && daily.enabled && (daily.directActive ?? 0) === 0 && (() => {
+            const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+            const pct = (Number(daily.min || 0) + Number(daily.max || 0)) / 2;
+            const bonus = Number(daily.bonusPerReferral ?? 0.02);
+            const est = Number(daily.price || 0) * (pct + bonus) / 100;
+            return (
+              <Link to="/network" className="block bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-800 dark:to-dark-700 rounded-2xl border-2 border-dashed border-gray-300 dark:border-dark-600 p-6 text-center hover:border-violet-400 hover:from-violet-50 hover:to-indigo-50 dark:hover:from-violet-900/20 dark:hover:to-indigo-900/20 transition-all animate-fade-up group">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-dark-600 dark:to-dark-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="text-xl">🔒</span>
                 </div>
-              </div>
-              <div className="flex justify-center gap-1.5 mt-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300 dark:border-dark-600 flex items-center justify-center text-gray-400 bg-white dark:bg-dark-800">+</div>
-                ))}
-              </div>
-              <span className="inline-flex items-center gap-1 mt-3 px-3 py-1.5 rounded-full bg-violet-600 text-white text-xs font-bold group-hover:bg-violet-700 transition-colors">Ir a Mi Red <ChevronRight className="w-3 h-3" /></span>
-            </Link>
-          )}
+                <p className="text-sm font-black text-gray-900 dark:text-dark-100">Desbloquea tu ganancia diaria</p>
+                <p className="text-xs text-gray-500 dark:text-dark-400 mt-1">Tu pack <b>{daily.planName || 'actual'} {usd(Number(daily.price || 0))}</b> ya tiene <span className="text-emerald-600 font-bold">{Number(daily.min || 0)}–{Number(daily.max || 0)}%/día</span> — solo falta <b>1 referido</b>.</p>
+                <div className="mt-3 p-2 rounded-xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 flex items-center gap-2 text-left">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-xs">+{est.toFixed(2)}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-gray-900 dark:text-dark-100">Si invitas hoy → {usd(est)}/día desde mañana</p>
+                    <p className="text-[11px] text-gray-500">Se suma a tu balance y es retirable</p>
+                  </div>
+                </div>
+                <div className="flex justify-center gap-1.5 mt-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300 dark:border-dark-600 flex items-center justify-center text-gray-400 bg-white dark:bg-dark-800">+</div>
+                  ))}
+                </div>
+                <span className="inline-flex items-center gap-1 mt-3 px-3 py-1.5 rounded-full bg-violet-600 text-white text-xs font-bold group-hover:bg-violet-700 transition-colors">Ir a Mi Red <ChevronRight className="w-3 h-3" /></span>
+              </Link>
+            );
+          })()}
 
           {/* Tus caminos de crecimiento */}
           <div className="animate-fade-up" style={{ animationDelay: '240ms' }}>
