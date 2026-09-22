@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Settings2, DollarSign, CheckCircle, XCircle, Loader2, RefreshCw, Ban } from 'lucide-react';
+import { Settings2, DollarSign, CheckCircle, XCircle, Loader2, RefreshCw, Ban, Users, Search, CalendarPlus, Infinity as InfinityIcon } from 'lucide-react';
 import { adminBusinessApi } from '@/services/api';
 import { Input, Label, Card, CardContent, ButtonPrimary, Button, PageHeader } from '@/components/ui';
 import { toast } from 'sonner';
@@ -8,6 +8,13 @@ const statusPayment: Record<string, { label: string; classes: string }> = {
   PENDING: { label: 'Pendiente', classes: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
   APPROVED: { label: 'Aprobado', classes: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
   REJECTED: { label: 'Rechazado', classes: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+};
+
+const statusMember: Record<string, { label: string; classes: string }> = {
+  ACTIVE: { label: 'Activo', classes: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
+  GRACE: { label: 'En gracia', classes: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  EXPIRED: { label: 'Vencido', classes: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+  INACTIVE: { label: 'Inactivo', classes: 'bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-400' },
 };
 
 export function AdminCommissionsPage() {
@@ -20,6 +27,9 @@ export function AdminCommissionsPage() {
   });
   const [payments, setPayments] = useState<any[]>([]);
   const [retained, setRetained] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [memberProcessingId, setMemberProcessingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -30,14 +40,16 @@ export function AdminCommissionsPage() {
 
   const load = async () => {
     try {
-      const [sRes, pRes, rRes] = await Promise.all([
+      const [sRes, pRes, rRes, mRes] = await Promise.all([
         adminBusinessApi.settings(),
         adminBusinessApi.payments(),
         adminBusinessApi.retained(),
+        adminBusinessApi.members(),
       ]);
       setSettings(sRes.data);
       setPayments(pRes.data.payments);
       setRetained(rRes.data.retained || []);
+      setMembers(mRes.data.members || []);
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Error al cargar el panel');
     } finally {
@@ -110,6 +122,32 @@ export function AdminCommissionsPage() {
 
   const fmt = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
   const pendingPayments = payments.filter(p => p.status === 'PENDING').length;
+
+  const filteredMembers = members.filter((m: any) => {
+    const q = memberSearch.trim().toLowerCase();
+    if (!q) return true;
+    return `${m.firstName || ''} ${m.lastName || ''} ${m.username || ''} ${m.email || ''}`.toLowerCase().includes(q);
+  });
+
+  const handleMembership = async (m: any, action: 'exempt' | 'activate30' | 'deactivate') => {
+    const name = m.firstName || m.username || 'este miembro';
+    const labels: Record<string, string> = {
+      exempt: 'quitar la cuota mensual (acceso permanente)',
+      activate30: 'activar 30 días',
+      deactivate: 'desactivar la cuenta',
+    };
+    if (!confirm(`¿${labels[action]} de ${name}?`)) return;
+    setMemberProcessingId(m.id);
+    try {
+      await adminBusinessApi.setMemberMembership(m.id, action);
+      toast.success('Cuota actualizada');
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al actualizar');
+    } finally {
+      setMemberProcessingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -525,6 +563,80 @@ export function AdminCommissionsPage() {
                       {processingId === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />} Desactivar
                     </Button>
                   )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Cuota mensual por miembro */}
+      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-100 dark:border-dark-700 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-gray-900 dark:text-dark-100 flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary-600 dark:text-primary-400" /> Cuota mensual por miembro
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-dark-400 mt-1">
+              Activa, exime o desactiva la cuota manualmente, sin registrar un pago.
+            </p>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+              placeholder="Buscar miembro..."
+              className="pl-9"
+            />
+          </div>
+        </div>
+        {filteredMembers.length === 0 ? (
+          <div className="text-center py-10 text-gray-400 dark:text-dark-500 text-sm">Sin miembros</div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-dark-700 max-h-[520px] overflow-y-auto">
+            {filteredMembers.map((m: any) => {
+              const ms = statusMember[m.effectiveStatus] || statusMember.INACTIVE;
+              const isPermanent = m.membershipStatus === 'ACTIVE' && !m.membershipExpiresAt;
+              return (
+                <div key={m.id} className="p-4 flex flex-wrap items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {(m.firstName?.[0] || m.username?.[0] || '?').toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-[160px]">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
+                      {m.firstName || m.username} {m.lastName || ''}
+                      {!m.firstName && <span className="text-gray-400 font-normal"> ({m.username})</span>}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-dark-400 truncate">
+                      {m.email}{m.country ? ` · ${m.country}` : ''}
+                    </p>
+                    <p className="text-[11px] text-gray-400 dark:text-dark-500">
+                      {isPermanent
+                        ? 'Cuota desactivada · acceso permanente'
+                        : m.membershipExpiresAt
+                          ? `Vence ${new Date(m.membershipExpiresAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                          : 'Sin membresía'}
+                    </p>
+                  </div>
+                  <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${ms.classes}`}>{ms.label}</span>
+                  <div className="flex items-center gap-2 shrink-0 ml-auto">
+                    <Button size="sm" disabled={memberProcessingId === m.id}
+                      className="bg-transparent text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/40"
+                      onClick={() => handleMembership(m, 'exempt')} title="Quitar cuota (acceso permanente)">
+                      {memberProcessingId === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <InfinityIcon className="w-4 h-4" />} Sin cuota
+                    </Button>
+                    <Button size="sm" disabled={memberProcessingId === m.id}
+                      className="bg-transparent text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 border border-primary-200 dark:border-primary-900/40"
+                      onClick={() => handleMembership(m, 'activate30')} title="Activar 30 días">
+                      <CalendarPlus className="w-4 h-4" /> +30 días
+                    </Button>
+                    <Button size="sm" disabled={memberProcessingId === m.id}
+                      className="bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-900/40"
+                      onClick={() => handleMembership(m, 'deactivate')} title="Desactivar cuenta">
+                      <Ban className="w-4 h-4" /> Desactivar
+                    </Button>
+                  </div>
                 </div>
               );
             })}

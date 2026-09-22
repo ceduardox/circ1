@@ -157,6 +157,9 @@ export const adminBusinessApi = {
   deactivatePayment: (id: string) => api.post(`/admin/business/payments/${id}/deactivate`),
   verifyPayment: (id: string) => api.post(`/admin/business/payments/${id}/verify`),
   network: () => api.get('/admin/business/network'),
+  members: () => api.get('/admin/business/members'),
+  setMemberMembership: (id: string, action: 'exempt' | 'activate30' | 'deactivate') =>
+    api.post(`/admin/business/members/${id}/membership`, { action }),
   withdrawals: () => api.get('/admin/business/withdrawals'),
   approveWithdrawal: (id: string, data?: any) => api.post(`/admin/business/withdrawals/${id}/approve`, data),
   rejectWithdrawal: (id: string) => api.post(`/admin/business/withdrawals/${id}/reject`),

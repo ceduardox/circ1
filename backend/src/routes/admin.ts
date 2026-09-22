@@ -8,6 +8,7 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
 import { ContentType } from '@prisma/client';
 import { activateMembership } from '../utils/activation.js';
+import { effectiveMembership } from '../utils/membershipStatus.js';
 import { activateCreatorExtra } from '../utils/tiktok.js';
 import { getPaymentStatus } from '../utils/nowpayments.js';
 import { config } from '../config/index.js';
@@ -697,6 +698,49 @@ export async function adminRoutes(app: FastifyInstance) {
     });
 
     return { success: true };
+  });
+
+  // Miembros y su cuota mensual: permite activar/eximir/desactivar sin registrar un pago.
+  app.get('/business/members', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const users = await prisma.user.findMany({
+      where: { role: 'USER' },
+      select: {
+        id: true, firstName: true, lastName: true, username: true, email: true, country: true,
+        membershipStatus: true, membershipExpiresAt: true, createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+    const members = users.map(u => ({ ...u, effectiveStatus: effectiveMembership(u).status }));
+    return { members };
+  });
+
+  app.post('/business/members/:id/membership', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { action } = (request.body as { action?: string }) || {};
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true } });
+    if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
+    if (user.role === 'ADMIN') return reply.code(400).send({ error: 'Los administradores no usan cuota' });
+
+    const now = new Date();
+    let data: { membershipStatus: 'ACTIVE' | 'INACTIVE'; membershipExpiresAt: Date | null; membershipPaidAt: Date | null };
+    if (action === 'exempt') {
+      // Cuota desactivada: activo y sin vencimiento (permanente).
+      data = { membershipStatus: 'ACTIVE', membershipExpiresAt: null, membershipPaidAt: now };
+    } else if (action === 'activate30') {
+      const expires = new Date(now);
+      expires.setDate(expires.getDate() + 30);
+      data = { membershipStatus: 'ACTIVE', membershipExpiresAt: expires, membershipPaidAt: now };
+    } else if (action === 'deactivate') {
+      data = { membershipStatus: 'INACTIVE', membershipExpiresAt: null, membershipPaidAt: null };
+    } else {
+      return reply.code(400).send({ error: 'Acción inválida' });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id }, data, select: { id: true, membershipStatus: true, membershipExpiresAt: true },
+    });
+    return { success: true, member: { ...updated, effectiveStatus: effectiveMembership(updated).status } };
   });
 
   // Red global (todas las redes, para que el admin vea todo)
