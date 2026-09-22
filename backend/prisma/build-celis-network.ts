@@ -59,6 +59,28 @@ const SALES = [
   { creator: 1, product: 'Berberina', qty: 2, daysAgo: 1 },
 ];
 
+// Lote mezclado: reparte las ventas entre los productos reales del catálogo de producción
+// (Energy Strip, Magnesio, Cretina, etc.). Se resuelve por nombre; si un producto no existe,
+// cae al primero del catálogo. Idempotente: se marca con un 'notes' distinto.
+const MIX_SALES = [
+  { creator: 0, product: 'Energy Strip', qty: 2, daysAgo: 29 },
+  { creator: 1, product: 'Magnesio Glicinato', qty: 1, daysAgo: 27 },
+  { creator: 0, product: 'Cretina', qty: 2, daysAgo: 25 },
+  { creator: 1, product: 'Berberina', qty: 3, daysAgo: 23 },
+  { creator: 0, product: 'Energy Strip', qty: 1, daysAgo: 21 },
+  { creator: 1, product: 'Magnesio Glicinato', qty: 2, daysAgo: 19 },
+  { creator: 0, product: 'Cretina', qty: 1, daysAgo: 17 },
+  { creator: 1, product: 'Berberina', qty: 2, daysAgo: 15 },
+  { creator: 0, product: 'Energy Strip', qty: 3, daysAgo: 13 },
+  { creator: 1, product: 'Magnesio Glicinato', qty: 1, daysAgo: 11 },
+  { creator: 0, product: 'Cretina', qty: 2, daysAgo: 9 },
+  { creator: 1, product: 'Berberina', qty: 1, daysAgo: 7 },
+  { creator: 0, product: 'Energy Strip', qty: 2, daysAgo: 5 },
+  { creator: 1, product: 'Magnesio Glicinato', qty: 2, daysAgo: 4 },
+  { creator: 0, product: 'Cretina', qty: 1, daysAgo: 2 },
+  { creator: 1, product: 'Berberina', qty: 2, daysAgo: 1 },
+];
+
 // ─── Helpers ───
 const daysAgo = (n: number) => {
   const d = new Date();
@@ -355,27 +377,35 @@ async function main() {
   }
   const creators = await prisma.tikTokCreator.findMany({ where: { campaignId: campaign.id }, orderBy: { createdAt: 'asc' } });
 
-  // Producto: usa el primero activo del catálogo, o crea uno default.
-  let product = await prisma.tikTokProduct.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'asc' } });
-  if (!product) {
-    product = await prisma.tikTokProduct.create({
+  // ── 6) Ventas (historial con fechas pasadas) ──
+  // Usa los productos REALES del catálogo de producción, no uno fijo.
+  const campaignId = campaign.id;
+  const celisId = celis.id;
+  const celisReferrerId = celis.referrerId;
+
+  const catalog = await prisma.tikTokProduct.findMany({ where: { isActive: true }, orderBy: { createdAt: 'asc' } });
+  if (catalog.length === 0) {
+    const def = await prisma.tikTokProduct.create({
       data: { name: 'Berberina', price: 39.9, commissionRate: 25, sponsorRate: 5, isActive: true },
     });
-    console.log(`   ✅ Producto default creado: ${product.name}`);
+    catalog.push(def);
+    console.log(`   ✅ Producto default creado: ${def.name}`);
   } else {
-    console.log(`   → Producto del catálogo: ${product.name} $${product.price} (alumno ${product.commissionRate}%)`);
+    console.log(`   → ${catalog.length} productos en catálogo: ${catalog.map(p => `${p.name} $${p.price}`).join(' · ')}`);
   }
+  const productByName = new Map(catalog.map(p => [p.name.toLowerCase(), p]));
 
-  // ── 6) Ventas (historial con fechas pasadas) ──
-  console.log('\n🛒 Registrando ventas...');
-  const existingSales = await prisma.tikTokSale.count({ where: { campaignId: campaign.id } });
-  let approvedCount = 0;
-  if (existingSales > 0) {
-    console.log(`   → Ya existen ${existingSales} ventas, no se duplican`);
-  } else {
-    for (const s of SALES) {
+  // Registra un lote de ventas repartidas entre productos y creadores. Idempotente por 'notes'.
+  const seedSales = async (list: { creator: number; product: string; qty: number; daysAgo: number }[], marker: string) => {
+    const already = await prisma.tikTokSale.count({ where: { campaignId, notes: marker } });
+    if (already > 0) {
+      console.log(`   → Lote "${marker}" ya registrado (${already} ventas), no se duplica`);
+      return;
+    }
+    for (const s of list) {
       const creator = creators[s.creator];
-      if (!creator) { console.log(`   ⚠️  Creador índice ${s.creator} no existe`); continue; }
+      const product = productByName.get(s.product.toLowerCase()) || catalog[0];
+      if (!creator || !product) { console.log(`   ⚠️  Faltan datos para ${s.product}`); continue; }
       const when = daysAgo(s.daysAgo);
       const total = round2(product.price * s.qty);
       const studentAmount = round2((total * product.commissionRate) / 100);
@@ -383,18 +413,18 @@ async function main() {
 
       const sale = await prisma.tikTokSale.create({
         data: {
-          campaignId: campaign.id,
+          campaignId,
           creatorId: creator.id,
           productId: product.id,
           quantity: s.qty,
           unitPrice: product.price,
           saleDate: when,
           createdAt: when,
-          notes: 'Venta TikTok Shop',
+          notes: marker,
           commissions: {
             create: [
               {
-                userId: celis.id,
+                userId: celisId,
                 type: 'STUDENT',
                 percent: product.commissionRate,
                 amount: studentAmount,
@@ -407,15 +437,14 @@ async function main() {
         },
       });
 
-      await creditBalance(celis.id, studentAmount, `Comisión TikTok Shop por ${product.name}`, addDays(when, 1));
-      approvedCount++;
+      await creditBalance(celisId, studentAmount, `Comisión TikTok Shop por ${product.name}`, addDays(when, 1));
 
       // SPONSOR (5%) para el referidor de celis, si existe.
-      if (celis.referrerId) {
+      if (celisReferrerId) {
         await prisma.tikTokCommission.create({
           data: {
             saleId: sale.id,
-            userId: celis.referrerId,
+            userId: celisReferrerId,
             type: 'SPONSOR',
             percent: product.sponsorRate,
             amount: sponsorAmount,
@@ -424,11 +453,17 @@ async function main() {
             approvedAt: addDays(when, 1),
           },
         });
-        await creditBalance(celis.referrerId, sponsorAmount, `Comisión sponsor TikTok por ${product.name}`, addDays(when, 1));
+        await creditBalance(celisReferrerId, sponsorAmount, `Comisión sponsor TikTok por ${product.name}`, addDays(when, 1));
       }
       console.log(`   ✅ ${s.qty}× ${product.name} ${fmtUSD(total)} (${when.toISOString().slice(0, 10)}) → celis +${fmtUSD(studentAmount)}`);
     }
-  }
+  };
+
+  console.log('\n🛒 Registrando ventas...');
+  // Lote histórico original (compatibilidad al reconstruir desde cero).
+  await seedSales(SALES, 'Venta TikTok Shop');
+  // Lote mezclado: reparte entre todos los productos del catálogo real.
+  await seedSales(MIX_SALES, 'Venta TikTok Shop · mix');
 
   // ── 7) Resumen ──
   console.log('\n═══════════ RESUMEN ═══════════');
