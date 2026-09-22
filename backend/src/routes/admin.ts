@@ -176,7 +176,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
   const updateUserSchema = z.object({
     email: z.string().email('Email inválido').optional(),
-    username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/).optional(),
+    username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
     password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').optional(),
     firstName: z.string().min(1).optional(),
     lastName: z.string().min(1).optional(),
