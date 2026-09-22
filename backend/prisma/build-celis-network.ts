@@ -19,23 +19,23 @@ const CELIS_PACK = Number(process.env.CELIS_PACK || 1000);
 // Red nivel 1: referidos directos de celis.
 // daysAgo = hace cuántos días pagó la membresía (fechas en el pasado).
 const L1 = [
-  { username: 'red.juan', email: 'red.juan.mamani@ryztor.test', firstName: 'Juan', lastName: 'Mamani', country: 'Bolivia', pack: 500, daysAgo: 28 },
+  { username: 'red.juan', email: 'red.juan.mamani@ryztor.test', firstName: 'Juan', lastName: 'Mamani', country: 'Colombia', pack: 500, daysAgo: 28 },
   { username: 'red.maria', email: 'red.maria.quispe@ryztor.test', firstName: 'María', lastName: 'Quispe', country: 'Bolivia', pack: 1000, daysAgo: 28 },
-  { username: 'red.carlos', email: 'red.carlos.choque@ryztor.test', firstName: 'Carlos', lastName: 'Choque', country: 'Bolivia', pack: 500, daysAgo: 25 },
-  { username: 'red.lucia', email: 'red.ana.condori@ryztor.test', firstName: 'Ana', lastName: 'Condori', country: 'Bolivia', pack: 500, daysAgo: 21 },
-  { username: 'red.diego', email: 'red.jose.flores@ryztor.test', firstName: 'José', lastName: 'Flores', country: 'Bolivia', pack: 1000, daysAgo: 17 },
-  { username: 'red.valentina', email: 'red.gabriela.apaza@ryztor.test', firstName: 'Gabriela', lastName: 'Apaza', country: 'Bolivia', pack: 500, daysAgo: 14 },
+  { username: 'red.carlos', email: 'red.carlos.choque@ryztor.test', firstName: 'Carlos', lastName: 'Choque', country: 'Paraguay', pack: 500, daysAgo: 25 },
+  { username: 'red.lucia', email: 'red.ana.condori@ryztor.test', firstName: 'Ana', lastName: 'Condori', country: 'Paraguay', pack: 500, daysAgo: 21 },
+  { username: 'red.diego', email: 'red.jose.flores@ryztor.test', firstName: 'José', lastName: 'Flores', country: 'Colombia', pack: 1000, daysAgo: 17 },
+  { username: 'red.valentina', email: 'red.gabriela.apaza@ryztor.test', firstName: 'Gabriela', lastName: 'Apaza', country: 'Colombia', pack: 500, daysAgo: 14 },
   { username: 'red.andres', email: 'red.roberto.gutierrez@ryztor.test', firstName: 'Roberto', lastName: 'Gutiérrez', country: 'Bolivia', pack: 500, daysAgo: 10 },
-  { username: 'red.camila', email: 'red.daniela.vargas@ryztor.test', firstName: 'Daniela', lastName: 'Vargas', country: 'Bolivia', pack: 1000, daysAgo: 6 },
+  { username: 'red.camila', email: 'red.daniela.vargas@ryztor.test', firstName: 'Daniela', lastName: 'Vargas', country: 'Colombia', pack: 1000, daysAgo: 6 },
 ];
 
 // Red nivel 2: referidos de los L1. parent = username del L1.
 // Distribución natural: 2 bajo Juan, 2 bajo María, 1 bajo Carlos, el resto sin referidos.
 const L2 = [
   { username: 'red.sofia', email: 'red.rosa.ticona@ryztor.test', firstName: 'Rosa', lastName: 'Ticona', country: 'Bolivia', pack: 500, daysAgo: 20, parent: 'red.juan' },
-  { username: 'red.santiago', email: 'red.rodrigo.mendoza@ryztor.test', firstName: 'Rodrigo', lastName: 'Mendoza', country: 'Bolivia', pack: 500, daysAgo: 8, parent: 'red.juan' },
-  { username: 'red.mateo', email: 'red.luis.huanca@ryztor.test', firstName: 'Luis', lastName: 'Huanca', country: 'Bolivia', pack: 500, daysAgo: 15, parent: 'red.maria' },
-  { username: 'red.fernanda', email: 'red.patricia.torrez@ryztor.test', firstName: 'Patricia', lastName: 'Torrez', country: 'Bolivia', pack: 500, daysAgo: 4, parent: 'red.maria' },
+  { username: 'red.santiago', email: 'red.rodrigo.mendoza@ryztor.test', firstName: 'Rodrigo', lastName: 'Mendoza', country: 'Paraguay', pack: 500, daysAgo: 8, parent: 'red.juan' },
+  { username: 'red.mateo', email: 'red.luis.huanca@ryztor.test', firstName: 'Luis', lastName: 'Huanca', country: 'Colombia', pack: 500, daysAgo: 15, parent: 'red.maria' },
+  { username: 'red.fernanda', email: 'red.patricia.torrez@ryztor.test', firstName: 'Patricia', lastName: 'Torrez', country: 'Paraguay', pack: 500, daysAgo: 4, parent: 'red.maria' },
   { username: 'red.isabella', email: 'red.carmen.chipana@ryztor.test', firstName: 'Carmen', lastName: 'Chipana', country: 'Bolivia', pack: 1000, daysAgo: 12, parent: 'red.carlos' },
 ];
 
