@@ -711,7 +711,22 @@ export async function adminRoutes(app: FastifyInstance) {
       orderBy: { createdAt: 'desc' },
       take: 500,
     });
-    const members = users.map(u => ({ ...u, effectiveStatus: effectiveMembership(u).status }));
+    // Pack actual: último pago MEMBERSHIP aprobado de cada usuario.
+    const lastPays = await prisma.membershipPayment.findMany({
+      where: { userId: { in: users.map(u => u.id) }, type: 'MEMBERSHIP', status: 'APPROVED' },
+      select: { userId: true, planId: true, planName: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const planByUser = new Map<string, { planId: string | null; planName: string | null }>();
+    for (const p of lastPays) {
+      if (!planByUser.has(p.userId)) planByUser.set(p.userId, { planId: p.planId ?? null, planName: p.planName ?? null });
+    }
+    const members = users.map(u => ({
+      ...u,
+      effectiveStatus: effectiveMembership(u).status,
+      planId: planByUser.get(u.id)?.planId ?? null,
+      planName: planByUser.get(u.id)?.planName ?? null,
+    }));
     return { members };
   });
 
@@ -741,6 +756,45 @@ export async function adminRoutes(app: FastifyInstance) {
       where: { id }, data, select: { id: true, membershipStatus: true, membershipExpiresAt: true },
     });
     return { success: true, member: { ...updated, effectiveStatus: effectiveMembership(updated).status } };
+  });
+
+  // Asignar un pack (plan) a un usuario sin que pague: crea un pago MEMBERSHIP aprobado
+  // y activa como una activación normal (genera comisiones de red al referidor).
+  app.post('/business/members/:id/assign-plan', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { planId } = (request.body as { planId?: string }) || {};
+    const adminUser = (request as any).user as JWTPayload;
+
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true } });
+    if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
+    if (user.role === 'ADMIN') return reply.code(400).send({ error: 'Los administradores no usan pack' });
+
+    const settings = await getSettings();
+    const plan = settings.plans.find((p: any) => p.id === planId);
+    if (!plan) return reply.code(400).send({ error: 'Plan no encontrado' });
+
+    const now = new Date();
+    const payment = await prisma.membershipPayment.create({
+      data: {
+        userId: id,
+        amount: Number(plan.price),
+        type: 'MEMBERSHIP',
+        status: 'PENDING',
+        planId: plan.id,
+        planName: plan.name,
+        method: 'admin',
+        reference: `admin-assign:${adminUser.sub}`,
+        createdAt: now,
+      },
+    });
+
+    try {
+      await activateMembership(payment.id, adminUser.sub);
+    } catch (err: any) {
+      return reply.code(400).send({ error: err.message || 'No se pudo activar el pack' });
+    }
+
+    return { success: true, planId: plan.id, planName: plan.name };
   });
 
   // Red global (todas las redes, para que el admin vea todo)

@@ -160,6 +160,8 @@ export const adminBusinessApi = {
   members: () => api.get('/admin/business/members'),
   setMemberMembership: (id: string, action: 'exempt' | 'activate30' | 'deactivate') =>
     api.post(`/admin/business/members/${id}/membership`, { action }),
+  assignPlan: (id: string, planId: string) =>
+    api.post(`/admin/business/members/${id}/assign-plan`, { planId }),
   withdrawals: () => api.get('/admin/business/withdrawals'),
   approveWithdrawal: (id: string, data?: any) => api.post(`/admin/business/withdrawals/${id}/approve`, data),
   rejectWithdrawal: (id: string) => api.post(`/admin/business/withdrawals/${id}/reject`),

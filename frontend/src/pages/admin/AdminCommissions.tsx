@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Settings2, DollarSign, CheckCircle, XCircle, Loader2, RefreshCw, Ban, Users, Search, CalendarPlus, Infinity as InfinityIcon } from 'lucide-react';
+import { Settings2, DollarSign, CheckCircle, XCircle, Loader2, RefreshCw, Ban, Users, Search, CalendarPlus, Infinity as InfinityIcon, Package } from 'lucide-react';
 import { adminBusinessApi } from '@/services/api';
 import { Input, Label, Card, CardContent, ButtonPrimary, Button, PageHeader } from '@/components/ui';
 import { toast } from 'sonner';
@@ -30,6 +30,7 @@ export function AdminCommissionsPage() {
   const [members, setMembers] = useState<any[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
   const [memberProcessingId, setMemberProcessingId] = useState<string | null>(null);
+  const [assignPlan, setAssignPlan] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -144,6 +145,24 @@ export function AdminCommissionsPage() {
       await load();
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Error al actualizar');
+    } finally {
+      setMemberProcessingId(null);
+    }
+  };
+
+  const handleAssignPlan = async (m: any, planId: string) => {
+    const plan = (settings.plans || []).find((p: any) => p.id === planId);
+    if (!plan) return;
+    const name = m.firstName || m.username || 'este miembro';
+    if (!confirm(`¿Asignar pack ${plan.name} (${fmt(Number(plan.price) || 0)}) a ${name}? Se activará su membresía 30 días y se generarán comisiones de red como una activación normal.`)) return;
+    setMemberProcessingId(m.id);
+    try {
+      await adminBusinessApi.assignPlan(m.id, planId);
+      toast.success(`Pack ${plan.name} asignado a ${name}`);
+      setAssignPlan(prev => { const next = { ...prev }; delete next[m.id]; return next; });
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al asignar el pack');
     } finally {
       setMemberProcessingId(null);
     }
@@ -635,6 +654,26 @@ export function AdminCommissionsPage() {
                       className="bg-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-900/40"
                       onClick={() => handleMembership(m, 'deactivate')} title="Desactivar cuenta">
                       <Ban className="w-4 h-4" /> Desactivar
+                    </Button>
+                  </div>
+                  <div className="w-full flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] text-gray-500 dark:text-dark-400">
+                      Pack: <b className="text-gray-700 dark:text-dark-200">{m.planName || 'Sin pack'}</b>
+                    </span>
+                    <select
+                      value={assignPlan[m.id] || ''}
+                      onChange={(e) => setAssignPlan(prev => ({ ...prev, [m.id]: e.target.value }))}
+                      className="text-[11px] px-2 py-1.5 rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-700 dark:text-dark-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="">Asignar pack…</option>
+                      {(settings.plans || []).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.name} · {fmt(Number(p.price) || 0)}</option>
+                      ))}
+                    </select>
+                    <Button size="sm" disabled={!assignPlan[m.id] || memberProcessingId === m.id}
+                      className="bg-transparent text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 border border-violet-200 dark:border-violet-900/40"
+                      onClick={() => handleAssignPlan(m, assignPlan[m.id])} title="Asignar el pack elegido (activa 30 días y genera comisiones)">
+                      {memberProcessingId === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />} Asignar
                     </Button>
                   </div>
                 </div>
