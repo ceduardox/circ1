@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, User, Plus, Trash2, Pencil, CheckCircle, XCircle, Loader2, Package, Music, DollarSign, ExternalLink, Users, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, Mail, MapPin, Crown } from 'lucide-react';
+import { Search, User, Plus, Trash2, Pencil, CheckCircle, XCircle, Loader2, Package, Music, DollarSign, ExternalLink, Users, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, Mail, MapPin, Crown, X } from 'lucide-react';
 import { adminTiktokApi, adminBusinessApi } from '@/services/api';
 import { Input, Label, ButtonPrimary, Button, PageHeader } from '@/components/ui';
 import { TikTokIcon } from '@/components/TikTokLogo';
@@ -363,12 +363,42 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   const [submitting, setSubmitting] = useState(false);
   const [saleForm, setSaleForm] = useState({ creatorId: '', productId: '', quantity: 1, saleDate: new Date().toISOString().slice(0, 10), notes: '' });
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [planSlots, setPlanSlots] = useState<string[]>([]);
+  const [planPicker, setPlanPicker] = useState<number | null>(null);
+  const [savingPlan, setSavingPlan] = useState(false);
   const { base500, base1000 } = usePackBaseDefaults();
 
   const { user, campaign, creators, sales, products, pendingCommissions, maxCreators } = data;
 
   const isOverLimit = creators.length > maxCreators;
   const userTotal = sales.reduce((s: number, x: any) => s + x.unitPrice * x.quantity, 0);
+
+  // Rejilla de productos del usuario (visual): admin puede verla y editarla.
+  useEffect(() => {
+    const maxSlots = data?.maxCreators ?? 0;
+    const saved: string[] = Array.isArray(data?.campaign?.productSlots) ? data.campaign.productSlots : [];
+    setPlanSlots(Array.from({ length: maxSlots }, (_, i) => saved[i] || ''));
+  }, [data?.campaign?.id, data?.maxCreators, JSON.stringify(data?.campaign?.productSlots ?? [])]);
+
+  const productById: Record<string, any> = {};
+  for (const p of (products || [])) productById[p.id] = p;
+  const planUsed = planSlots.filter(Boolean).length;
+  const planSaved: string[] = Array.isArray(campaign?.productSlots) ? campaign.productSlots : [];
+  const planDirty = JSON.stringify(planSlots.filter(Boolean)) !== JSON.stringify(planSaved.filter(Boolean));
+
+  const savePlan = async () => {
+    setSavingPlan(true);
+    try {
+      await adminTiktokApi.updateProductPlan(user.id, planSlots.filter(Boolean));
+      toast.success('Plan de productos guardado');
+      const { data: fresh } = await adminTiktokApi.campaign(user.id);
+      onRefresh(fresh);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al guardar');
+    } finally {
+      setSavingPlan(false);
+    }
+  };
 
   const addCreator = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -530,6 +560,74 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
           </div>
         </div>
       </div>
+
+      {/* Productos que el usuario quiere ofrecer (visual; el admin puede editarlo) */}
+      {campaign && maxCreators > 0 && (
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100 dark:border-dark-700 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-dark-100 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-primary-600" /> Productos que quiere ofrecer
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5">
+                Selección del usuario ({planUsed}/{maxCreators} espacios). Puedes editarla. Es solo visual.
+              </p>
+            </div>
+            {planDirty && (
+              <ButtonPrimary size="sm" onClick={savePlan} disabled={savingPlan}>
+                {savingPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Guardar
+              </ButtonPrimary>
+            )}
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {planSlots.map((pid, i) => {
+                const prod = pid ? productById[pid] : null;
+                return (
+                  <div key={i} className={`relative rounded-2xl border-2 p-3 flex flex-col items-center justify-center gap-1.5 min-h-[110px] ${prod ? 'border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-900/10' : 'border-dashed border-gray-200 dark:border-dark-600 bg-gray-50/50 dark:bg-dark-700/20'}`}>
+                    {prod ? (
+                      <>
+                        {prod.imageUrl
+                          ? <img src={prod.imageUrl} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                          : <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center"><ShoppingBag className="w-4 h-4 text-primary-600 dark:text-primary-400" /></div>}
+                        <p className="text-[11px] font-semibold text-gray-900 dark:text-dark-100 text-center leading-tight">{prod.name}</p>
+                        <button type="button" onClick={() => setPlanPicker(i)} className="text-[10px] text-primary-600 dark:text-primary-400 hover:underline">Cambiar</button>
+                        <button type="button" onClick={() => setPlanSlots(prev => prev.map((x, j) => (j === i ? '' : x)))} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 dark:bg-dark-800/90 text-gray-500 hover:text-red-600 flex items-center justify-center" title="Quitar"><X className="w-3 h-3" /></button>
+                      </>
+                    ) : (
+                      <button type="button" onClick={() => setPlanPicker(i)} className="flex flex-col items-center gap-1.5 w-full">
+                        <div className="w-9 h-9 rounded-full border-2 border-dashed border-gray-300 dark:border-dark-500 flex items-center justify-center text-gray-400"><Plus className="w-4 h-4" /></div>
+                        <span className="text-[10px] text-gray-400 dark:text-dark-500">Espacio {i + 1}</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Picker de producto (admin) */}
+      {planPicker != null && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setPlanPicker(null)}>
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-md w-full p-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 dark:text-dark-100">Elige un producto</h3>
+              <button onClick={() => setPlanPicker(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-2">
+              {(products || []).map((p: any) => (
+                <button key={p.id} type="button" onClick={() => { setPlanSlots(prev => prev.map((x, j) => (j === planPicker ? p.id : x))); setPlanPicker(null); }} className="w-full flex items-center gap-3 p-2 rounded-xl border border-gray-100 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700 text-left">
+                  {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" /> : <div className="w-9 h-9 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0"><ShoppingBag className="w-4 h-4 text-primary-600 dark:text-primary-400" /></div>}
+                  <span className="flex-1 min-w-0 text-sm font-medium text-gray-900 dark:text-dark-100 truncate">{p.name}</span>
+                  <span className="text-xs text-gray-400 shrink-0">{fmt(p.price)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {isOverLimit && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl text-sm text-red-700 dark:text-red-300">

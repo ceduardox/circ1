@@ -103,6 +103,7 @@ export async function tiktokRoutes(app: FastifyInstance) {
             extraCreators: campaign.extraCreators,
             isActive: campaign.isActive,
             createdAt: campaign.createdAt,
+            productSlots: campaign.productSlots ?? [],
           }
         : null,
       maxCreators: max,
@@ -130,6 +131,27 @@ export async function tiktokRoutes(app: FastifyInstance) {
     });
 
     return { campaign };
+  });
+
+  // ─── Plan visual de productos (qué productos quiere ofrecer el usuario) ───
+  // Solo visual: no afecta ventas, comisiones ni creadores.
+  const productPlanSchema = z.object({ productIds: z.array(z.string()).max(100) });
+
+  app.put('/product-plan', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const campaign = await prisma.tikTokShopCampaign.findUnique({ where: { userId } });
+    if (!campaign) return reply.code(400).send({ error: 'Activa primero TikTok Shop' });
+
+    const { productIds } = productPlanSchema.parse(request.body);
+    const active = await prisma.tikTokProduct.findMany({ where: { isActive: true }, select: { id: true } });
+    const valid = new Set(active.map(p => p.id));
+    const clean = productIds.filter(id => valid.has(id));
+
+    const updated = await prisma.tikTokShopCampaign.update({
+      where: { id: campaign.id },
+      data: { productSlots: clean },
+    });
+    return { productSlots: updated.productSlots ?? [] };
   });
 
   // ─── Comprar un creador extra ($50 USDT) ───

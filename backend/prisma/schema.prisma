@@ -417,6 +417,7 @@ model TikTokShopCampaign {
   baseCreators  Int      @default(5) @map("base_creators")
   extraCreators Int      @default(0) @map("extra_creators")
   isActive      Boolean  @default(true) @map("is_active")
+  productSlots  Json?    @map("product_slots")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 

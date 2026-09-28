@@ -95,6 +95,25 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     return { user, campaign, maxCreators, creators, sales, pendingCommissions, products };
   });
 
+  // ─── Plan visual de productos del usuario (el admin puede verlo y editarlo) ───
+  // Solo visual: no afecta ventas, comisiones ni creadores.
+  app.put('/campaigns/:userId/product-plan', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { userId } = request.params as { userId: string };
+    const campaign = await prisma.tikTokShopCampaign.findUnique({ where: { userId } });
+    if (!campaign) return reply.code(400).send({ error: 'Este usuario no tiene campaña' });
+
+    const { productIds } = z.object({ productIds: z.array(z.string()).max(100) }).parse(request.body);
+    const active = await prisma.tikTokProduct.findMany({ where: { isActive: true }, select: { id: true } });
+    const valid = new Set(active.map(p => p.id));
+    const clean = productIds.filter(id => valid.has(id));
+
+    const updated = await prisma.tikTokShopCampaign.update({
+      where: { id: campaign.id },
+      data: { productSlots: clean },
+    });
+    return { productSlots: updated.productSlots ?? [] };
+  });
+
   // ─── Activar campaña (manual por admin) ───
   app.post('/campaigns/:userId/activate', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
     const { userId } = request.params as { userId: string };

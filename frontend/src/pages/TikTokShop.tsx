@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Music, Play, ExternalLink, Loader2, CheckCircle2, AlertCircle, Plus, Clock, RefreshCw, ShoppingBag, TrendingUp, Wallet, Sparkles, Search, Users } from 'lucide-react';
+import { Music, Play, ExternalLink, Loader2, CheckCircle2, AlertCircle, Plus, Clock, RefreshCw, ShoppingBag, TrendingUp, Wallet, Sparkles, Search, Users, X } from 'lucide-react';
 import { tiktokApi } from '@/services/api';
 import { ButtonPrimary, Button, Input, Label, PageHeader } from '@/components/ui';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
@@ -29,6 +29,9 @@ export function TikTokShopPage() {
   const [buying, setBuying] = useState(false);
   const [pendingPay, setPendingPay] = useState<any>(null);
   const [phraseIdx, setPhraseIdx] = useState(0);
+  const [slots, setSlots] = useState<string[]>([]);
+  const [pickerSlot, setPickerSlot] = useState<number | null>(null);
+  const [savingSlots, setSavingSlots] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentUser = useAuthStore(s => s.user);
 
@@ -125,6 +128,14 @@ export function TikTokShopPage() {
     }).catch(() => {});
   }, []);
 
+  // Inicializa la rejilla de productos guardada (rellena hasta el máximo de espacios).
+  useEffect(() => {
+    if (!data?.campaign) { setSlots([]); return; }
+    const maxSlots = data.maxCreators ?? 0;
+    const saved: string[] = Array.isArray(data.campaign.productSlots) ? data.campaign.productSlots : [];
+    setSlots(Array.from({ length: maxSlots }, (_, i) => saved[i] || ''));
+  }, [data?.campaign?.id, data?.maxCreators, JSON.stringify(data?.campaign?.productSlots ?? [])]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -141,6 +152,25 @@ export function TikTokShopPage() {
   const max = data.maxCreators;
   const assigned = data.creators.length;
   const emptySlots = Math.max(max - assigned, 0);
+
+  const productById: Record<string, any> = {};
+  for (const p of (data.products || [])) productById[p.id] = p;
+  const usedSlots = slots.filter(Boolean).length;
+  const savedSlots: string[] = Array.isArray(data.campaign.productSlots) ? data.campaign.productSlots : [];
+  const slotsDirty = JSON.stringify(slots.filter(Boolean)) !== JSON.stringify(savedSlots.filter(Boolean));
+
+  const saveSlots = async () => {
+    setSavingSlots(true);
+    try {
+      await tiktokApi.updateProductPlan(slots.filter(Boolean));
+      toast.success('Productos guardados');
+      await load(true);
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al guardar');
+    } finally {
+      setSavingSlots(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -191,6 +221,116 @@ export function TikTokShopPage() {
         <StatCard icon={ShoppingBag} color="text-primary-600" bg="bg-primary-50" label="Ventas registradas" value={String(data.summary?.totalSales ?? 0)} />
         <StatCard icon={Users} color="text-purple-600" bg="bg-purple-50" label="Creadores" value={`${assigned} / ${max}`} />
       </div>
+
+      {/* Productos que quieres ofrecer (visual, informa al admin) */}
+      {max > 0 && (
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100 dark:border-dark-700 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-gray-900 dark:text-dark-100 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-primary-600" /> Productos que quieres ofrecer
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-dark-400 mt-0.5">
+                Rellena tus {max} espacios con los productos del catálogo. Es informativo: le dice al admin qué productos quieres que ofrezcan tus creadores.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 dark:text-dark-400">{usedSlots}/{max}</span>
+              {slotsDirty && (
+                <ButtonPrimary size="sm" onClick={saveSlots} disabled={savingSlots}>
+                  {savingSlots ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Guardar
+                </ButtonPrimary>
+              )}
+            </div>
+          </div>
+          <div className="p-5">
+            {data.products.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-dark-500 text-center py-6">Aún no hay productos en el catálogo.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {slots.map((pid, i) => {
+                  const prod = pid ? productById[pid] : null;
+                  return (
+                    <div
+                      key={i}
+                      className={`relative rounded-2xl border-2 p-3 flex flex-col items-center justify-center gap-2 min-h-[122px] ${
+                        prod
+                          ? 'border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-900/10'
+                          : 'border-dashed border-gray-200 dark:border-dark-600 bg-gray-50/50 dark:bg-dark-700/20'
+                      }`}
+                    >
+                      {prod ? (
+                        <>
+                          {prod.imageUrl ? (
+                            <img src={prod.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                              <ShoppingBag className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                            </div>
+                          )}
+                          <p className="text-xs font-semibold text-gray-900 dark:text-dark-100 leading-tight text-center">{prod.name}</p>
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={() => setPickerSlot(i)} className="text-[11px] text-primary-600 dark:text-primary-400 hover:underline">Cambiar</button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSlots(prev => prev.map((x, j) => (j === i ? '' : x)))}
+                            className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white/90 dark:bg-dark-800/90 text-gray-500 hover:text-red-600 flex items-center justify-center shadow-sm"
+                            title="Quitar"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <button type="button" onClick={() => setPickerSlot(i)} className="flex flex-col items-center gap-2 w-full h-full">
+                          <div className="w-10 h-10 rounded-full border-2 border-dashed border-gray-300 dark:border-dark-500 flex items-center justify-center text-gray-400">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <span className="text-[11px] text-gray-400 dark:text-dark-500">Espacio {i + 1}</span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Picker de producto */}
+      {pickerSlot != null && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setPickerSlot(null)}>
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-md w-full p-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 dark:text-dark-100">Elige un producto</h3>
+              <button onClick={() => setPickerSlot(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              {data.products.map((p: any) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => { setSlots(prev => prev.map((x, j) => (j === pickerSlot ? p.id : x))); setPickerSlot(null); }}
+                  className="w-full flex items-center gap-3 p-2 rounded-xl border border-gray-100 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700 text-left"
+                >
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
+                      <ShoppingBag className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                    </div>
+                  )}
+                  <span className="flex-1 min-w-0 text-sm font-medium text-gray-900 dark:text-dark-100 truncate">{p.name}</span>
+                  <span className="text-xs text-gray-400 shrink-0">{fmt(p.price)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Creadores */}
       <div>

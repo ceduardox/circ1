@@ -198,6 +198,7 @@ export const tiktokApi = {
   extraPaymentRequest: () => api.post('/tiktok/extra-payment/request'),
   extraPaymentPending: () => api.get('/tiktok/extra-payment/pending'),
   extraPaymentStatus: (id: string) => api.get(`/tiktok/extra-payment/${id}/status`),
+  updateProductPlan: (productIds: string[]) => api.put('/tiktok/product-plan', { productIds }),
 };
 
 export const adminTiktokApi = {
@@ -205,6 +206,7 @@ export const adminTiktokApi = {
   campaign: (userId: string) => api.get(`/admin/tiktok/campaigns/${userId}`),
   activateCampaign: (userId: string) => api.post(`/admin/tiktok/campaigns/${userId}/activate`),
   updatePack: (userId: string, data: any) => api.put(`/admin/tiktok/campaigns/${userId}/pack`, data),
+  updateProductPlan: (userId: string, productIds: string[]) => api.put(`/admin/tiktok/campaigns/${userId}/product-plan`, { productIds }),
   addCreator: (userId: string, data: any) => api.post(`/admin/tiktok/campaigns/${userId}/creators`, data),
   updateCreator: (id: string, data: any) => api.put(`/admin/tiktok/creators/${id}`, data),
   deleteCreator: (id: string) => api.delete(`/admin/tiktok/creators/${id}`),
