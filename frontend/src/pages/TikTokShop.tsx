@@ -309,8 +309,10 @@ export function TikTokShopPage() {
               const mine = s.commissions?.find((c: any) => c.type === 'STUDENT');
               return (
                 <div key={s.id} className="p-4 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                    {s.product?.name?.[0]?.toUpperCase() || 'P'}
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                    {s.product?.imageUrl
+                      ? <img src={s.product.imageUrl} alt="" className="w-full h-full object-cover" />
+                      : (s.product?.name?.[0]?.toUpperCase() || 'P')}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">

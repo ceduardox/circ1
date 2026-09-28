@@ -1,4 +1,8 @@
 import { FastifyInstance } from 'fastify';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { mkdir, writeFile } from 'fs/promises';
+import { randomUUID } from 'crypto';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
@@ -6,6 +10,8 @@ import { resolvePackForUser, approveTikTokCommission, creditPackReferral, getPac
 import { sendWebPush } from '../utils/onesignal.js';
 
 interface JWTPayload { sub: string; email: string; role: string; type?: string; }
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const fmtUSD = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
@@ -244,11 +250,33 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     price: z.number().positive(),
     commissionRate: z.number().min(0).max(100).default(25),
     sponsorRate: z.number().min(0).max(100).default(5),
+    imageUrl: z.string().max(500).optional().nullable(),
   });
 
   app.get('/products', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
     const products = await prisma.tikTokProduct.findMany({ orderBy: { name: 'asc' } });
     return { products };
+  });
+
+  // Subir imagen de un producto. La imagen llega YA optimizada desde el navegador. Máx 5MB.
+  app.post('/products/upload-image', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    let data: any;
+    try { data = await request.file(); } catch { return reply.code(400).send({ error: 'Archivo no válido' }); }
+    if (!data) return reply.code(400).send({ error: 'Debes enviar una imagen' });
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(data.mimetype)) return reply.code(400).send({ error: 'Formato no permitido. Usa JPG, PNG o WEBP' });
+    const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+    const filename = `product-${randomUUID()}.${extMap[data.mimetype] || 'jpg'}`;
+    const buffer = await data.toBuffer();
+    if (buffer.length > 5 * 1024 * 1024) return reply.code(400).send({ error: 'La imagen no puede superar los 5MB' });
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads', 'products');
+    await mkdir(uploadsDir, { recursive: true });
+    await writeFile(path.join(uploadsDir, filename), buffer);
+    // URL absoluta respetando el proxy (https) para evitar mixed-content; fallback a relativas.
+    const proto = (request.headers['x-forwarded-proto'] as string) || request.protocol || 'https';
+    const host = (request.headers['x-forwarded-host'] as string) || request.headers.host;
+    const baseUrl = process.env.BACKEND_URL || (host ? `${proto}://${host}` : '');
+    return { url: `${baseUrl}/uploads/products/${filename}` };
   });
 
   app.post('/products', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {

@@ -762,8 +762,10 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
               const sponsor = s.commissions?.find((c: any) => c.type === 'SPONSOR');
               return (
                 <div key={s.id} className="p-4 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                    {s.product.name?.[0]?.toUpperCase() || 'P'}
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                    {s.product.imageUrl
+                      ? <img src={s.product.imageUrl} alt="" className="w-full h-full object-cover" />
+                      : (s.product.name?.[0]?.toUpperCase() || 'P')}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">
@@ -796,8 +798,9 @@ function ProductsTab() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({ name: '', price: '', commissionRate: 25, sponsorRate: 5 });
+  const [form, setForm] = useState({ name: '', price: '', commissionRate: 25, sponsorRate: 5, imageUrl: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const load = async () => {
     try {
@@ -812,6 +815,50 @@ function ProductsTab() {
 
   useEffect(() => { load(); }, []);
 
+  // Optimiza en el navegador: redimensiona a máx 1280px y comprime a JPEG 0.8.
+  const optimizeImage = async (file: File): Promise<File | null> => {
+    if (!file.type.startsWith('image/')) { toast.error('El archivo debe ser una imagen'); return null; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('La imagen no puede superar los 5MB'); return null; }
+    try {
+      const bitmap = await createImageBitmap(file);
+      const MAX_DIM = 1280;
+      let { width, height } = bitmap;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { bitmap.close(); return file; }
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close();
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(b => resolve(b), 'image/jpeg', 0.8));
+      if (!blob) return file;
+      return new File([blob], 'product.jpg', { type: 'image/jpeg' });
+    } catch {
+      return file;
+    }
+  };
+
+  const handleImageSelect = async (file?: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const optimized = await optimizeImage(file);
+      if (!optimized) return;
+      const { data } = await adminTiktokApi.uploadProductImage(optimized);
+      setForm(f => ({ ...f, imageUrl: data.url }));
+      toast.success('Imagen lista');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al subir la imagen');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -821,6 +868,7 @@ function ProductsTab() {
         price: Number(form.price),
         commissionRate: Number(form.commissionRate),
         sponsorRate: Number(form.sponsorRate),
+        imageUrl: form.imageUrl || null,
       };
       if (editing) {
         await adminTiktokApi.updateProduct(editing.id, payload);
@@ -831,7 +879,7 @@ function ProductsTab() {
       }
       setShowForm(false);
       setEditing(null);
-      setForm({ name: '', price: '', commissionRate: 25, sponsorRate: 5 });
+      setForm({ name: '', price: '', commissionRate: 25, sponsorRate: 5, imageUrl: '' });
       await load();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Error al guardar');
@@ -856,7 +904,7 @@ function ProductsTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <ButtonPrimary size="sm" onClick={() => { setEditing(null); setForm({ name: '', price: '', commissionRate: 25, sponsorRate: 5 }); setShowForm(!showForm); }}>
+        <ButtonPrimary size="sm" onClick={() => { setEditing(null); setForm({ name: '', price: '', commissionRate: 25, sponsorRate: 5, imageUrl: '' }); setShowForm(!showForm); }}>
           <Plus className="w-4 h-4" /> Nuevo producto
         </ButtonPrimary>
       </div>
@@ -882,6 +930,38 @@ function ProductsTab() {
               <Input type="number" min="0" max="100" value={form.sponsorRate} onChange={e => setForm({ ...form, sponsorRate: Number(e.target.value) })} />
             </div>
           </div>
+          <div>
+            <Label>Imagen del producto (opcional)</Label>
+            <div className="flex items-center gap-3 mt-1">
+              <div className="w-16 h-16 rounded-xl border border-gray-200 dark:border-dark-600 overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-dark-700 shrink-0">
+                {form.imageUrl ? (
+                  <img src={form.imageUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Package className="w-6 h-6 text-gray-400" />
+                )}
+              </div>
+              <label className="px-3 py-2 rounded-lg border border-gray-200 dark:border-dark-600 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700">
+                {uploading ? 'Subiendo…' : 'Subir imagen'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = (e.target as HTMLInputElement).files?.[0];
+                    void handleImageSelect(f);
+                    (e.target as HTMLInputElement).value = '';
+                  }}
+                />
+              </label>
+              {form.imageUrl && (
+                <button type="button" onClick={() => setForm({ ...form, imageUrl: '' })} className="text-xs text-red-600 hover:underline">
+                  Quitar
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">Se optimiza en tu navegador (máx 1280px, JPEG) para que no pese.</p>
+          </div>
           <div className="flex gap-2">
             <ButtonPrimary type="submit" disabled={submitting}>
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
@@ -899,8 +979,10 @@ function ProductsTab() {
           <div className="divide-y divide-gray-100 dark:divide-dark-700">
             {products.map(p => (
               <div key={p.id} className="p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white flex items-center justify-center shrink-0">
-                  <Package className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700 flex items-center justify-center">
+                  {p.imageUrl
+                    ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
+                    : <Package className="w-4 h-4 text-gray-400" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">{p.name}</p>
@@ -908,7 +990,7 @@ function ProductsTab() {
                     {fmt(p.price)} · Alumno {p.commissionRate}% · Patrocinador {p.sponsorRate}%
                   </p>
                 </div>
-                <Button size="sm" variant="danger" onClick={() => { setEditing(p); setForm({ name: p.name, price: String(p.price), commissionRate: p.commissionRate, sponsorRate: p.sponsorRate }); setShowForm(true); }} className="!bg-transparent !shadow-none">
+                <Button size="sm" variant="danger" onClick={() => { setEditing(p); setForm({ name: p.name, price: String(p.price), commissionRate: p.commissionRate, sponsorRate: p.sponsorRate, imageUrl: p.imageUrl || '' }); setShowForm(true); }} className="!bg-transparent !shadow-none">
                   <Pencil className="w-4 h-4" />
                 </Button>
                 <Button size="sm" variant="danger" onClick={() => remove(p)} className="!bg-transparent !shadow-none">

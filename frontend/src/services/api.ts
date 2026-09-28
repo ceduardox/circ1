@@ -212,6 +212,13 @@ export const adminTiktokApi = {
   createProduct: (data: any) => api.post('/admin/tiktok/products', data),
   updateProduct: (id: string, data: any) => api.put(`/admin/tiktok/products/${id}`, data),
   deleteProduct: (id: string) => api.delete(`/admin/tiktok/products/${id}`),
+  uploadProductImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/admin/tiktok/products/upload-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   registerSale: (data: any) => api.post('/admin/tiktok/sales', data),
   deleteSale: (id: string) => api.delete(`/admin/tiktok/sales/${id}`),
   pendingCommissions: () => api.get('/admin/tiktok/commissions/pending'),
