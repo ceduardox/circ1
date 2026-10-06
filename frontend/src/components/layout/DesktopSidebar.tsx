@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Sparkles } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Sparkles, Landmark, History } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 import { useState, useEffect } from 'react';
 
@@ -12,6 +12,14 @@ const networkSubItems = [
   { path: '/network?tab=tree', tab: 'tree', label: 'Árbol Gráfico', icon: GitBranch, gradient: 'from-purple-500 to-fuchsia-600' },
   { path: '/network?tab=calculator', tab: 'calculator', label: 'Calculadora', icon: Calculator, gradient: 'from-amber-500 to-orange-600' },
   { path: '/network?tab=stats', tab: 'stats', label: 'Estadísticas', icon: TrendingUp, gradient: 'from-sky-500 to-blue-600' },
+];
+
+const earningsSubItems = [
+  { path: '/earnings?tab=wallet', tab: 'wallet', label: 'Billetera y Retiro', icon: Wallet, gradient: 'from-amber-500 to-orange-600' },
+  { path: '/earnings?tab=commissions', tab: 'commissions', label: 'Comisiones', icon: TrendingUp, gradient: 'from-emerald-500 to-teal-600' },
+  { path: '/earnings?tab=accounts', tab: 'accounts', label: 'Cuentas de Cobro', icon: Landmark, gradient: 'from-blue-500 to-indigo-600' },
+  { path: '/earnings?tab=withdrawals', tab: 'withdrawals', label: 'Historial de Retiros', icon: History, gradient: 'from-purple-500 to-fuchsia-600' },
+  { path: '/earnings?tab=calculator', tab: 'calculator', label: 'Calculadora Fee', icon: Calculator, gradient: 'from-cyan-500 to-blue-600' },
 ];
 
 const tiktokSubItems = [
@@ -28,11 +36,15 @@ export function DesktopSidebar() {
   const location = useLocation();
   const memberStatus = useMembershipStore(s => s.status);
   const [networkExpanded, setNetworkExpanded] = useState<boolean>(() => location.pathname === '/network');
+  const [earningsExpanded, setEarningsExpanded] = useState<boolean>(() => location.pathname === '/earnings');
   const [tiktokExpanded, setTiktokExpanded] = useState<boolean>(() => location.pathname === '/tiktok-shop');
 
   useEffect(() => {
     if (location.pathname === '/network') {
       setNetworkExpanded(true);
+    }
+    if (location.pathname === '/earnings') {
+      setEarningsExpanded(true);
     }
     if (location.pathname === '/tiktok-shop') {
       setTiktokExpanded(true);
@@ -47,7 +59,7 @@ export function DesktopSidebar() {
     { path: '/progress', label: 'Progreso', icon: BarChart, color: 'from-blue-500 to-indigo-600' },
     { path: '/network', label: 'Mi Red', icon: Network, color: 'from-emerald-500 to-teal-600', isExpandable: true, isExpanded: networkExpanded, toggleExpand: () => setNetworkExpanded(v => !v), subItems: networkSubItems },
     { path: '/team', label: 'Construir Equipo', icon: Users2, color: 'from-cyan-500 to-sky-600' },
-    { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600' },
+    { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600', isExpandable: true, isExpanded: earningsExpanded, toggleExpand: () => setEarningsExpanded(v => !v), subItems: earningsSubItems },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown, color: 'from-violet-600 to-fuchsia-600' },
     ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600', isExpandable: true, isExpanded: tiktokExpanded, toggleExpand: () => setTiktokExpanded(v => !v), subItems: tiktokSubItems }] : []),
     { path: '/contenido', label: 'Contenido', icon: FolderOpen, color: 'from-teal-500 to-emerald-600' },
