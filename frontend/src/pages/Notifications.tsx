@@ -29,20 +29,7 @@ export function getNotificationMeta(n: NotificationItem) {
   const t = (n.type || '').toLowerCase();
   const text = `${n.title || ''} ${n.message || ''}`.toLowerCase();
 
-  // 1. TikTok Shop / Ventas de Producto por Creadores
-  if (t === 'tiktok' || text.includes('tiktok') || (text.includes('venta') && (text.includes('producto') || text.includes('creador') || text.includes('tienda')))) {
-    return {
-      category: 'tiktok',
-      label: 'TikTok Shop',
-      icon: ShoppingBag,
-      gradient: 'from-pink-500 to-rose-600',
-      badge: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-200/50',
-      linkText: 'Ver Ventas TikTok',
-      linkHref: '/tiktok-shop?tab=sales',
-    };
-  }
-
-  // 2. Comisiones & Ganancias
+  // 1. Comisiones & Ganancias (Ventas de Productos, Referidos y Red)
   if (t === 'commission' || text.includes('comisión') || text.includes('comision') || text.includes('ganancia') || text.includes('ganaste') || text.includes('billetera')) {
     return {
       category: 'commission',
@@ -50,8 +37,21 @@ export function getNotificationMeta(n: NotificationItem) {
       icon: TrendingUp,
       gradient: 'from-emerald-500 to-teal-600',
       badge: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/50',
-      linkText: 'Ver Billetera',
-      linkHref: '/earnings?tab=wallet',
+      linkText: 'Ver Comisiones',
+      linkHref: '/earnings?tab=commissions',
+    };
+  }
+
+  // 2. TikTok Shop (Productos, Creadores y Materiales)
+  if (t === 'tiktok' || text.includes('tiktok') || text.includes('tienda') || text.includes('creador')) {
+    return {
+      category: 'tiktok',
+      label: 'TikTok Shop',
+      icon: ShoppingBag,
+      gradient: 'from-pink-500 to-rose-600',
+      badge: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-200/50',
+      linkText: 'Ver TikTok Shop',
+      linkHref: '/tiktok-shop?tab=sales',
     };
   }
 
