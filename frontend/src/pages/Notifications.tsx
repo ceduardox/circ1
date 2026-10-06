@@ -24,97 +24,126 @@ interface NotificationItem {
   createdAt: string;
 }
 
-// Iconografía y estilos por categoría de notificación con rutas 100% verificadas
-const typeMeta: Record<string, {
-  label: string;
-  icon: any;
-  gradient: string;
-  badge: string;
-  linkText?: string;
-  linkHref?: string;
-  isChat?: boolean;
-}> = {
-  commission: {
-    label: 'Comisión',
-    icon: TrendingUp,
-    gradient: 'from-emerald-500 to-teal-600',
-    badge: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/50',
-    linkText: 'Ver Billetera',
-    linkHref: '/earnings?tab=wallet',
-  },
-  payment: {
-    label: 'Pago Recibido',
-    icon: CheckCircle2,
-    gradient: 'from-blue-500 to-indigo-600',
-    badge: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200/50',
-    linkText: 'Ver Ganancias',
-    linkHref: '/earnings?tab=commissions',
-  },
-  withdrawal: {
-    label: 'Retiro',
-    icon: Wallet,
-    gradient: 'from-amber-500 to-orange-600',
-    badge: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/50',
-    linkText: 'Historial Retiros',
-    linkHref: '/earnings?tab=withdrawals',
-  },
-  membership: {
-    label: 'Membresía',
-    icon: Crown,
-    gradient: 'from-purple-500 to-fuchsia-600',
-    badge: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200/50',
-    linkText: 'Ver Mi Plan',
-    linkHref: '/network?tab=overview',
-  },
-  referral: {
-    label: 'Nuevo Afiliado',
-    icon: UserPlus,
-    gradient: 'from-cyan-500 to-sky-600',
-    badge: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 border-cyan-200/50',
-    linkText: 'Ver Mi Red',
-    linkHref: '/network?tab=members',
-  },
-  achievement: {
-    label: 'Logro / Medalla',
-    icon: Trophy,
-    gradient: 'from-yellow-500 to-amber-600',
-    badge: 'bg-yellow-50 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400 border-yellow-200/50',
-    linkText: 'Ver Logros',
-    linkHref: '/progress?tab=achievements',
-  },
-  tiktok: {
-    label: 'TikTok Shop',
-    icon: ShoppingBag,
-    gradient: 'from-pink-500 to-rose-600',
-    badge: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-200/50',
-    linkText: 'Ver Ventas TikTok',
-    linkHref: '/tiktok-shop?tab=sales',
-  },
-  mention: {
-    label: 'Mención Chat',
-    icon: AtSign,
-    gradient: 'from-indigo-500 to-purple-600',
-    badge: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200/50',
-    linkText: 'Abrir Chat',
-    isChat: true,
-  },
-  chat: {
-    label: 'Mensaje Chat',
-    icon: MessageCircle,
-    gradient: 'from-pink-500 to-rose-600',
-    badge: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-200/50',
-    linkText: 'Abrir Chat',
-    isChat: true,
-  },
-  info: {
-    label: 'Panel Mi Día',
+// Función inteligente que clasifica con precisión cada notificación según su tipo y contenido
+export function getNotificationMeta(n: NotificationItem) {
+  const t = (n.type || '').toLowerCase();
+  const text = `${n.title || ''} ${n.message || ''}`.toLowerCase();
+
+  // 1. TikTok Shop / Ventas de Producto por Creadores
+  if (t === 'tiktok' || text.includes('tiktok') || (text.includes('venta') && (text.includes('producto') || text.includes('creador') || text.includes('tienda')))) {
+    return {
+      category: 'tiktok',
+      label: 'TikTok Shop',
+      icon: ShoppingBag,
+      gradient: 'from-pink-500 to-rose-600',
+      badge: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-200/50',
+      linkText: 'Ver Ventas TikTok',
+      linkHref: '/tiktok-shop?tab=sales',
+    };
+  }
+
+  // 2. Comisiones & Ganancias
+  if (t === 'commission' || text.includes('comisión') || text.includes('comision') || text.includes('ganancia') || text.includes('ganaste') || text.includes('billetera')) {
+    return {
+      category: 'commission',
+      label: 'Comisión Ganada',
+      icon: TrendingUp,
+      gradient: 'from-emerald-500 to-teal-600',
+      badge: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/50',
+      linkText: 'Ver Billetera',
+      linkHref: '/earnings?tab=wallet',
+    };
+  }
+
+  // 3. Pagos y Facturación
+  if (t === 'payment' || text.includes('pago aprobado') || text.includes('factura') || text.includes('pago recibido')) {
+    return {
+      category: 'payment',
+      label: 'Pago Procesado',
+      icon: CheckCircle2,
+      gradient: 'from-blue-500 to-indigo-600',
+      badge: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200/50',
+      linkText: 'Ver Ganancias',
+      linkHref: '/earnings?tab=commissions',
+    };
+  }
+
+  // 4. Retiros
+  if (t === 'withdrawal' || text.includes('retiro') || text.includes('retirar')) {
+    return {
+      category: 'withdrawal',
+      label: 'Retiro de Fondos',
+      icon: Wallet,
+      gradient: 'from-amber-500 to-orange-600',
+      badge: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/50',
+      linkText: 'Historial Retiros',
+      linkHref: '/earnings?tab=withdrawals',
+    };
+  }
+
+  // 5. Chat y Menciones
+  if (t === 'mention' || t === 'chat' || text.includes('mencionó') || text.includes('menciono') || text.includes('chat') || text.includes('mensaje')) {
+    const isMention = t === 'mention' || text.includes('mencion');
+    return {
+      category: 'chat',
+      label: isMention ? 'Mención Chat' : 'Mensaje Chat',
+      icon: isMention ? AtSign : MessageCircle,
+      gradient: 'from-indigo-500 to-purple-600',
+      badge: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200/50',
+      linkText: 'Abrir Chat',
+      isChat: true,
+    };
+  }
+
+  // 6. Membresía y Red / Afiliados
+  if (t === 'referral' || text.includes('afiliado') || text.includes('referido') || text.includes('miembro')) {
+    return {
+      category: 'referral',
+      label: 'Nuevo Afiliado',
+      icon: UserPlus,
+      gradient: 'from-cyan-500 to-sky-600',
+      badge: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 border-cyan-200/50',
+      linkText: 'Ver Mi Red',
+      linkHref: '/network?tab=members',
+    };
+  }
+
+  if (t === 'membership' || text.includes('membresía') || text.includes('membresia') || text.includes('renovación') || text.includes('plan')) {
+    return {
+      category: 'membership',
+      label: 'Membresía',
+      icon: Crown,
+      gradient: 'from-purple-500 to-fuchsia-600',
+      badge: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200/50',
+      linkText: 'Ver Mi Plan',
+      linkHref: '/network?tab=overview',
+    };
+  }
+
+  // 7. Logros y Programa Diario
+  if (t === 'achievement' || text.includes('logro') || text.includes('medalla') || text.includes('desbloqueado') || text.includes('día') || text.includes('dia ') || text.includes('completaste')) {
+    return {
+      category: 'achievement',
+      label: 'Logro / Medalla',
+      icon: Trophy,
+      gradient: 'from-yellow-500 to-amber-600',
+      badge: 'bg-yellow-50 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400 border-yellow-200/50',
+      linkText: 'Ver Logros',
+      linkHref: '/progress?tab=achievements',
+    };
+  }
+
+  // 8. Información / General del Panel
+  return {
+    category: 'info',
+    label: 'Aviso del Sistema',
     icon: Info,
     gradient: 'from-slate-500 to-gray-700',
     badge: 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-dark-300 border-gray-200/60',
     linkText: 'Ir a Mi Día',
     linkHref: '/dashboard',
-  },
-};
+  };
+}
 
 // Resaltado de coincidencias estilo WhatsApp en negrita
 function highlightMatch(text: string, query: string) {
@@ -163,7 +192,7 @@ export function NotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'UNREAD' | 'commission' | 'payment' | 'chat' | 'mention' | 'achievement'>('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'UNREAD' | 'tiktok' | 'commission' | 'payment' | 'chat' | 'achievement'>('ALL');
   const [pushGranted, setPushGranted] = useState(false);
   const [testing, setTesting] = useState(false);
 
@@ -250,23 +279,28 @@ export function NotificationsPage() {
     }
   };
 
-  // Filtrado reactivo estilo WhatsApp
+  // Filtrado reactivo estilo WhatsApp con clasificador inteligente
   const filteredNotifications = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
     return notifications.filter(n => {
-      // Filtro por tipo/estado
-      if (typeFilter === 'UNREAD' && n.read) return false;
-      if (typeFilter === 'commission' && n.type !== 'commission') return false;
-      if (typeFilter === 'payment' && n.type !== 'payment' && n.type !== 'withdrawal') return false;
-      if (typeFilter === 'chat' && n.type !== 'chat' && n.type !== 'mention') return false;
-      if (typeFilter === 'achievement' && n.type !== 'achievement' && n.type !== 'membership') return false;
+      const meta = getNotificationMeta(n);
 
-      // Filtro por búsqueda
+      // Filtro por tipo/categoría
+      if (typeFilter === 'UNREAD' && n.read) return false;
+      if (typeFilter === 'tiktok' && meta.category !== 'tiktok') return false;
+      if (typeFilter === 'commission' && meta.category !== 'commission') return false;
+      if (typeFilter === 'payment' && meta.category !== 'payment' && meta.category !== 'withdrawal') return false;
+      if (typeFilter === 'chat' && meta.category !== 'chat') return false;
+      if (typeFilter === 'achievement' && meta.category !== 'achievement' && meta.category !== 'membership' && meta.category !== 'referral') return false;
+
+      // Filtro por búsqueda textual estilo WhatsApp
       if (q) {
         const matchTitle = n.title?.toLowerCase().includes(q);
         const matchMsg = n.message?.toLowerCase().includes(q);
         const matchType = n.type?.toLowerCase().includes(q);
-        if (!matchTitle && !matchMsg && !matchType) return false;
+        const matchLabel = meta.label?.toLowerCase().includes(q);
+        const matchLink = meta.linkText?.toLowerCase().includes(q);
+        if (!matchTitle && !matchMsg && !matchType && !matchLabel && !matchLink) return false;
       }
 
       return true;
@@ -469,17 +503,18 @@ export function NotificationsPage() {
                 {[
                   { id: 'ALL', label: 'Todas', count: notifications.length },
                   { id: 'UNREAD', label: 'No leídas', count: unreadCount },
-                  { id: 'commission', label: 'Comisiones', count: notifications.filter(n => n.type === 'commission').length },
-                  { id: 'payment', label: 'Pagos / Retiros', count: notifications.filter(n => n.type === 'payment' || n.type === 'withdrawal').length },
-                  { id: 'chat', label: 'Chat', count: notifications.filter(n => n.type === 'chat' || n.type === 'mention').length },
-                  { id: 'achievement', label: 'Logros', count: notifications.filter(n => n.type === 'achievement' || n.type === 'membership').length },
+                  { id: 'tiktok', label: 'TikTok Shop', count: notifications.filter(n => getNotificationMeta(n).category === 'tiktok').length },
+                  { id: 'commission', label: 'Comisiones', count: notifications.filter(n => getNotificationMeta(n).category === 'commission').length },
+                  { id: 'payment', label: 'Pagos / Retiros', count: notifications.filter(n => ['payment', 'withdrawal'].includes(getNotificationMeta(n).category)).length },
+                  { id: 'chat', label: 'Chat', count: notifications.filter(n => getNotificationMeta(n).category === 'chat').length },
+                  { id: 'achievement', label: 'Logros y Red', count: notifications.filter(n => ['achievement', 'membership', 'referral'].includes(getNotificationMeta(n).category)).length },
                 ].map(chip => (
                   <button
                     key={chip.id}
                     onClick={() => setTypeFilter(chip.id as any)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                       typeFilter === chip.id
-                        ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/30'
+                        ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/30 font-bold'
                         : 'bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-400 hover:bg-gray-200 dark:hover:bg-dark-600'
                     }`}
                   >
@@ -507,7 +542,7 @@ export function NotificationsPage() {
               <p className="text-xs text-gray-400 max-w-sm mx-auto">
                 {searchTerm
                   ? `No hay avisos que contengan "${searchTerm}". Intenta con otra palabra clave.`
-                  : 'Aparecerán aquí avisos automáticos cuando recibas comisiones, respuestas en el chat o actualizaciones de tus pagos.'}
+                  : 'Aparecerán aquí avisos automáticos cuando recibas ventas en TikTok, comisiones, respuestas en el chat o actualizaciones de tus pagos.'}
               </p>
               {searchTerm && (
                 <button
@@ -521,7 +556,7 @@ export function NotificationsPage() {
           ) : (
             <div className="space-y-3">
               {filteredNotifications.map(n => {
-                const meta = typeMeta[n.type] || typeMeta.info;
+                const meta = getNotificationMeta(n);
                 const Icon = meta.icon;
 
                 return (

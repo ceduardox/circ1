@@ -504,7 +504,8 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
       await prisma.notification.create({
         data: {
           userId: campaign.userId,
-          title: '¡Venta registrada!',
+          type: 'tiktok',
+          title: '¡Venta registrada! 🎉',
           message: autoApprove
             ? `${creator.name} vendió ${body.quantity} ${product.name} por ${fmtUSD(total)}. Ganaste ${fmtUSD(studentAmount)}.`
             : `${creator.name} vendió ${body.quantity} ${product.name} por ${fmtUSD(total)}. Ganaste ${fmtUSD(studentAmount)} (pendiente).`,

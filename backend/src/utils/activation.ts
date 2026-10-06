@@ -11,17 +11,17 @@ const defaults = {
 
 const fmtUSD = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
-async function notify(userId: string, title: string, message: string) {
+async function notify(userId: string, title: string, message: string, type = 'info') {
   try {
-    await prisma.notification.create({ data: { userId, title, message } });
+    await prisma.notification.create({ data: { userId, title, message, type } });
   } catch {
     // no romper la activación si falla la notificación
   }
 }
 
 // Notificación + web push, respetando las preferencias del usuario.
-async function notifyWithPush(userId: string, title: string, message: string, pref: 'pushCommissions' | 'pushPayments' | 'pushChat') {
-  await notify(userId, title, message);
+async function notifyWithPush(userId: string, title: string, message: string, pref: 'pushCommissions' | 'pushPayments' | 'pushChat', type = 'info') {
+  await notify(userId, title, message, type);
   try {
     const u = await prisma.user.findUnique({ where: { id: userId }, select: { pushEnabled: true, [pref]: true } as any });
     if (u?.pushEnabled && u[pref]) {
@@ -109,7 +109,8 @@ export async function activateMembership(paymentId: string, processedBy: string)
           referrer.id,
           'Comisión por referido',
           `${buyerName} activó su membresía y ganaste ${fmtUSD(amount)} (nivel 1).`,
-          'pushCommissions'
+          'pushCommissions',
+          'commission'
         );
       }
     }
@@ -144,7 +145,8 @@ export async function activateMembership(paymentId: string, processedBy: string)
             grandReferrer.id,
             'Comisión de tu red',
             `${buyerName} de tu red activó su membresía y ganaste ${fmtUSD(amount2)} (nivel 2).`,
-            'pushCommissions'
+            'pushCommissions',
+            'commission'
           );
         }
       }
@@ -155,7 +157,8 @@ export async function activateMembership(paymentId: string, processedBy: string)
         source.id,
         'Membresía activa',
         'Tu membresía está activa. ¡Bienvenido a Círculo 1! Ya puedes acceder a tu programa.',
-        'pushPayments'
+        'pushPayments',
+        'membership'
       );
     }
   });

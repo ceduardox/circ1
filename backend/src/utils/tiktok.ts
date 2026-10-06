@@ -37,9 +37,9 @@ export async function getPackBaseCreators(): Promise<{ base500: number; base1000
 }
 
 // Notificación in-app + web push respetando las preferencias del usuario.
-async function notifyWithPush(userId: string, title: string, message: string, pref: 'pushCommissions' | 'pushPayments' | 'pushChat') {
+async function notifyWithPush(userId: string, title: string, message: string, pref: 'pushCommissions' | 'pushPayments' | 'pushChat', type: string = 'tiktok') {
   try {
-    await prisma.notification.create({ data: { userId, title, message } });
+    await prisma.notification.create({ data: { userId, title, message, type } });
   } catch { /* no romper */ }
   try {
     const u = await prisma.user.findUnique({ where: { id: userId }, select: { pushEnabled: true, [pref]: true } as any });

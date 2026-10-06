@@ -867,6 +867,7 @@ export async function adminRoutes(app: FastifyInstance) {
       await prisma.notification.create({
         data: {
           userId: withdrawal.userId,
+          type: 'withdrawal',
           title: 'Retiro aprobado',
           message: feePercent > 0
             ? `Tu retiro de ${withdrawal.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} fue aprobado (comisión ${feePercent}%).`
