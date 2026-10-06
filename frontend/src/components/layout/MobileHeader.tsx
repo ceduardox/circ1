@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 
 const networkSubItems = [
@@ -21,6 +21,13 @@ export function MobileHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const memberStatus = useMembershipStore(s => s.status);
+  const [networkExpanded, setNetworkExpanded] = useState<boolean>(() => location.pathname === '/network');
+
+  useEffect(() => {
+    if (location.pathname === '/network') {
+      setNetworkExpanded(true);
+    }
+  }, [location.pathname]);
 
   // TikTok Shop solo se muestra si el plan del usuario lo incluye (checkbox en config).
   const hasTikTok = user?.role === 'ADMIN' || memberStatus?.pack?.tiktokAccess !== false;
@@ -98,24 +105,44 @@ export function MobileHeader() {
 
               return (
                 <div key={item.path} className="space-y-1">
-                  <Link
-                    to={item.path}
-                    onClick={closeMenu}
-                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
-                      active
-                        ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
-                        : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    {item.label}
-                  </Link>
+                  <div className="flex items-center">
+                    <Link
+                      to={item.path}
+                      onClick={() => {
+                        closeMenu();
+                        if (isNetwork && !networkExpanded) setNetworkExpanded(true);
+                      }}
+                      className={`flex-1 flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                        active
+                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
+                          : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.label}</span>
+                    </Link>
 
-                  {isNetwork && active && (
+                    {isNetwork && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setNetworkExpanded(!networkExpanded);
+                        }}
+                        aria-label="Desplegar o plegar submenú"
+                        className="p-2.5 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-all ml-1"
+                      >
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${networkExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+                  </div>
+
+                  {isNetwork && networkExpanded && (
                     <div className="pl-6 pr-2 py-1 space-y-1 animate-fade-in">
                       {networkSubItems.map(sub => {
                         const SubIcon = sub.icon;
-                        const isSubActive = location.search.includes(`tab=${sub.tab}`) || (!location.search && sub.tab === 'overview');
+                        const isSubActive = location.pathname === '/network' && (location.search.includes(`tab=${sub.tab}`) || (!location.search && sub.tab === 'overview'));
                         return (
                           <Link
                             key={sub.tab}

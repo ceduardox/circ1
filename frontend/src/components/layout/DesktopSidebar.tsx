@@ -2,8 +2,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
+import { useState, useEffect } from 'react';
 
 const networkSubItems = [
   { path: '/network?tab=overview', tab: 'overview', label: 'Link y Planes', icon: LinkIcon, gradient: 'from-blue-500 to-indigo-600' },
@@ -18,6 +19,13 @@ export function DesktopSidebar() {
   const { isDark, toggle } = useTheme();
   const location = useLocation();
   const memberStatus = useMembershipStore(s => s.status);
+  const [networkExpanded, setNetworkExpanded] = useState<boolean>(() => location.pathname === '/network');
+
+  useEffect(() => {
+    if (location.pathname === '/network') {
+      setNetworkExpanded(true);
+    }
+  }, [location.pathname]);
 
   // TikTok Shop solo se muestra si el plan del usuario lo incluye (checkbox en config).
   const hasTikTok = user?.role === 'ADMIN' || memberStatus?.pack?.tiktokAccess !== false;
@@ -71,30 +79,54 @@ export function DesktopSidebar() {
 
             return (
               <div key={item.path} className="space-y-0.5">
-                <Link
-                  to={item.path}
-                  className={`sidebar-link flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
-                    active
-                      ? 'sidebar-link-active text-white font-semibold'
-                      : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300 hover:translate-x-1'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
-                    active
-                      ? 'bg-white/20 text-white'
-                      : `bg-gradient-to-br ${item.color} text-white shadow-sm group-hover:scale-110 group-hover:shadow-md`
-                  }`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  {item.label}
-                  {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
-                </Link>
+                <div className="flex items-center">
+                  <Link
+                    to={item.path}
+                    onClick={() => {
+                      if (isNetwork && !networkExpanded) setNetworkExpanded(true);
+                    }}
+                    className={`sidebar-link flex-1 flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
+                      active
+                        ? 'sidebar-link-active text-white font-semibold'
+                        : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300 hover:translate-x-1'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
+                      active
+                        ? 'bg-white/20 text-white'
+                        : `bg-gradient-to-br ${item.color} text-white shadow-sm group-hover:scale-110 group-hover:shadow-md`
+                    }`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span>{item.label}</span>
+                    {active && !isNetwork && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                  </Link>
 
-                {isNetwork && active && (
+                  {isNetwork && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setNetworkExpanded(!networkExpanded);
+                      }}
+                      title={networkExpanded ? "Plegar submenú" : "Desplegar submenú"}
+                      className={`p-1.5 mr-1 rounded-lg transition-all ${
+                        active
+                          ? 'text-white/80 hover:text-white hover:bg-white/10'
+                          : 'text-gray-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700'
+                      }`}
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${networkExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                </div>
+
+                {isNetwork && networkExpanded && (
                   <div className="pl-6 pr-1 py-1 space-y-1 animate-fade-in">
                     {networkSubItems.map(sub => {
                       const SubIcon = sub.icon;
-                      const isSubActive = location.search.includes(`tab=${sub.tab}`) || (!location.search && sub.tab === 'overview');
+                      const isSubActive = location.pathname === '/network' && (location.search.includes(`tab=${sub.tab}`) || (!location.search && sub.tab === 'overview'));
                       return (
                         <Link
                           key={sub.tab}
