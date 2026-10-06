@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 
 const progressSubItems = [
@@ -20,6 +20,14 @@ const networkSubItems = [
   { path: '/network?tab=tree', tab: 'tree', label: 'Árbol Gráfico', icon: GitBranch, gradient: 'from-purple-500 to-fuchsia-600' },
   { path: '/network?tab=calculator', tab: 'calculator', label: 'Calculadora', icon: Calculator, gradient: 'from-amber-500 to-orange-600' },
   { path: '/network?tab=stats', tab: 'stats', label: 'Estadísticas', icon: TrendingUp, gradient: 'from-sky-500 to-blue-600' },
+];
+
+const teamSubItems = [
+  { path: '/team?tab=contacts', tab: 'contacts', label: 'Mis Contactos CRM', icon: Users2, gradient: 'from-cyan-500 to-sky-600' },
+  { path: '/team?tab=guides', tab: 'guides', label: 'Guías y Guiones', icon: BookOpen, gradient: 'from-emerald-500 to-teal-600' },
+  { path: '/team?tab=calendar', tab: 'calendar', label: 'Calendario Social', icon: CalendarCheck, gradient: 'from-purple-500 to-fuchsia-600' },
+  { path: '/team?tab=strategy', tab: 'strategy', label: 'Estrategia', icon: Target, gradient: 'from-amber-500 to-orange-600' },
+  { path: '/team?tab=calculator', tab: 'calculator', label: 'Calculadora Equipo', icon: Calculator, gradient: 'from-blue-500 to-indigo-600' },
 ];
 
 const earningsSubItems = [
@@ -47,6 +55,7 @@ export function MobileHeader() {
   const memberStatus = useMembershipStore(s => s.status);
   const [progressExpanded, setProgressExpanded] = useState<boolean>(() => location.pathname === '/progress');
   const [networkExpanded, setNetworkExpanded] = useState<boolean>(() => location.pathname === '/network');
+  const [teamExpanded, setTeamExpanded] = useState<boolean>(() => location.pathname === '/team');
   const [earningsExpanded, setEarningsExpanded] = useState<boolean>(() => location.pathname === '/earnings');
   const [tiktokExpanded, setTiktokExpanded] = useState<boolean>(() => location.pathname === '/tiktok-shop');
 
@@ -56,6 +65,9 @@ export function MobileHeader() {
     }
     if (location.pathname === '/network') {
       setNetworkExpanded(true);
+    }
+    if (location.pathname === '/team') {
+      setTeamExpanded(true);
     }
     if (location.pathname === '/earnings') {
       setEarningsExpanded(true);
@@ -72,7 +84,7 @@ export function MobileHeader() {
     { path: '/dashboard', label: 'Mi Día', icon: Home, color: 'from-violet-500 to-purple-600' },
     { path: '/progress', label: 'Progreso', icon: BarChart, color: 'from-blue-500 to-indigo-600', isExpandable: true, isExpanded: progressExpanded, toggleExpand: () => setProgressExpanded(v => !v), subItems: progressSubItems },
     { path: '/network', label: 'Mi Red', icon: Network, color: 'from-emerald-500 to-teal-600', isExpandable: true, isExpanded: networkExpanded, toggleExpand: () => setNetworkExpanded(v => !v), subItems: networkSubItems },
-    { path: '/team', label: 'Construir Equipo', icon: Users2, color: 'from-cyan-500 to-sky-600' },
+    { path: '/team', label: 'Construir Equipo', icon: Users2, color: 'from-cyan-500 to-sky-600', isExpandable: true, isExpanded: teamExpanded, toggleExpand: () => setTeamExpanded(v => !v), subItems: teamSubItems },
     { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600', isExpandable: true, isExpanded: earningsExpanded, toggleExpand: () => setEarningsExpanded(v => !v), subItems: earningsSubItems },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown, color: 'from-violet-600 to-fuchsia-600' },
     ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600', isExpandable: true, isExpanded: tiktokExpanded, toggleExpand: () => setTiktokExpanded(v => !v), subItems: tiktokSubItems }] : []),
