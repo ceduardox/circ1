@@ -4,13 +4,15 @@ import {
   Bell, BellRing, Search, X, CheckCircle2, TrendingUp, Info, Wallet,
   Crown, UserPlus, Trophy, AtSign, MessageCircle, CheckCheck, Trash2,
   Filter, Sparkles, ChevronRight, Smartphone, Laptop, ExternalLink,
-  ShieldCheck, RefreshCw, Send, Layers, Flame, Sliders, Check, ArrowRight
+  ShieldCheck, RefreshCw, Send, Layers, Flame, Sliders, Check, ArrowRight,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { membershipApi } from '@/services/api';
 import { PageHeader } from '@/components/ui';
 import { PushNotificationsPanel } from '@/components/program/PushNotificationsPanel';
 import { hasPushPermission, getNativePushPermission } from '@/lib/onesignal';
+import { openGlobalChat } from '@/components/chat/FloatingChat';
 import { toast } from 'sonner';
 
 interface NotificationItem {
@@ -22,7 +24,7 @@ interface NotificationItem {
   createdAt: string;
 }
 
-// Iconografía y estilos por categoría de notificación
+// Iconografía y estilos por categoría de notificación con rutas 100% verificadas
 const typeMeta: Record<string, {
   label: string;
   icon: any;
@@ -30,6 +32,7 @@ const typeMeta: Record<string, {
   badge: string;
   linkText?: string;
   linkHref?: string;
+  isChat?: boolean;
 }> = {
   commission: {
     label: 'Comisión',
@@ -44,7 +47,7 @@ const typeMeta: Record<string, {
     icon: CheckCircle2,
     gradient: 'from-blue-500 to-indigo-600',
     badge: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200/50',
-    linkText: 'Ver Detalles',
+    linkText: 'Ver Ganancias',
     linkHref: '/earnings?tab=commissions',
   },
   withdrawal: {
@@ -79,13 +82,21 @@ const typeMeta: Record<string, {
     linkText: 'Ver Logros',
     linkHref: '/progress?tab=achievements',
   },
+  tiktok: {
+    label: 'TikTok Shop',
+    icon: ShoppingBag,
+    gradient: 'from-pink-500 to-rose-600',
+    badge: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-200/50',
+    linkText: 'Ver Ventas TikTok',
+    linkHref: '/tiktok-shop?tab=sales',
+  },
   mention: {
     label: 'Mención Chat',
     icon: AtSign,
     gradient: 'from-indigo-500 to-purple-600',
     badge: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200/50',
-    linkText: 'Ir al Chat',
-    linkHref: '/chat',
+    linkText: 'Abrir Chat',
+    isChat: true,
   },
   chat: {
     label: 'Mensaje Chat',
@@ -93,14 +104,14 @@ const typeMeta: Record<string, {
     gradient: 'from-pink-500 to-rose-600',
     badge: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-200/50',
     linkText: 'Abrir Chat',
-    linkHref: '/chat',
+    isChat: true,
   },
   info: {
-    label: 'Sistema',
+    label: 'Panel Mi Día',
     icon: Info,
     gradient: 'from-slate-500 to-gray-700',
     badge: 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-dark-300 border-gray-200/60',
-    linkText: 'Ver Panel',
+    linkText: 'Ir a Mi Día',
     linkHref: '/dashboard',
   },
 };
@@ -555,7 +566,19 @@ export function NotificationsPage() {
 
                       {/* Botones de Acción */}
                       <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
-                        {meta.linkHref && (
+                        {meta.isChat ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openGlobalChat();
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/40 text-xs font-bold transition-all"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>Abrir Chat</span>
+                          </button>
+                        ) : meta.linkHref ? (
                           <Link
                             to={meta.linkHref}
                             className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline"
@@ -563,7 +586,7 @@ export function NotificationsPage() {
                             <span>{meta.linkText || 'Ver detalles'}</span>
                             <ArrowRight className="w-3 h-3" />
                           </Link>
-                        )}
+                        ) : null}
 
                         <div className="flex items-center gap-1 ml-auto opacity-80 group-hover:opacity-100 transition-opacity">
                           {!n.read && (

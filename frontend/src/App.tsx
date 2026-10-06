@@ -48,6 +48,13 @@ function SpeechCleanup() {
   return null;
 }
 
+function ChatRedirect() {
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('open-chat'));
+  }, []);
+  return <Navigate to="/dashboard" replace />;
+}
+
 function App() {
   const { fetchMe, isAuthenticated, accessToken } = useAuthStore();
   const { updateAvailable, reload } = useUpdateDetector();
@@ -98,6 +105,7 @@ function App() {
             <Route path="/vip-pro" element={<VipProPage />} />
             <Route path="/tiktok-shop" element={<TikTokShopPage />} />
             <Route path="/contenido" element={<ContentMaterialsPage />} />
+            <Route path="/chat" element={<ChatRedirect />} />
 
             <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
               <Route path="/admin" element={<AdminDashboardPage />} />

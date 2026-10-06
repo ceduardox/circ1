@@ -388,6 +388,14 @@ export function FloatingChat() {
     if (open) setUnreadCount(0);
   }, [open]);
 
+  useEffect(() => {
+    const handleOpenChat = () => {
+      setOpen(true);
+    };
+    window.addEventListener('open-chat', handleOpenChat);
+    return () => window.removeEventListener('open-chat', handleOpenChat);
+  }, []);
+
   const loadMore = async () => {
     if (loadingMore || messages.length === 0) return;
     setLoadingMore(true);
@@ -1068,4 +1076,8 @@ export function FloatingChat() {
       )}
     </div>
   );
+}
+
+export function openGlobalChat() {
+  window.dispatchEvent(new CustomEvent('open-chat'));
 }
