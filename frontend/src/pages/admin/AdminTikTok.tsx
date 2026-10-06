@@ -75,7 +75,7 @@ export function AdminTikTokPage() {
       <PageHeader
         title="Administración de TikTok Shop"
         subtitle="Gestiona campañas, asigna creadores de contenido, administra productos y autoriza comisiones de venta."
-        icon={TikTokShopIcon}
+        icon={TikTokShopIcon as any}
       />
 
       {/* Hero Banner Panel Admin */}
