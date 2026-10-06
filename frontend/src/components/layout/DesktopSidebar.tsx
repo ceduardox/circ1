@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Sparkles, Landmark, History, Award, Flame, Target, CalendarCheck } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Sparkles, Landmark, History, Award, Flame, Target, CalendarCheck, Compass } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 import { useState, useEffect } from 'react';
 
@@ -46,6 +46,13 @@ const tiktokSubItems = [
   { path: '/tiktok-shop?tab=calculator', tab: 'calculator', label: 'Calculadora', icon: Calculator, gradient: 'from-cyan-500 to-blue-600' },
 ];
 
+const contenidoSubItems = [
+  { path: '/contenido?tab=materials', tab: 'materials', label: 'Material de Productos', icon: FolderOpen, gradient: 'from-teal-500 to-emerald-600' },
+  { path: '/contenido?tab=scripts', tab: 'scripts', label: 'Guiones y Hooks', icon: FileText, gradient: 'from-amber-500 to-orange-600' },
+  { path: '/contenido?tab=templates', tab: 'templates', label: 'Plantillas y Overlays', icon: Sparkles, gradient: 'from-purple-500 to-indigo-600' },
+  { path: '/contenido?tab=guidelines', tab: 'guidelines', label: 'Algoritmo y Reglas', icon: Compass, gradient: 'from-pink-500 to-rose-600' },
+];
+
 export function DesktopSidebar() {
   const { user, logout } = useAuthStore();
   const { isDark, toggle } = useTheme();
@@ -56,6 +63,7 @@ export function DesktopSidebar() {
   const [teamExpanded, setTeamExpanded] = useState<boolean>(() => location.pathname === '/team');
   const [earningsExpanded, setEarningsExpanded] = useState<boolean>(() => location.pathname === '/earnings');
   const [tiktokExpanded, setTiktokExpanded] = useState<boolean>(() => location.pathname === '/tiktok-shop');
+  const [contenidoExpanded, setContenidoExpanded] = useState<boolean>(() => location.pathname === '/contenido');
 
   useEffect(() => {
     if (location.pathname === '/progress') {
@@ -73,6 +81,9 @@ export function DesktopSidebar() {
     if (location.pathname === '/tiktok-shop') {
       setTiktokExpanded(true);
     }
+    if (location.pathname === '/contenido') {
+      setContenidoExpanded(true);
+    }
   }, [location.pathname]);
 
   // TikTok Shop solo se muestra si el plan del usuario lo incluye (checkbox en config).
@@ -86,7 +97,7 @@ export function DesktopSidebar() {
     { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600', isExpandable: true, isExpanded: earningsExpanded, toggleExpand: () => setEarningsExpanded(v => !v), subItems: earningsSubItems },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown, color: 'from-violet-600 to-fuchsia-600' },
     ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600', isExpandable: true, isExpanded: tiktokExpanded, toggleExpand: () => setTiktokExpanded(v => !v), subItems: tiktokSubItems }] : []),
-    { path: '/contenido', label: 'Contenido', icon: FolderOpen, color: 'from-teal-500 to-emerald-600' },
+    { path: '/contenido', label: 'Contenido', icon: FolderOpen, color: 'from-teal-500 to-emerald-600', isExpandable: true, isExpanded: contenidoExpanded, toggleExpand: () => setContenidoExpanded(v => !v), subItems: contenidoSubItems },
     { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600' },
     { path: '/profile', label: 'Perfil', icon: User, color: 'from-pink-500 to-rose-600' },
   ];
