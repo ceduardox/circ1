@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck, Sparkles, Compass } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck, Sparkles, Compass, Package, DollarSign } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 
 const progressSubItems = [
@@ -53,6 +53,13 @@ const contenidoSubItems = [
   { path: '/contenido?tab=guidelines', tab: 'guidelines', label: 'Algoritmo y Reglas', icon: Compass, gradient: 'from-pink-500 to-rose-600' },
 ];
 
+const adminTikTokSubItems = [
+  { path: '/admin/tiktok?tab=usuarios', tab: 'usuarios', label: 'Usuarios y Campañas', icon: Users, gradient: 'from-blue-500 to-indigo-600' },
+  { path: '/admin/tiktok?tab=productos', tab: 'productos', label: 'Catálogo Productos', icon: Package, gradient: 'from-purple-500 to-fuchsia-600' },
+  { path: '/admin/tiktok?tab=material', tab: 'material', label: 'Material Creativo', icon: FolderOpen, gradient: 'from-teal-500 to-emerald-600' },
+  { path: '/admin/tiktok?tab=comisiones', tab: 'comisiones', label: 'Comisiones TikTok', icon: DollarSign, gradient: 'from-amber-500 to-orange-600' },
+];
+
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuthStore();
@@ -66,6 +73,7 @@ export function MobileHeader() {
   const [earningsExpanded, setEarningsExpanded] = useState<boolean>(() => location.pathname === '/earnings');
   const [tiktokExpanded, setTiktokExpanded] = useState<boolean>(() => location.pathname === '/tiktok-shop');
   const [contenidoExpanded, setContenidoExpanded] = useState<boolean>(() => location.pathname === '/contenido');
+  const [adminTiktokExpanded, setAdminTiktokExpanded] = useState<boolean>(() => location.pathname === '/admin/tiktok');
 
   useEffect(() => {
     if (location.pathname === '/progress') {
@@ -85,6 +93,9 @@ export function MobileHeader() {
     }
     if (location.pathname === '/contenido') {
       setContenidoExpanded(true);
+    }
+    if (location.pathname === '/admin/tiktok') {
+      setAdminTiktokExpanded(true);
     }
   }, [location.pathname]);
 
@@ -112,7 +123,7 @@ export function MobileHeader() {
     { path: '/admin/commissions', label: 'Comisiones', icon: Zap },
     { path: '/admin/withdrawals', label: 'Retiros', icon: Wallet },
     { path: '/admin/transcribe', label: 'Transcribir', icon: FileText },
-    { path: '/admin/tiktok', label: 'TikTok Shop', icon: TikTokShopIcon },
+    { path: '/admin/tiktok', label: 'TikTok Shop', icon: TikTokShopIcon, isExpandable: true, isExpanded: adminTiktokExpanded, toggleExpand: () => setAdminTiktokExpanded(v => !v), subItems: adminTikTokSubItems },
     { path: '/admin/network', label: 'Red Global', icon: Network },
   ];
 
@@ -245,20 +256,75 @@ export function MobileHeader() {
                 {adminItems.map(item => {
                   const Icon = item.icon;
                   const active = location.pathname === item.path;
+                  const isExpandable = item.isExpandable;
+                  const isExpanded = item.isExpanded;
+                  const subItems = item.subItems;
+
                   return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={closeMenu}
-                      className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
-                        active
-                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
-                          : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      {item.label}
-                    </Link>
+                    <div key={item.path} className="space-y-0.5">
+                      <div className="flex items-center">
+                        <Link
+                          to={item.path}
+                          onClick={() => {
+                            if (isExpandable && !isExpanded && item.toggleExpand) {
+                              item.toggleExpand();
+                            } else if (!isExpandable) {
+                              closeMenu();
+                            }
+                          }}
+                          className={`flex-1 flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                            active
+                              ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
+                              : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
+                          }`}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+
+                        {isExpandable && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (item.toggleExpand) item.toggleExpand();
+                            }}
+                            title={isExpanded ? "Plegar submenú" : "Desplegar submenú"}
+                            className="p-2 mr-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-all"
+                          >
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                        )}
+                      </div>
+
+                      {isExpandable && isExpanded && subItems && (
+                        <div className="pl-6 pr-1 py-1 space-y-1 animate-fade-in">
+                          {subItems.map(sub => {
+                            const SubIcon = sub.icon;
+                            const defaultTab = subItems[0]?.tab;
+                            const isSubActive = location.pathname === item.path && (location.search.includes(`tab=${sub.tab}`) || (!location.search && sub.tab === defaultTab));
+                            return (
+                              <Link
+                                key={sub.tab}
+                                to={sub.path}
+                                onClick={closeMenu}
+                                className={`flex items-center gap-2.5 py-2 px-2.5 rounded-xl text-xs font-medium transition-all ${
+                                  isSubActive
+                                    ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-semibold shadow-sm'
+                                    : 'text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-dark-100 hover:bg-gray-50 dark:hover:bg-dark-700/50'
+                                }`}
+                              >
+                                <div className={`w-5 h-5 rounded-lg bg-gradient-to-br ${sub.gradient} text-white flex items-center justify-center shrink-0 shadow-sm`}>
+                                  <SubIcon className="w-3 h-3 text-white" />
+                                </div>
+                                <span className="truncate">{sub.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
