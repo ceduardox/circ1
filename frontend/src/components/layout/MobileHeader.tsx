@@ -105,14 +105,25 @@ export function MobileHeader() {
 
               return (
                 <div key={item.path} className="space-y-1">
-                  <div className="flex items-center">
+                  {isNetwork ? (
+                    <button
+                      type="button"
+                      onClick={() => setNetworkExpanded(v => !v)}
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                        active
+                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
+                          : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.label}</span>
+                      <ChevronDown className={`ml-auto w-4 h-4 transition-transform duration-200 ${networkExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  ) : (
                     <Link
                       to={item.path}
-                      onClick={() => {
-                        closeMenu();
-                        if (isNetwork && !networkExpanded) setNetworkExpanded(true);
-                      }}
-                      className={`flex-1 flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                      onClick={closeMenu}
+                      className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
                         active
                           ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
                           : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
@@ -121,22 +132,7 @@ export function MobileHeader() {
                       <Icon className="w-5 h-5" />
                       <span>{item.label}</span>
                     </Link>
-
-                    {isNetwork && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setNetworkExpanded(!networkExpanded);
-                        }}
-                        aria-label="Desplegar o plegar submenú"
-                        className="p-2.5 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-all ml-1"
-                      >
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${networkExpanded ? 'rotate-180' : ''}`} />
-                      </button>
-                    )}
-                  </div>
+                  )}
 
                   {isNetwork && networkExpanded && (
                     <div className="pl-6 pr-2 py-1 space-y-1 animate-fade-in">

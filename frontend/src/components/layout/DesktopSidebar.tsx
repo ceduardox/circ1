@@ -79,13 +79,30 @@ export function DesktopSidebar() {
 
             return (
               <div key={item.path} className="space-y-0.5">
-                <div className="flex items-center">
+                {isNetwork ? (
+                  <button
+                    type="button"
+                    onClick={() => setNetworkExpanded(v => !v)}
+                    className={`sidebar-link w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
+                      active
+                        ? 'sidebar-link-active text-white font-semibold'
+                        : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
+                      active
+                        ? 'bg-white/20 text-white'
+                        : `bg-gradient-to-br ${item.color} text-white shadow-sm group-hover:scale-110 group-hover:shadow-md`
+                    }`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span>{item.label}</span>
+                    <ChevronDown className={`ml-auto w-4 h-4 transition-transform duration-200 ${networkExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                ) : (
                   <Link
                     to={item.path}
-                    onClick={() => {
-                      if (isNetwork && !networkExpanded) setNetworkExpanded(true);
-                    }}
-                    className={`sidebar-link flex-1 flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
+                    className={`sidebar-link flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
                       active
                         ? 'sidebar-link-active text-white font-semibold'
                         : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300 hover:translate-x-1'
@@ -99,28 +116,9 @@ export function DesktopSidebar() {
                       <Icon className="w-4 h-4" />
                     </div>
                     <span>{item.label}</span>
-                    {active && !isNetwork && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                    {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                   </Link>
-
-                  {isNetwork && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setNetworkExpanded(!networkExpanded);
-                      }}
-                      title={networkExpanded ? "Plegar submenú" : "Desplegar submenú"}
-                      className={`p-1.5 mr-1 rounded-lg transition-all ${
-                        active
-                          ? 'text-white/80 hover:text-white hover:bg-white/10'
-                          : 'text-gray-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700'
-                      }`}
-                    >
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${networkExpanded ? 'rotate-180' : ''}`} />
-                    </button>
-                  )}
-                </div>
+                )}
 
                 {isNetwork && networkExpanded && (
                   <div className="pl-6 pr-1 py-1 space-y-1 animate-fade-in">
