@@ -226,11 +226,14 @@ export const adminTiktokApi = {
   createMediaCategory: (data: any) => api.post('/admin/tiktok/media-categories', data),
   updateMediaCategory: (id: string, data: any) => api.put(`/admin/tiktok/media-categories/${id}`, data),
   deleteMediaCategory: (id: string) => api.delete(`/admin/tiktok/media-categories/${id}`),
-  uploadProductMedia: (productId: string, file: File) => {
+  uploadProductMedia: (productId: string, file: File, onProgress?: (pct: number) => void) => {
     const formData = new FormData();
     formData.append('file', file);
     return api.post(`/admin/tiktok/products/${productId}/media`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.min(100, Math.round((e.loaded / e.total) * 100)));
+      },
     });
   },
   updateMedia: (id: string, data: any) => api.put(`/admin/tiktok/media/${id}`, data),

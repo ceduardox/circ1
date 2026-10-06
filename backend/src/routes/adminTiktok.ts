@@ -388,6 +388,7 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     const dir = path.join(__dirname, '..', '..', 'uploads', 'media', product.id);
     await mkdir(dir, { recursive: true });
     const buffer = await data.toBuffer();
+    if (data.file?.truncated) return reply.code(400).send({ error: 'El archivo supera el límite de 200MB' });
     await writeFile(path.join(dir, filename), buffer);
 
     const count = await prisma.productMedia.count({ where: { productId: product.id } });

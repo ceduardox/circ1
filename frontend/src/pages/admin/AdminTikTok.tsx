@@ -1283,6 +1283,7 @@ function MaterialTab() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
   const [newCat, setNewCat] = useState('');
 
   const load = async () => {
@@ -1345,14 +1346,16 @@ function MaterialTab() {
   const uploadMedia = async (productId: string, file?: File) => {
     if (!file) return;
     setBusy(productId);
+    setProgress(0);
     try {
-      await adminTiktokApi.uploadProductMedia(productId, file);
+      await adminTiktokApi.uploadProductMedia(productId, file, (pct) => setProgress(pct));
       toast.success('Archivo subido');
       await load();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Error al subir el archivo');
     } finally {
       setBusy(null);
+      setProgress(0);
     }
   };
 
@@ -1398,6 +1401,15 @@ function MaterialTab() {
             <input type="file" accept="image/*,video/*" className="hidden" disabled={busy === p.id} onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; void uploadMedia(p.id, f); (e.target as HTMLInputElement).value = ''; }} />
           </label>
         </div>
+
+        {busy === p.id && (
+          <div className="mt-3">
+            <div className="h-2 rounded-full bg-gray-100 dark:bg-dark-700 overflow-hidden">
+              <div className="h-full bg-primary-600 transition-all duration-200" style={{ width: `${progress}%` }} />
+            </div>
+            <p className="text-[11px] text-gray-500 dark:text-dark-400 mt-1">Subiendo… {progress}%</p>
+          </div>
+        )}
 
         {(images.length + videos.length) > 0 && (
           <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
