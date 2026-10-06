@@ -5,7 +5,7 @@ import {
   Sparkles, UserPlus2, Users2, BadgePercent, Crown, Loader2, Mail, QrCode,
   MessageCircle, Send, Calculator, TrendingUp, AlertCircle, CheckCircle2,
   X, Search, Filter, ArrowRight, ExternalLink, RefreshCw, Zap, DollarSign,
-  UserCheck, UserX, HelpCircle, ChevronRight
+  UserCheck, UserX, HelpCircle, ChevronRight, Network
 } from 'lucide-react';
 import { membershipApi, authApi } from '@/services/api';
 import { useMembershipStore } from '@/store/membershipStore';
