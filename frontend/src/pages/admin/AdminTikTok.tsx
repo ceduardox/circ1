@@ -1343,16 +1343,24 @@ function MaterialTab() {
     }
   };
 
-  const uploadMedia = async (productId: string, file?: File) => {
-    if (!file) return;
+  const uploadMedia = async (productId: string, files: File[]) => {
+    if (!files.length) return;
     setBusy(productId);
     setProgress(0);
+    let done = 0;
     try {
-      await adminTiktokApi.uploadProductMedia(productId, file, (pct) => setProgress(pct));
-      toast.success('Archivo subido');
+      for (const file of files) {
+        await adminTiktokApi.uploadProductMedia(productId, file, (pct) => {
+          const overall = Math.round(((done + pct / 100) / files.length) * 100);
+          setProgress(overall);
+        });
+        done++;
+      }
+      toast.success(files.length > 1 ? `${files.length} archivos subidos` : 'Archivo subido');
       await load();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Error al subir el archivo');
+      const tail = files.length > done + 1 ? ` (${done}/${files.length} subidos)` : '';
+      toast.error((err.response?.data?.error || 'Error al subir el archivo') + tail);
     } finally {
       setBusy(null);
       setProgress(0);
@@ -1398,7 +1406,7 @@ function MaterialTab() {
           </select>
           <label className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer border-gray-200 dark:border-dark-600 text-gray-700 dark:text-dark-200 ${busy === p.id ? 'opacity-60' : 'hover:bg-gray-50 dark:hover:bg-dark-700'}`}>
             {busy === p.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />} Subir
-            <input type="file" accept="image/*,video/*" className="hidden" disabled={busy === p.id} onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; void uploadMedia(p.id, f); (e.target as HTMLInputElement).value = ''; }} />
+            <input type="file" accept="image/*,video/*" multiple className="hidden" disabled={busy === p.id} onChange={e => { const files = Array.from((e.target as HTMLInputElement).files || []); void uploadMedia(p.id, files); (e.target as HTMLInputElement).value = ''; }} />
           </label>
         </div>
 
