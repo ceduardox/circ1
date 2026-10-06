@@ -86,20 +86,63 @@ export function MobileHeader() {
             {navItems.map(item => {
               const Icon = item.icon;
               const active = location.pathname === item.path;
+              const isNetwork = item.path === '/network';
+
               return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={closeMenu}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
-                    active
-                      ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
-                      : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  {item.label}
-                </Link>
+                <div key={item.path} className="space-y-1">
+                  <Link
+                    to={item.path}
+                    onClick={closeMenu}
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                      active
+                        ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-semibold'
+                        : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-dark-100'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {item.label}
+                  </Link>
+
+                  {isNetwork && active && (
+                    <div className="pl-11 pr-2 py-1 space-y-1">
+                      <Link
+                        to="/network?tab=overview"
+                        onClick={closeMenu}
+                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
+                      >
+                        🔗 Link y Planes
+                      </Link>
+                      <Link
+                        to="/network?tab=members"
+                        onClick={closeMenu}
+                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
+                      >
+                        👥 Miembros de Red
+                      </Link>
+                      <Link
+                        to="/network?tab=tree"
+                        onClick={closeMenu}
+                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
+                      >
+                        🌳 Árbol Gráfico
+                      </Link>
+                      <Link
+                        to="/network?tab=calculator"
+                        onClick={closeMenu}
+                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
+                      >
+                        🧮 Calculadora
+                      </Link>
+                      <Link
+                        to="/network?tab=stats"
+                        onClick={closeMenu}
+                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
+                      >
+                        📊 Estadísticas
+                      </Link>
+                    </div>
+                  )}
+                </div>
               );
             })}
 

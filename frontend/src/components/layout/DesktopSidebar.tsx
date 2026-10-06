@@ -59,26 +59,64 @@ export function DesktopSidebar() {
           {navItems.map(item => {
             const Icon = item.icon;
             const active = location.pathname === item.path;
+            const isNetwork = item.path === '/network';
+
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`sidebar-link flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
-                  active
-                    ? 'sidebar-link-active text-white font-semibold'
-                    : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300 hover:translate-x-1'
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
-                  active
-                    ? 'bg-white/20 text-white'
-                    : `bg-gradient-to-br ${item.color} text-white shadow-sm group-hover:scale-110 group-hover:shadow-md`
-                }`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                {item.label}
-                {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
-              </Link>
+              <div key={item.path} className="space-y-0.5">
+                <Link
+                  to={item.path}
+                  className={`sidebar-link flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
+                    active
+                      ? 'sidebar-link-active text-white font-semibold'
+                      : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300 hover:translate-x-1'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
+                    active
+                      ? 'bg-white/20 text-white'
+                      : `bg-gradient-to-br ${item.color} text-white shadow-sm group-hover:scale-110 group-hover:shadow-md`
+                  }`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  {item.label}
+                  {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                </Link>
+
+                {isNetwork && active && (
+                  <div className="pl-11 pr-2 py-1 space-y-0.5 animate-fade-in">
+                    <Link
+                      to="/network?tab=overview"
+                      className="block text-xs py-1 px-2.5 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium transition-colors"
+                    >
+                      🔗 Link y Planes
+                    </Link>
+                    <Link
+                      to="/network?tab=members"
+                      className="block text-xs py-1 px-2.5 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium transition-colors"
+                    >
+                      👥 Miembros de Red
+                    </Link>
+                    <Link
+                      to="/network?tab=tree"
+                      className="block text-xs py-1 px-2.5 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium transition-colors"
+                    >
+                      🌳 Árbol Gráfico
+                    </Link>
+                    <Link
+                      to="/network?tab=calculator"
+                      className="block text-xs py-1 px-2.5 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium transition-colors"
+                    >
+                      🧮 Calculadora
+                    </Link>
+                    <Link
+                      to="/network?tab=stats"
+                      className="block text-xs py-1 px-2.5 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium transition-colors"
+                    >
+                      📊 Estadísticas
+                    </Link>
+                  </div>
+                )}
+              </div>
             );
           })}
 
