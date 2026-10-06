@@ -111,6 +111,10 @@ export const membershipApi = {
   deletePayoutAccount: (id: string) => api.delete(`/membership/payout-accounts/${id}`),
   notifications: () => api.get('/membership/notifications'),
   markNotificationsRead: () => api.post('/membership/notifications/read'),
+  markNotificationRead: (id: string) => api.post(`/membership/notifications/${id}/read`),
+  deleteNotification: (id: string) => api.delete(`/membership/notifications/${id}`),
+  clearNotifications: () => api.delete('/membership/notifications'),
+  testNotification: () => api.post('/membership/notifications/test'),
   dailySummary: () => api.get('/membership/daily-earnings/summary'),
   dailyHistory: (page?: number) => api.get('/membership/daily-earnings/history', { params: { page } }),
 };

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck, Sparkles, Compass, Package, DollarSign } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, BellRing, Sliders, Smartphone, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck, Sparkles, Compass, Package, DollarSign } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 
 const progressSubItems = [
@@ -53,6 +53,13 @@ const contenidoSubItems = [
   { path: '/contenido?tab=guidelines', tab: 'guidelines', label: 'Algoritmo y Reglas', icon: Compass, gradient: 'from-pink-500 to-rose-600' },
 ];
 
+const notificationsSubItems = [
+  { path: '/notifications?tab=inbox', tab: 'inbox', label: 'Bandeja de Entrada', icon: Bell, gradient: 'from-sky-500 to-blue-600' },
+  { path: '/notifications?tab=push', tab: 'push', label: 'Configuración Push', icon: BellRing, gradient: 'from-emerald-500 to-teal-600' },
+  { path: '/notifications?tab=channels', tab: 'channels', label: 'Canales y Alertas', icon: Sliders, gradient: 'from-purple-500 to-indigo-600' },
+  { path: '/notifications?tab=guide', tab: 'guide', label: 'Guía Dispositivos', icon: Smartphone, gradient: 'from-amber-500 to-orange-600' },
+];
+
 const adminTikTokSubItems = [
   { path: '/admin/tiktok?tab=usuarios', tab: 'usuarios', label: 'Usuarios y Campañas', icon: Users, gradient: 'from-blue-500 to-indigo-600' },
   { path: '/admin/tiktok?tab=productos', tab: 'productos', label: 'Catálogo Productos', icon: Package, gradient: 'from-purple-500 to-fuchsia-600' },
@@ -73,6 +80,7 @@ export function MobileHeader() {
   const [earningsExpanded, setEarningsExpanded] = useState<boolean>(() => location.pathname === '/earnings');
   const [tiktokExpanded, setTiktokExpanded] = useState<boolean>(() => location.pathname === '/tiktok-shop');
   const [contenidoExpanded, setContenidoExpanded] = useState<boolean>(() => location.pathname === '/contenido');
+  const [notificationsExpanded, setNotificationsExpanded] = useState<boolean>(() => location.pathname === '/notifications');
   const [adminTiktokExpanded, setAdminTiktokExpanded] = useState<boolean>(() => location.pathname === '/admin/tiktok');
 
   useEffect(() => {
@@ -94,6 +102,9 @@ export function MobileHeader() {
     if (location.pathname === '/contenido') {
       setContenidoExpanded(true);
     }
+    if (location.pathname === '/notifications') {
+      setNotificationsExpanded(true);
+    }
     if (location.pathname === '/admin/tiktok') {
       setAdminTiktokExpanded(true);
     }
@@ -111,7 +122,7 @@ export function MobileHeader() {
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown, color: 'from-violet-600 to-fuchsia-600' },
     ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600', isExpandable: true, isExpanded: tiktokExpanded, toggleExpand: () => setTiktokExpanded(v => !v), subItems: tiktokSubItems }] : []),
     { path: '/contenido', label: 'Contenido', icon: FolderOpen, color: 'from-teal-500 to-emerald-600', isExpandable: true, isExpanded: contenidoExpanded, toggleExpand: () => setContenidoExpanded(v => !v), subItems: contenidoSubItems },
-    { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600' },
+    { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600', isExpandable: true, isExpanded: notificationsExpanded, toggleExpand: () => setNotificationsExpanded(v => !v), subItems: notificationsSubItems },
     { path: '/profile', label: 'Perfil', icon: User, color: 'from-pink-500 to-rose-600' },
   ];
 

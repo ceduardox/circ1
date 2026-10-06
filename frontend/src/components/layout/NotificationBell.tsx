@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Bell, CheckCircle2, TrendingUp, Info, Wallet, Crown, UserPlus, Trophy, AtSign } from 'lucide-react';
+import { Bell, CheckCircle2, TrendingUp, Info, Wallet, Crown, UserPlus, Trophy, AtSign, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { membershipApi } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 
@@ -106,6 +107,16 @@ export function NotificationBell() {
                 );
               })
             )}
+          </div>
+          <div className="p-2.5 bg-gray-50 dark:bg-dark-750 border-t border-gray-100 dark:border-dark-700 text-center">
+            <Link
+              to="/notifications"
+              onClick={() => setOpen(false)}
+              className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1"
+            >
+              <span>Ver Centro de Notificaciones</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
           </div>
         </div>
       )}

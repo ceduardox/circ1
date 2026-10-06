@@ -589,7 +589,7 @@ export async function membershipRoutes(app: FastifyInstance) {
     const notifications = await prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      take: 30,
+      take: 100,
     });
     const unread = await prisma.notification.count({ where: { userId, read: false } });
     return { notifications, unread };
@@ -599,6 +599,45 @@ export async function membershipRoutes(app: FastifyInstance) {
     const userId = (request.user as JWTPayload).sub;
     await prisma.notification.updateMany({ where: { userId, read: false }, data: { read: true } });
     return { ok: true };
+  });
+
+  app.post<{ Params: { id: string } }>('/notifications/:id/read', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    const { id } = request.params;
+    await prisma.notification.updateMany({ where: { id, userId }, data: { read: true } });
+    return { ok: true };
+  });
+
+  app.delete<{ Params: { id: string } }>('/notifications/:id', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    const { id } = request.params;
+    await prisma.notification.deleteMany({ where: { id, userId } });
+    return { ok: true };
+  });
+
+  app.delete('/notifications', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    await prisma.notification.deleteMany({ where: { userId } });
+    return { ok: true };
+  });
+
+  app.post('/notifications/test', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    const notif = await prisma.notification.create({
+      data: {
+        userId,
+        type: 'achievement',
+        title: '🎉 Notificación de Prueba',
+        message: '¡Tus notificaciones están funcionando correctamente en Círculo 1!',
+      },
+    });
+    void sendWebPush({
+      externalUserIds: [userId],
+      title: '🎉 Notificación de Prueba',
+      message: '¡Tus notificaciones están funcionando correctamente en Círculo 1!',
+      url: '/notifications',
+    });
+    return { ok: true, notification: notif };
   });
 
   // ─── Solicitudes de retiro ───
