@@ -3,8 +3,16 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, FolderOpen } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
+
+const networkSubItems = [
+  { path: '/network?tab=overview', tab: 'overview', label: 'Link y Planes', icon: LinkIcon, gradient: 'from-blue-500 to-indigo-600' },
+  { path: '/network?tab=members', tab: 'members', label: 'Miembros', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
+  { path: '/network?tab=tree', tab: 'tree', label: 'Árbol Gráfico', icon: GitBranch, gradient: 'from-purple-500 to-fuchsia-600' },
+  { path: '/network?tab=calculator', tab: 'calculator', label: 'Calculadora', icon: Calculator, gradient: 'from-amber-500 to-orange-600' },
+  { path: '/network?tab=stats', tab: 'stats', label: 'Estadísticas', icon: TrendingUp, gradient: 'from-sky-500 to-blue-600' },
+];
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
@@ -104,42 +112,28 @@ export function MobileHeader() {
                   </Link>
 
                   {isNetwork && active && (
-                    <div className="pl-11 pr-2 py-1 space-y-1">
-                      <Link
-                        to="/network?tab=overview"
-                        onClick={closeMenu}
-                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
-                      >
-                        🔗 Link y Planes
-                      </Link>
-                      <Link
-                        to="/network?tab=members"
-                        onClick={closeMenu}
-                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
-                      >
-                        👥 Miembros de Red
-                      </Link>
-                      <Link
-                        to="/network?tab=tree"
-                        onClick={closeMenu}
-                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
-                      >
-                        🌳 Árbol Gráfico
-                      </Link>
-                      <Link
-                        to="/network?tab=calculator"
-                        onClick={closeMenu}
-                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
-                      >
-                        🧮 Calculadora
-                      </Link>
-                      <Link
-                        to="/network?tab=stats"
-                        onClick={closeMenu}
-                        className="block text-xs py-1.5 px-3 rounded-lg text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-dark-700/50 font-medium"
-                      >
-                        📊 Estadísticas
-                      </Link>
+                    <div className="pl-6 pr-2 py-1 space-y-1 animate-fade-in">
+                      {networkSubItems.map(sub => {
+                        const SubIcon = sub.icon;
+                        const isSubActive = location.search.includes(`tab=${sub.tab}`) || (!location.search && sub.tab === 'overview');
+                        return (
+                          <Link
+                            key={sub.tab}
+                            to={sub.path}
+                            onClick={closeMenu}
+                            className={`flex items-center gap-2.5 py-2 px-3 rounded-xl text-xs font-medium transition-all ${
+                              isSubActive
+                                ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-semibold shadow-sm'
+                                : 'text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-dark-100 hover:bg-gray-50 dark:hover:bg-dark-700/50'
+                            }`}
+                          >
+                            <div className={`w-5 h-5 rounded-lg bg-gradient-to-br ${sub.gradient} text-white flex items-center justify-center shrink-0 shadow-sm`}>
+                              <SubIcon className="w-3 h-3 text-white" />
+                            </div>
+                            <span className="truncate">{sub.label}</span>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
