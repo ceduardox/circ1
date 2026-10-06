@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Sparkles } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 import { useState, useEffect } from 'react';
 
@@ -14,16 +14,28 @@ const networkSubItems = [
   { path: '/network?tab=stats', tab: 'stats', label: 'Estadísticas', icon: TrendingUp, gradient: 'from-sky-500 to-blue-600' },
 ];
 
+const tiktokSubItems = [
+  { path: '/tiktok-shop?tab=creators', tab: 'creators', label: 'Creadores', icon: Users, gradient: 'from-pink-500 to-rose-600' },
+  { path: '/tiktok-shop?tab=products', tab: 'products', label: 'Catálogo y Slots', icon: ShoppingBag, gradient: 'from-purple-500 to-indigo-600' },
+  { path: '/tiktok-shop?tab=sales', tab: 'sales', label: 'Ventas y Ganancias', icon: TrendingUp, gradient: 'from-emerald-500 to-teal-600' },
+  { path: '/tiktok-shop?tab=material', tab: 'material', label: 'Material Creativo', icon: FolderOpen, gradient: 'from-amber-500 to-orange-600' },
+  { path: '/tiktok-shop?tab=calculator', tab: 'calculator', label: 'Calculadora', icon: Calculator, gradient: 'from-cyan-500 to-blue-600' },
+];
+
 export function DesktopSidebar() {
   const { user, logout } = useAuthStore();
   const { isDark, toggle } = useTheme();
   const location = useLocation();
   const memberStatus = useMembershipStore(s => s.status);
   const [networkExpanded, setNetworkExpanded] = useState<boolean>(() => location.pathname === '/network');
+  const [tiktokExpanded, setTiktokExpanded] = useState<boolean>(() => location.pathname === '/tiktok-shop');
 
   useEffect(() => {
     if (location.pathname === '/network') {
       setNetworkExpanded(true);
+    }
+    if (location.pathname === '/tiktok-shop') {
+      setTiktokExpanded(true);
     }
   }, [location.pathname]);
 
@@ -33,11 +45,11 @@ export function DesktopSidebar() {
   const navItems = [
     { path: '/dashboard', label: 'Mi Día', icon: Home, color: 'from-violet-500 to-purple-600' },
     { path: '/progress', label: 'Progreso', icon: BarChart, color: 'from-blue-500 to-indigo-600' },
-    { path: '/network', label: 'Mi Red', icon: Network, color: 'from-emerald-500 to-teal-600' },
+    { path: '/network', label: 'Mi Red', icon: Network, color: 'from-emerald-500 to-teal-600', isExpandable: true, isExpanded: networkExpanded, toggleExpand: () => setNetworkExpanded(v => !v), subItems: networkSubItems },
     { path: '/team', label: 'Construir Equipo', icon: Users2, color: 'from-cyan-500 to-sky-600' },
     { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600' },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown, color: 'from-violet-600 to-fuchsia-600' },
-    ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600' }] : []),
+    ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600', isExpandable: true, isExpanded: tiktokExpanded, toggleExpand: () => setTiktokExpanded(v => !v), subItems: tiktokSubItems }] : []),
     { path: '/contenido', label: 'Contenido', icon: FolderOpen, color: 'from-teal-500 to-emerald-600' },
     { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600' },
     { path: '/profile', label: 'Perfil', icon: User, color: 'from-pink-500 to-rose-600' },
@@ -75,34 +87,21 @@ export function DesktopSidebar() {
           {navItems.map(item => {
             const Icon = item.icon;
             const active = location.pathname === item.path;
-            const isNetwork = item.path === '/network';
+            const isExpandable = item.isExpandable;
+            const isExpanded = item.isExpanded;
+            const subItems = item.subItems;
 
             return (
               <div key={item.path} className="space-y-0.5">
-                {isNetwork ? (
-                  <button
-                    type="button"
-                    onClick={() => setNetworkExpanded(v => !v)}
-                    className={`sidebar-link w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
-                      active
-                        ? 'sidebar-link-active text-white font-semibold'
-                        : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
-                      active
-                        ? 'bg-white/20 text-white'
-                        : `bg-gradient-to-br ${item.color} text-white shadow-sm group-hover:scale-110 group-hover:shadow-md`
-                    }`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <span>{item.label}</span>
-                    <ChevronDown className={`ml-auto w-4 h-4 transition-transform duration-200 ${networkExpanded ? 'rotate-180' : ''}`} />
-                  </button>
-                ) : (
+                <div className="flex items-center">
                   <Link
                     to={item.path}
-                    className={`sidebar-link flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
+                    onClick={() => {
+                      if (isExpandable && !isExpanded && item.toggleExpand) {
+                        item.toggleExpand();
+                      }
+                    }}
+                    className={`sidebar-link flex-1 flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium group ${
                       active
                         ? 'sidebar-link-active text-white font-semibold'
                         : 'text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-primary-700 dark:hover:text-primary-300 hover:translate-x-1'
@@ -115,16 +114,36 @@ export function DesktopSidebar() {
                     }`}>
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span>{item.label}</span>
-                    {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                    <span className="truncate">{item.label}</span>
+                    {active && !isExpandable && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                   </Link>
-                )}
 
-                {isNetwork && networkExpanded && (
+                  {isExpandable && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (item.toggleExpand) item.toggleExpand();
+                      }}
+                      title={isExpanded ? "Plegar submenú" : "Desplegar submenú"}
+                      className={`p-1.5 mr-1 rounded-lg transition-all ${
+                        active
+                          ? 'text-white/80 hover:text-white hover:bg-white/10'
+                          : 'text-gray-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-700'
+                      }`}
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                </div>
+
+                {isExpandable && isExpanded && subItems && (
                   <div className="pl-6 pr-1 py-1 space-y-1 animate-fade-in">
-                    {networkSubItems.map(sub => {
+                    {subItems.map(sub => {
                       const SubIcon = sub.icon;
-                      const isSubActive = location.pathname === '/network' && (location.search.includes(`tab=${sub.tab}`) || (!location.search && sub.tab === 'overview'));
+                      const defaultTab = subItems[0]?.tab;
+                      const isSubActive = location.pathname === item.path && (location.search.includes(`tab=${sub.tab}`) || (!location.search && sub.tab === defaultTab));
                       return (
                         <Link
                           key={sub.tab}
