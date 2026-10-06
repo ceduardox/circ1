@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, User, Plus, Trash2, Pencil, CheckCircle, XCircle, Loader2, Package, Music, DollarSign, ExternalLink, Users, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, Mail, MapPin, Crown, X } from 'lucide-react';
+import { Search, User, Plus, Trash2, Pencil, CheckCircle, XCircle, Loader2, Package, Music, DollarSign, ExternalLink, Users, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, Mail, MapPin, Crown, X, FolderOpen, Film, Upload } from 'lucide-react';
 import { adminTiktokApi, adminBusinessApi } from '@/services/api';
 import { Input, Label, ButtonPrimary, Button, PageHeader } from '@/components/ui';
 import { TikTokIcon } from '@/components/TikTokLogo';
@@ -14,7 +14,7 @@ const creatorStatusMeta: Record<string, { label: string; classes: string }> = {
   ACTIVO: { label: 'Activo', classes: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
 };
 
-type Tab = 'usuarios' | 'productos' | 'comisiones';
+type Tab = 'usuarios' | 'productos' | 'material' | 'comisiones';
 
 // Creadores base por pack, configurables en /admin/commissions.
 // Fallbacks = defaults actuales (500 → 3, 1000 → 5).
@@ -48,6 +48,7 @@ export function AdminTikTokPage() {
         {([
           { id: 'usuarios', label: 'Usuarios y campañas', icon: Users },
           { id: 'productos', label: 'Catálogo de productos', icon: Package },
+          { id: 'material', label: 'Material de productos', icon: FolderOpen },
           { id: 'comisiones', label: 'Comisiones por aprobar', icon: DollarSign },
         ] as const).map(t => {
           const Icon = t.icon;
@@ -72,6 +73,7 @@ export function AdminTikTokPage() {
 
       {tab === 'usuarios' && <UsersTab />}
       {tab === 'productos' && <ProductsTab />}
+      {tab === 'material' && <MaterialTab />}
       {tab === 'comisiones' && <CommissionsTab />}
     </div>
   );
@@ -1271,6 +1273,192 @@ function SummaryCard({ label, value, color, bg, icon: Icon }: { label: string; v
         <p className="text-sm text-gray-500 dark:text-dark-400">{label}</p>
         <p className={`text-lg font-bold text-gray-900 dark:text-dark-100 truncate ${color}`}>{value}</p>
       </div>
+    </div>
+  );
+}
+
+// ─── Material de productos (imágenes y videos para el usuario) ───
+function MaterialTab() {
+  const [categories, setCategories] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [newCat, setNewCat] = useState('');
+
+  const load = async () => {
+    try {
+      const [c, p] = await Promise.all([adminTiktokApi.mediaCategories(), adminTiktokApi.products()]);
+      setCategories(c.data.categories || []);
+      setProducts(p.data.products || []);
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al cargar el material');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const addCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCat.trim()) return;
+    try {
+      await adminTiktokApi.createMediaCategory({ name: newCat.trim() });
+      setNewCat('');
+      toast.success('Categoría creada');
+      await load();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al crear la categoría');
+    }
+  };
+
+  const renameCategory = async (id: string, name: string) => {
+    if (!name.trim()) return;
+    try {
+      await adminTiktokApi.updateMediaCategory(id, { name: name.trim() });
+      await load();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al renombrar');
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    if (!confirm('¿Eliminar la categoría? Los productos quedarán sin categoría.')) return;
+    try {
+      await adminTiktokApi.deleteMediaCategory(id);
+      toast.success('Categoría eliminada');
+      await load();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al eliminar');
+    }
+  };
+
+  const setProductCategory = async (productId: string, categoryId: string) => {
+    try {
+      await adminTiktokApi.updateProduct(productId, { categoryId: categoryId || null });
+      await load();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al asignar categoría');
+    }
+  };
+
+  const uploadMedia = async (productId: string, file?: File) => {
+    if (!file) return;
+    setBusy(productId);
+    try {
+      await adminTiktokApi.uploadProductMedia(productId, file);
+      toast.success('Archivo subido');
+      await load();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al subir el archivo');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const removeMedia = async (id: string) => {
+    if (!confirm('¿Eliminar este archivo?')) return;
+    try {
+      await adminTiktokApi.deleteMedia(id);
+      toast.success('Archivo eliminado');
+      await load();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al eliminar');
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;
+
+  const groups = categories.map(c => ({ id: c.id, name: c.name, products: products.filter(p => p.categoryId === c.id) }));
+  const uncategorized = products.filter(p => !p.categoryId);
+
+  const renderProduct = (p: any) => {
+    const images = (p.media || []).filter((m: any) => m.type === 'IMAGE');
+    const videos = (p.media || []).filter((m: any) => m.type === 'VIDEO');
+    return (
+      <div key={p.id} className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700 flex items-center justify-center shrink-0">
+            {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-gray-400" />}
+          </div>
+          <div className="flex-1 min-w-[140px]">
+            <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">{p.name}</p>
+            <p className="text-xs text-gray-500 dark:text-dark-400">{images.length} img · {videos.length} video{videos.length === 1 ? '' : 's'}</p>
+          </div>
+          <select
+            value={p.categoryId || ''}
+            onChange={e => setProductCategory(p.id, e.target.value)}
+            className="text-xs rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-700 dark:text-dark-200 px-2 py-1.5"
+          >
+            <option value="">Sin categoría</option>
+            {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <label className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer border-gray-200 dark:border-dark-600 text-gray-700 dark:text-dark-200 ${busy === p.id ? 'opacity-60' : 'hover:bg-gray-50 dark:hover:bg-dark-700'}`}>
+            {busy === p.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />} Subir
+            <input type="file" accept="image/*,video/*" className="hidden" disabled={busy === p.id} onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; void uploadMedia(p.id, f); (e.target as HTMLInputElement).value = ''; }} />
+          </label>
+        </div>
+
+        {(images.length + videos.length) > 0 && (
+          <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+            {images.map((m: any) => (
+              <div key={m.id} className="relative group rounded-lg overflow-hidden border border-gray-100 dark:border-dark-700">
+                <img src={m.url} alt="" className="w-full h-20 object-cover" />
+                <button type="button" onClick={() => removeMedia(m.id)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center" title="Eliminar"><X className="w-3 h-3" /></button>
+              </div>
+            ))}
+            {videos.map((m: any) => (
+              <div key={m.id} className="relative group rounded-lg overflow-hidden border border-gray-100 dark:border-dark-700 bg-black">
+                <video src={m.url} className="w-full h-20 object-cover" muted preload="metadata" />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Film className="w-5 h-5 text-white/80" /></div>
+                <button type="button" onClick={() => removeMedia(m.id)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center" title="Eliminar"><X className="w-3 h-3" /></button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-5">
+        <h3 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">Categorías de producto</h3>
+        <p className="text-xs text-gray-500 dark:text-dark-400 mb-3">Organizan el material. Ej.: Suplementos, Energía.</p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {categories.map((c: any) => (
+            <div key={c.id} className="flex items-center gap-1 bg-gray-50 dark:bg-dark-700 rounded-xl pl-2 pr-1 py-1">
+              <input
+                defaultValue={c.name}
+                onBlur={e => { if (e.target.value !== c.name) renameCategory(c.id, e.target.value); }}
+                className="bg-transparent text-sm text-gray-900 dark:text-dark-100 w-32 focus:outline-none"
+              />
+              <button type="button" onClick={() => deleteCategory(c.id)} className="p-1 rounded-lg text-gray-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>
+            </div>
+          ))}
+          {categories.length === 0 && <span className="text-xs text-gray-400">Aún no hay categorías.</span>}
+        </div>
+        <form onSubmit={addCategory} className="flex gap-2">
+          <Input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="Nueva categoría (ej. Suplementos)" className="max-w-xs" />
+          <ButtonPrimary type="submit" size="sm"><Plus className="w-4 h-4" /> Agregar</ButtonPrimary>
+        </form>
+      </div>
+
+      {groups.map(g => (
+        <div key={g.id}>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-dark-100 mb-2 flex items-center gap-2"><FolderOpen className="w-4 h-4 text-primary-600" /> {g.name} <span className="text-xs font-normal text-gray-400">({g.products.length})</span></h3>
+          <div className="space-y-3">
+            {g.products.length === 0 ? <p className="text-xs text-gray-400">Sin productos en esta categoría.</p> : g.products.map(renderProduct)}
+          </div>
+        </div>
+      ))}
+
+      {uncategorized.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-dark-100 mb-2 flex items-center gap-2"><Package className="w-4 h-4 text-gray-400" /> Sin categoría <span className="text-xs font-normal text-gray-400">({uncategorized.length})</span></h3>
+          <div className="space-y-3">{uncategorized.map(renderProduct)}</div>
+        </div>
+      )}
     </div>
   );
 }

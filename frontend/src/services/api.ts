@@ -199,6 +199,7 @@ export const tiktokApi = {
   extraPaymentPending: () => api.get('/tiktok/extra-payment/pending'),
   extraPaymentStatus: (id: string) => api.get(`/tiktok/extra-payment/${id}/status`),
   updateProductPlan: (productIds: string[]) => api.put('/tiktok/product-plan', { productIds }),
+  material: () => api.get('/tiktok/material'),
 };
 
 export const adminTiktokApi = {
@@ -221,6 +222,19 @@ export const adminTiktokApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  mediaCategories: () => api.get('/admin/tiktok/media-categories'),
+  createMediaCategory: (data: any) => api.post('/admin/tiktok/media-categories', data),
+  updateMediaCategory: (id: string, data: any) => api.put(`/admin/tiktok/media-categories/${id}`, data),
+  deleteMediaCategory: (id: string) => api.delete(`/admin/tiktok/media-categories/${id}`),
+  uploadProductMedia: (productId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/admin/tiktok/products/${productId}/media`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  updateMedia: (id: string, data: any) => api.put(`/admin/tiktok/media/${id}`, data),
+  deleteMedia: (id: string) => api.delete(`/admin/tiktok/media/${id}`),
   registerSale: (data: any) => api.post('/admin/tiktok/sales', data),
   deleteSale: (id: string) => api.delete(`/admin/tiktok/sales/${id}`),
   pendingCommissions: () => api.get('/admin/tiktok/commissions/pending'),

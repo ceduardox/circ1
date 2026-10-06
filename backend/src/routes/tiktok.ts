@@ -119,6 +119,43 @@ export async function tiktokRoutes(app: FastifyInstance) {
     };
   });
 
+  // ─── Material de productos para el usuario (imágenes y videos para usar/descargar) ───
+  app.get('/material', { preHandler: authMiddleware }, async () => {
+    const [categories, products] = await Promise.all([
+      prisma.productCategory.findMany({ orderBy: [{ order: 'asc' }, { name: 'asc' }] }),
+      prisma.tikTokProduct.findMany({
+        where: { isActive: true },
+        orderBy: { name: 'asc' },
+        include: {
+          category: true,
+          media: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] },
+        },
+      }),
+    ]);
+
+    const withMedia = products.filter(p => p.media.length > 0);
+    const grouped = new Map<string, any[]>();
+    for (const p of withMedia) {
+      const key = p.categoryId || '__none__';
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push({
+        id: p.id,
+        name: p.name,
+        imageUrl: p.imageUrl,
+        media: p.media.map(m => ({ id: m.id, type: m.type, url: m.url, title: m.title })),
+      });
+    }
+
+    const result = categories
+      .filter(c => grouped.has(c.id))
+      .map(c => ({ id: c.id, name: c.name, products: grouped.get(c.id)! }));
+    if (grouped.has('__none__')) {
+      result.push({ id: '__none__', name: 'Otros', products: grouped.get('__none__')! });
+    }
+
+    return { categories: result };
+  });
+
   // ─── Activar TikTok Shop (crea la campaña si no existe) ───
   app.post('/activate', { preHandler: authMiddleware }, async (request, reply) => {
     const userId = (request.user as JWTPayload).sub;

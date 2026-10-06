@@ -270,10 +270,17 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     commissionRate: z.number().min(0).max(100).default(25),
     sponsorRate: z.number().min(0).max(100).default(5),
     imageUrl: z.string().max(500).optional().nullable(),
+    categoryId: z.string().optional().nullable(),
   });
 
   app.get('/products', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
-    const products = await prisma.tikTokProduct.findMany({ orderBy: { name: 'asc' } });
+    const products = await prisma.tikTokProduct.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        category: true,
+        media: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] },
+      },
+    });
     return { products };
   });
 
@@ -318,6 +325,95 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     const sales = await prisma.tikTokSale.count({ where: { productId: id } });
     if (sales > 0) return reply.code(400).send({ error: 'No se puede eliminar un producto con ventas registradas' });
     await prisma.tikTokProduct.delete({ where: { id } });
+    return { success: true };
+  });
+
+  // ─── Categorías de producto (organizan el material) ───
+  const categorySchema = z.object({
+    name: z.string().min(1, 'El nombre es obligatorio').max(120),
+    order: z.number().int().min(0).optional(),
+  });
+
+  app.get('/media-categories', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const categories = await prisma.productCategory.findMany({ orderBy: [{ order: 'asc' }, { name: 'asc' }] });
+    return { categories };
+  });
+
+  app.post('/media-categories', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const body = categorySchema.parse(request.body);
+    const category = await prisma.productCategory.create({ data: { name: body.name, order: body.order ?? 0 } });
+    return { category };
+  });
+
+  app.put('/media-categories/:id', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = categorySchema.partial().parse(request.body);
+    const existing = await prisma.productCategory.findUnique({ where: { id } });
+    if (!existing) return reply.code(404).send({ error: 'Categoría no encontrada' });
+    const category = await prisma.productCategory.update({ where: { id }, data: body });
+    return { category };
+  });
+
+  app.delete('/media-categories/:id', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const existing = await prisma.productCategory.findUnique({ where: { id } });
+    if (!existing) return reply.code(404).send({ error: 'Categoría no encontrada' });
+    await prisma.productCategory.delete({ where: { id } });
+    return { success: true };
+  });
+
+  // ─── Material por producto: imágenes y videos (hasta 200MB) ───
+  app.post('/products/:id/media', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const product = await prisma.tikTokProduct.findUnique({ where: { id } });
+    if (!product) return reply.code(404).send({ error: 'Producto no encontrado' });
+
+    let data: any;
+    try {
+      data = await (request as any).file({ limits: { fileSize: 200 * 1024 * 1024 } });
+    } catch {
+      return reply.code(400).send({ error: 'Archivo no válido o demasiado grande (máx 200MB)' });
+    }
+    if (!data) return reply.code(400).send({ error: 'Debes enviar un archivo' });
+
+    const imageMimes: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+    const videoMimes: Record<string, string> = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' };
+    let type: 'IMAGE' | 'VIDEO';
+    let ext: string;
+    if (imageMimes[data.mimetype]) { type = 'IMAGE'; ext = imageMimes[data.mimetype]; }
+    else if (videoMimes[data.mimetype]) { type = 'VIDEO'; ext = videoMimes[data.mimetype]; }
+    else return reply.code(400).send({ error: 'Formato no permitido. Imágenes JPG/PNG/WEBP/GIF o videos MP4/WEBM/MOV' });
+
+    const filename = `${type.toLowerCase()}-${randomUUID()}.${ext}`;
+    const dir = path.join(__dirname, '..', '..', 'uploads', 'media', product.id);
+    await mkdir(dir, { recursive: true });
+    const buffer = await data.toBuffer();
+    await writeFile(path.join(dir, filename), buffer);
+
+    const count = await prisma.productMedia.count({ where: { productId: product.id } });
+    const proto = (request.headers['x-forwarded-proto'] as string) || request.protocol || 'https';
+    const host = (request.headers['x-forwarded-host'] as string) || request.headers.host;
+    const base = process.env.BACKEND_URL || (host ? `${proto}://${host}` : '');
+    const media = await prisma.productMedia.create({
+      data: { productId: product.id, type, url: `${base}/uploads/media/${product.id}/${filename}`, order: count },
+    });
+    return { media };
+  });
+
+  app.put('/media/:id', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = z.object({ title: z.string().max(200).optional().nullable(), order: z.number().int().min(0).optional() }).parse(request.body);
+    const existing = await prisma.productMedia.findUnique({ where: { id } });
+    if (!existing) return reply.code(404).send({ error: 'Archivo no encontrado' });
+    const media = await prisma.productMedia.update({ where: { id }, data: body });
+    return { media };
+  });
+
+  app.delete('/media/:id', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const existing = await prisma.productMedia.findUnique({ where: { id } });
+    if (!existing) return reply.code(404).send({ error: 'Archivo no encontrado' });
+    await prisma.productMedia.delete({ where: { id } });
     return { success: true };
   });
 

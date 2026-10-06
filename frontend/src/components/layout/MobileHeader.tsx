@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2 } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, FolderOpen } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 
 export function MobileHeader() {
@@ -25,6 +25,7 @@ export function MobileHeader() {
     { path: '/earnings', label: 'Ganancias', icon: Wallet },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown },
     ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon }] : []),
+    { path: '/contenido', label: 'Contenido', icon: FolderOpen },
     { path: '/notifications', label: 'Notificaciones', icon: Bell },
     { path: '/profile', label: 'Perfil', icon: User },
   ];

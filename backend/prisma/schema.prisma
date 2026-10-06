@@ -452,12 +452,45 @@ model TikTokProduct {
   sponsorRate    Float    @default(5) @map("sponsor_rate")
   imageUrl       String?  @map("image_url")
   isActive       Boolean  @default(true) @map("is_active")
+  categoryId     String?  @map("category_id")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  sales TikTokSale[]
+  category ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sales    TikTokSale[]
+  media    ProductMedia[]
 
   @@map("tiktok_products")
+}
+
+model ProductCategory {
+  id        String   @id @default(uuid())
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  products TikTokProduct[]
+
+  @@map("product_categories")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model ProductMedia {
+  id        String    @id @default(uuid())
+  productId String    @map("product_id")
+  type      MediaType
+  url       String
+  title     String?
+  order     Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  product TikTokProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_media")
 }
 
 model TikTokSale {
