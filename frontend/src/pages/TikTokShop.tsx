@@ -80,6 +80,10 @@ export function TikTokShopPage() {
   const [creatorSearch, setCreatorSearch] = useState('');
   const [creatorFilter, setCreatorFilter] = useState<'ALL' | 'ACTIVO' | 'ACEPTADO' | 'PENDIENTE' | 'EMPTY'>('ALL');
 
+  // Filtros de materiales
+  const [materialSearch, setMaterialSearch] = useState('');
+  const [materialFilter, setMaterialFilter] = useState<'ALL' | 'VIDEO' | 'IMAGE'>('ALL');
+
   // Filtros de ventas
   const [salesSearch, setSalesSearch] = useState('');
   const [salesFilter, setSalesFilter] = useState<'ALL' | 'APPROVED' | 'PENDING'>('ALL');
@@ -933,7 +937,7 @@ export function TikTokShopPage() {
       {/* ─── TAB 4: Material Creativo & Recursos ─── */}
       {currentTab === 'material' && (
         <div className="space-y-6 animate-fade-in">
-          <div className="bg-white dark:bg-dark-800 rounded-3xl border border-gray-100 dark:border-dark-700 shadow-sm p-5 sm:p-6">
+          <div className="bg-white dark:bg-dark-800 rounded-3xl border border-gray-100 dark:border-dark-700 shadow-sm p-5 sm:p-6 space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 className="font-bold text-base sm:text-lg text-gray-900 dark:text-dark-100 flex items-center gap-2">
@@ -955,6 +959,65 @@ export function TikTokShopPage() {
               </button>
             </div>
 
+            {/* Barra de Filtros y Buscador estilo WhatsApp */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-gray-100 dark:border-dark-700">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar material por producto, video o imagen..."
+                  value={materialSearch}
+                  onChange={e => setMaterialSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                />
+                {materialSearch && (
+                  <button
+                    onClick={() => setMaterialSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-dark-200"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filtros de Formato */}
+              <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setMaterialFilter('ALL')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    materialFilter === 'ALL'
+                      ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/30'
+                      : 'bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-400 hover:bg-gray-200 dark:hover:bg-dark-600'
+                  }`}
+                >
+                  Todos los formatos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaterialFilter('VIDEO')}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    materialFilter === 'VIDEO'
+                      ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500/30'
+                      : 'bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-400 hover:bg-gray-200 dark:hover:bg-dark-600'
+                  }`}
+                >
+                  <Film className="w-3.5 h-3.5 text-rose-500" /> 🎬 Solo Videos UGC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaterialFilter('IMAGE')}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    materialFilter === 'IMAGE'
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 ring-1 ring-blue-500/30'
+                      : 'bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-400 hover:bg-gray-200 dark:hover:bg-dark-600'
+                  }`}
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-blue-500" /> 📸 Solo Fotos HD
+                </button>
+              </div>
+            </div>
+
             {loadingMaterial ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
@@ -967,66 +1030,186 @@ export function TikTokShopPage() {
                 <p className="text-xs text-gray-400 mt-1">El administrador subirá recursos y videos próximamente.</p>
               </div>
             ) : (
-              <div className="space-y-6 mt-6">
-                {(materialData?.categories || []).map((cat: any) => (
-                  <div key={cat.id} className="space-y-3">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
-                      {cat.name}
-                    </h3>
+              <div className="space-y-8 mt-4">
+                {(materialData?.categories || []).map((cat: any) => {
+                  const filteredProducts = (cat.products || []).filter((p: any) => {
+                    if (materialSearch.trim()) {
+                      const q = materialSearch.toLowerCase();
+                      const matchName = p.name?.toLowerCase().includes(q);
+                      const matchCat = cat.name?.toLowerCase().includes(q);
+                      const matchMedia = (p.media || []).some((m: any) => m.title?.toLowerCase().includes(q));
+                      if (!matchName && !matchCat && !matchMedia) return false;
+                    }
+                    if (materialFilter !== 'ALL') {
+                      const hasType = (p.media || []).some((m: any) => m.type === materialFilter);
+                      if (!hasType) return false;
+                    }
+                    return true;
+                  });
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {cat.products?.map((prod: any) => (
-                        <div key={prod.id} className="rounded-2xl border border-gray-100 dark:border-dark-700 p-4 bg-gray-50/50 dark:bg-dark-900/30 space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-white dark:bg-dark-800 shrink-0">
-                              {prod.imageUrl ? (
-                                <img src={prod.imageUrl} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <ShoppingBag className="w-5 h-5 text-gray-400 m-auto" />
-                              )}
-                            </div>
-                            <p className="font-bold text-sm text-gray-900 dark:text-dark-100 truncate">{prod.name}</p>
-                          </div>
+                  if (filteredProducts.length === 0) return null;
 
-                          <div className="space-y-2">
-                            {prod.media?.map((m: any) => (
-                              <div key={m.id} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 text-xs">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {m.type === 'VIDEO' ? (
-                                    <Film className="w-4 h-4 text-pink-500 shrink-0" />
-                                  ) : (
-                                    <ImageIcon className="w-4 h-4 text-blue-500 shrink-0" />
-                                  )}
-                                  <span className="truncate font-medium text-gray-800 dark:text-dark-200">{m.title || 'Recurso promocional'}</span>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <button
-                                    onClick={() => setMediaPreview(m)}
-                                    className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700"
-                                    title="Previsualizar"
-                                  >
-                                    <Eye className="w-3.5 h-3.5" />
-                                  </button>
-                                  <a
-                                    href={m.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    download
-                                    className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700"
-                                    title="Descargar"
-                                  >
-                                    <Download className="w-3.5 h-3.5" />
-                                  </a>
+                  return (
+                    <div key={cat.id} className="space-y-4">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                        <span>{highlightMatch(cat.name, materialSearch)}</span>
+                        <span className="text-xs font-normal text-gray-400">({filteredProducts.length} productos)</span>
+                      </h3>
+
+                      <div className="space-y-6">
+                        {filteredProducts.map((prod: any) => {
+                          const videos = (prod.media || []).filter((m: any) => m.type === 'VIDEO');
+                          const images = (prod.media || []).filter((m: any) => m.type === 'IMAGE');
+
+                          const showVideos = materialFilter === 'ALL' || materialFilter === 'VIDEO';
+                          const showImages = materialFilter === 'ALL' || materialFilter === 'IMAGE';
+
+                          return (
+                            <div key={prod.id} className="rounded-3xl border border-gray-200 dark:border-dark-700 p-5 bg-white dark:bg-dark-800 shadow-sm space-y-4">
+                              {/* Header del Producto */}
+                              <div className="flex items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-dark-700">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-11 h-11 rounded-2xl overflow-hidden bg-gray-50 dark:bg-dark-700 border border-gray-100 dark:border-dark-700 shrink-0 flex items-center justify-center">
+                                    {prod.imageUrl ? (
+                                      <img src={prod.imageUrl} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <ShoppingBag className="w-5 h-5 text-gray-400" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-sm text-gray-900 dark:text-dark-100 truncate">
+                                      {highlightMatch(prod.name, materialSearch)}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                                        🎬 {videos.length} videos UGC
+                                      </span>
+                                      <span className="text-gray-300 dark:text-dark-600">·</span>
+                                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                                        📸 {images.length} fotos HD
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+
+                              {/* SECCIÓN 1: VIDEOS UGC (VERTICAL 9:16 CON ROSA/ROJO) */}
+                              {showVideos && videos.length > 0 && (
+                                <div className="rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-gradient-to-b from-rose-50/20 to-transparent dark:from-rose-950/10 p-4 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white text-[11px] font-black tracking-wider flex items-center gap-1 shadow-sm">
+                                        <Film className="w-3 h-3" /> VIDEOS UGC
+                                      </span>
+                                      <span className="text-xs font-bold text-gray-800 dark:text-dark-200">
+                                        {videos.length} video{videos.length === 1 ? '' : 's'} listos para publicar
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 rounded-md border border-rose-200/50">
+                                      Formato 9:16 Vertical HD
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                    {videos.map((m: any) => (
+                                      <div key={m.id} className="relative group rounded-2xl overflow-hidden border-2 border-rose-300 dark:border-rose-800 bg-black aspect-[9/14] flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+                                        <video src={m.url} className="w-full h-full object-cover" muted preload="metadata" />
+
+                                        {/* Badge Video */}
+                                        <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md bg-rose-600/90 backdrop-blur-sm text-white text-[9px] font-black flex items-center gap-1 shadow">
+                                          <Film className="w-2.5 h-2.5" /> VIDEO
+                                        </div>
+
+                                        {/* Play Overlay */}
+                                        <div
+                                          onClick={() => setMediaPreview({ url: m.url, type: 'VIDEO', title: m.title || prod.name })}
+                                          className="absolute inset-0 bg-black/40 group-hover:bg-black/20 cursor-pointer flex flex-col items-center justify-center gap-1.5 transition-all"
+                                        >
+                                          <div className="w-10 h-10 rounded-full bg-white text-gray-950 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                            <Play className="w-4 h-4 fill-current ml-0.5 text-rose-600" />
+                                          </div>
+                                          <span className="text-[10px] font-bold text-white drop-shadow">Reproducir</span>
+                                        </div>
+
+                                        {/* Acciones de Tarjeta */}
+                                        <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1">
+                                          <a
+                                            href={m.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            download
+                                            className="p-1.5 rounded-lg bg-black/70 text-white hover:bg-rose-600 transition-colors shadow"
+                                            title="Descargar video"
+                                          >
+                                            <Download className="w-3.5 h-3.5" />
+                                          </a>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* SECCIÓN 2: FOTOS & BANNERS HD (CUADRADOS CON AZUL/CYAN) */}
+                              {showImages && images.length > 0 && (
+                                <div className="rounded-2xl border border-blue-200 dark:border-blue-900/40 bg-gradient-to-b from-blue-50/20 to-transparent dark:from-blue-950/10 p-4 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[11px] font-black tracking-wider flex items-center gap-1 shadow-sm">
+                                        <ImageIcon className="w-3 h-3" /> FOTOS & BANNERS HD
+                                      </span>
+                                      <span className="text-xs font-bold text-gray-800 dark:text-dark-200">
+                                        {images.length} imagen{images.length === 1 ? '' : 'es'} en alta resolución
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-md border border-blue-200/50">
+                                      Alta Definición · JPG / PNG
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                    {images.map((m: any) => (
+                                      <div key={m.id} className="relative group rounded-2xl overflow-hidden border-2 border-blue-200 dark:border-blue-800 bg-gray-50 dark:bg-dark-900 aspect-square shadow-sm hover:shadow-md transition-shadow">
+                                        <img src={m.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+
+                                        {/* Badge Foto */}
+                                        <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md bg-blue-600/90 backdrop-blur-sm text-white text-[9px] font-black flex items-center gap-1 shadow">
+                                          <ImageIcon className="w-2.5 h-2.5" /> FOTO
+                                        </div>
+
+                                        {/* Hover Overlay */}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => setMediaPreview({ url: m.url, type: 'IMAGE', title: m.title || prod.name })}
+                                            className="px-2.5 py-1.5 rounded-xl bg-white text-gray-900 text-[10px] font-bold flex items-center gap-1 shadow hover:bg-gray-100"
+                                          >
+                                            <Eye className="w-3 h-3 text-blue-600" /> Ver
+                                          </button>
+                                          <a
+                                            href={m.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            download
+                                            className="p-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow"
+                                            title="Descargar foto"
+                                          >
+                                            <Download className="w-3 h-3" />
+                                          </a>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
