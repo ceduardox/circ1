@@ -3,8 +3,16 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
+
+const progressSubItems = [
+  { path: '/progress?tab=overview', tab: 'overview', label: 'Mi Nivel y Resumen', icon: BarChart, gradient: 'from-blue-500 to-indigo-600' },
+  { path: '/progress?tab=days', tab: 'days', label: 'Días del Programa', icon: BookOpen, gradient: 'from-violet-500 to-purple-600' },
+  { path: '/progress?tab=achievements', tab: 'achievements', label: 'Logros y Medallas', icon: Award, gradient: 'from-amber-500 to-yellow-600' },
+  { path: '/progress?tab=reflections', tab: 'reflections', label: 'Mis Reflexiones', icon: Target, gradient: 'from-emerald-500 to-teal-600' },
+  { path: '/progress?tab=stats', tab: 'stats', label: 'Racha y Hábitos', icon: Flame, gradient: 'from-rose-500 to-orange-500' },
+];
 
 const networkSubItems = [
   { path: '/network?tab=overview', tab: 'overview', label: 'Link y Planes', icon: LinkIcon, gradient: 'from-blue-500 to-indigo-600' },
@@ -37,11 +45,15 @@ export function MobileHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const memberStatus = useMembershipStore(s => s.status);
+  const [progressExpanded, setProgressExpanded] = useState<boolean>(() => location.pathname === '/progress');
   const [networkExpanded, setNetworkExpanded] = useState<boolean>(() => location.pathname === '/network');
   const [earningsExpanded, setEarningsExpanded] = useState<boolean>(() => location.pathname === '/earnings');
   const [tiktokExpanded, setTiktokExpanded] = useState<boolean>(() => location.pathname === '/tiktok-shop');
 
   useEffect(() => {
+    if (location.pathname === '/progress') {
+      setProgressExpanded(true);
+    }
     if (location.pathname === '/network') {
       setNetworkExpanded(true);
     }
@@ -58,7 +70,7 @@ export function MobileHeader() {
 
   const navItems = [
     { path: '/dashboard', label: 'Mi Día', icon: Home, color: 'from-violet-500 to-purple-600' },
-    { path: '/progress', label: 'Progreso', icon: BarChart, color: 'from-blue-500 to-indigo-600' },
+    { path: '/progress', label: 'Progreso', icon: BarChart, color: 'from-blue-500 to-indigo-600', isExpandable: true, isExpanded: progressExpanded, toggleExpand: () => setProgressExpanded(v => !v), subItems: progressSubItems },
     { path: '/network', label: 'Mi Red', icon: Network, color: 'from-emerald-500 to-teal-600', isExpandable: true, isExpanded: networkExpanded, toggleExpand: () => setNetworkExpanded(v => !v), subItems: networkSubItems },
     { path: '/team', label: 'Construir Equipo', icon: Users2, color: 'from-cyan-500 to-sky-600' },
     { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600', isExpandable: true, isExpanded: earningsExpanded, toggleExpand: () => setEarningsExpanded(v => !v), subItems: earningsSubItems },
