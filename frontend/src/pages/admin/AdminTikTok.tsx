@@ -38,7 +38,7 @@ const creatorStatusMeta: Record<string, { label: string; classes: string }> = {
   ACTIVO: { label: 'Activo', classes: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50' },
 };
 
-type Tab = 'usuarios' | 'productos' | 'material' | 'comisiones';
+type Tab = 'usuarios' | 'productos' | 'material' | 'personalizados' | 'comisiones';
 
 function usePackBaseDefaults() {
   const [base, setBase] = useState({ base500: 3, base1000: 5 });
@@ -67,6 +67,7 @@ export function AdminTikTokPage() {
     { id: 'usuarios', label: 'Usuarios y Campañas', icon: Users, color: 'from-blue-500 to-indigo-600' },
     { id: 'productos', label: 'Catálogo de Productos', icon: Package, color: 'from-purple-500 to-fuchsia-600' },
     { id: 'material', label: 'Material Creativo', icon: FolderOpen, color: 'from-teal-500 to-emerald-600' },
+    { id: 'personalizados', label: 'Videos Personalizados', icon: Film, color: 'from-fuchsia-500 to-pink-600' },
     { id: 'comisiones', label: 'Comisiones por Aprobar', icon: DollarSign, color: 'from-amber-500 to-orange-600' },
   ];
 
@@ -141,6 +142,7 @@ export function AdminTikTokPage() {
       {currentTab === 'usuarios' && <UsersTab />}
       {currentTab === 'productos' && <ProductsTab />}
       {currentTab === 'material' && <MaterialTab />}
+      {currentTab === 'personalizados' && <CustomVideosTab />}
       {currentTab === 'comisiones' && <CommissionsTab />}
     </div>
   );
@@ -1949,4 +1951,152 @@ function SummaryCard({ label, value, color, bg, icon: Icon }: { label: string; v
     </div>
   );
 }
+
+// ─── Videos personalizados (solicitudes de usuarios) ───
+const cvStatusMeta: Record<string, { label: string; classes: string }> = {
+  SOLICITADO: { label: 'Solicitado', classes: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  EN_PROCESO: { label: 'En proceso', classes: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
+  ENTREGADO: { label: 'Entregado', classes: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
+  CANCELADO: { label: 'Cancelado', classes: 'bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-400' },
+};
+
+function CustomVideosTab() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+
+  const load = async () => {
+    try {
+      const { data } = await adminTiktokApi.customVideos();
+      setRequests(data.requests || []);
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al cargar las solicitudes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const receive = async (id: string) => {
+    if (!confirm('¿Marcar como recibido? El usuario ya no podrá editar ni cancelar.')) return;
+    setBusy('receive-' + id);
+    try {
+      await adminTiktokApi.receiveCustomVideo(id);
+      toast.success('Solicitud recibida');
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const uploadVideo = async (itemId: string, file?: File) => {
+    if (!file) return;
+    setBusy(itemId);
+    setProgress(0);
+    try {
+      await adminTiktokApi.uploadCustomVideoItem(itemId, file, (p) => setProgress(p));
+      toast.success('Video subido');
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al subir el video');
+    } finally {
+      setBusy(null);
+      setProgress(0);
+    }
+  };
+
+  const deliver = async (id: string) => {
+    if (!confirm('¿Entregar? Se notificará al usuario.')) return;
+    setBusy('deliver-' + id);
+    try {
+      await adminTiktokApi.deliverCustomVideo(id);
+      toast.success('Entregado al usuario');
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;
+
+  const list = requests.filter(r => r.status !== 'CANCELADO');
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-gray-500 dark:text-dark-400">Solicitudes de video personalizado (2 productos por solicitud). Recibe, sube los 2 videos y entrega.</p>
+      {list.length === 0 && <div className="text-center py-10 text-gray-400 dark:text-dark-500 text-sm">No hay solicitudes.</div>}
+      {list.map(r => {
+        const st = cvStatusMeta[r.status] || cvStatusMeta.SOLICITADO;
+        const allVideos = r.items.length > 0 && r.items.every((i: any) => i.videoUrl);
+        return (
+          <div key={r.id} className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-pink-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                {(r.user?.firstName?.[0] || r.user?.username?.[0] || '?').toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-[150px]">
+                <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">{r.user?.firstName || r.user?.username} {r.user?.lastName || ''} <span className="text-gray-400 font-normal">@{r.user?.username}</span></p>
+                <p className="text-xs text-gray-500 dark:text-dark-400">{new Date(r.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })} · {r.locked ? 'Bloqueado' : 'Editable'}</p>
+              </div>
+              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${st.classes}`}>{st.label}</span>
+              {!r.locked && (
+                <Button size="sm" disabled={busy === 'receive-' + r.id} className="bg-transparent border border-blue-200 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20" onClick={() => receive(r.id)}>
+                  {busy === 'receive-' + r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Recibir
+                </Button>
+              )}
+              {allVideos && r.status !== 'ENTREGADO' && (
+                <Button size="sm" disabled={busy === 'deliver-' + r.id} className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => deliver(r.id)}>
+                  {busy === 'deliver-' + r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Entregar
+                </Button>
+              )}
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(r.photos || []).map((url: string, i: number) => (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                  <img src={url} alt="" className="w-16 h-16 rounded-xl object-cover border border-gray-100 dark:border-dark-700" />
+                </a>
+              ))}
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {r.items.map((it: any) => (
+                <div key={it.id} className="rounded-xl border border-gray-100 dark:border-dark-700 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    {it.product?.imageUrl ? <img src={it.product.imageUrl} alt="" className="w-7 h-7 rounded object-cover" /> : <Package className="w-4 h-4 text-gray-400" />}
+                    <span className="text-xs font-semibold text-gray-800 dark:text-dark-100 truncate">{it.product?.name}</span>
+                  </div>
+                  {it.videoUrl ? (
+                    <div className="rounded-lg overflow-hidden border border-gray-100 dark:border-dark-700">
+                      <video src={it.videoUrl} controls preload="metadata" className="w-full h-40 object-contain bg-black" />
+                      <label className="block text-center text-[11px] text-primary-600 dark:text-primary-400 py-1 cursor-pointer hover:underline">
+                        Reemplazar video
+                        <input type="file" accept="video/*" className="hidden" disabled={busy === it.id} onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; void uploadVideo(it.id, f); (e.target as HTMLInputElement).value = ''; }} />
+                      </label>
+                    </div>
+                  ) : (
+                    <>
+                      <label className={`flex items-center justify-center gap-2 h-40 rounded-lg border-2 border-dashed cursor-pointer text-xs font-semibold ${busy === it.id ? 'opacity-60' : 'border-gray-200 dark:border-dark-600 text-gray-500 dark:text-dark-300 hover:border-primary-300'}`}>
+                        {busy === it.id ? <><Loader2 className="w-4 h-4 animate-spin" /> {progress}%</> : <><Upload className="w-4 h-4" /> Subir video</>}
+                        <input type="file" accept="video/*" className="hidden" disabled={busy === it.id} onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; void uploadVideo(it.id, f); (e.target as HTMLInputElement).value = ''; }} />
+                      </label>
+                      {busy === it.id && <div className="mt-2 h-1.5 rounded-full bg-gray-100 dark:bg-dark-700 overflow-hidden"><div className="h-full bg-primary-600 transition-all" style={{ width: `${progress}%` }} /></div>}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default AdminTikTokPage;

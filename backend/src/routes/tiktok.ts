@@ -1,4 +1,8 @@
 import { FastifyInstance } from 'fastify';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { mkdir, writeFile } from 'fs/promises';
+import { randomUUID } from 'crypto';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
@@ -6,10 +10,20 @@ import { config } from '../config/index.js';
 import { createInvoice, getPaymentStatus } from '../utils/nowpayments.js';
 import { resolvePackForUser, activateCreatorExtra, campaignMaxCreators } from '../utils/tiktok.js';
 import { effectiveMembership } from '../utils/membershipStatus.js';
+import { sendWebPush } from '../utils/onesignal.js';
 
 interface JWTPayload { sub: string; email: string; role: string; type?: string; }
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const baseUrlOf = (request: any) => {
+  const proto = (request.headers['x-forwarded-proto'] as string) || request.protocol || 'https';
+  const host = (request.headers['x-forwarded-host'] as string) || request.headers.host;
+  return process.env.BACKEND_URL || (host ? `${proto}://${host}` : '');
+};
+
 const PAYMENT_TTL_MINUTES = 30;
+const CUSTOM_VIDEO_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
 async function getExtraCreatorPrice(): Promise<number> {
   const row = await prisma.adminSetting.findUnique({ where: { key: 'TIKTOK_EXTRA_CREATOR_PRICE' } });
@@ -154,6 +168,126 @@ export async function tiktokRoutes(app: FastifyInstance) {
     }
 
     return { categories: result };
+  });
+
+  // ─── Videos personalizados ───
+  const createCustomVideoSchema = z.object({
+    photos: z.array(z.string().max(600)).min(1).max(3),
+    productIds: z.array(z.string()).length(2),
+  });
+
+  // Subir una foto (máx 8MB) para la solicitud de video personalizado.
+  app.post('/custom-video/upload-photo', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    let data: any;
+    try { data = await (request as any).file({ limits: { fileSize: 8 * 1024 * 1024 } }); } catch { return reply.code(400).send({ error: 'Archivo no válido o demasiado grande (máx 8MB)' }); }
+    if (!data) return reply.code(400).send({ error: 'Debes enviar una imagen' });
+    const allowed: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+    const ext = allowed[data.mimetype];
+    if (!ext) return reply.code(400).send({ error: 'Formato no permitido. Usa JPG, PNG o WEBP' });
+    const filename = `photo-${randomUUID()}.${ext}`;
+    const dir = path.join(__dirname, '..', '..', 'uploads', 'custom-videos', userId);
+    await mkdir(dir, { recursive: true });
+    const buffer = await data.toBuffer();
+    if (data.file?.truncated) return reply.code(400).send({ error: 'La imagen supera los 8MB' });
+    await writeFile(path.join(dir, filename), buffer);
+    const base = baseUrlOf(request);
+    return { url: `${base}/uploads/custom-videos/${userId}/${filename}` };
+  });
+
+  // Estado de sus solicitudes + productos activos para el selector.
+  app.get('/custom-video', { preHandler: authMiddleware }, async (request) => {
+    const userId = (request.user as JWTPayload).sub;
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, membershipStatus: true, membershipExpiresAt: true, role: true } });
+    const eff = effectiveMembership(user!);
+    const isActive = eff.status === 'ACTIVE';
+
+    const requests = await prisma.customVideoRequest.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: { items: { orderBy: { order: 'asc' }, include: { product: { select: { id: true, name: true, imageUrl: true } } } } },
+    });
+
+    const activeReq = requests.find(r => r.status !== 'CANCELADO');
+    let canRequest = isActive;
+    let nextAvailableAt: string | null = null;
+    if (activeReq) {
+      const next = new Date(activeReq.createdAt.getTime() + CUSTOM_VIDEO_WINDOW_MS);
+      if (next > new Date()) { canRequest = false; nextAvailableAt = next.toISOString(); }
+    }
+
+    const products = await prisma.tikTokProduct.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, imageUrl: true },
+    });
+
+    return { isActive, canRequest, nextAvailableAt, requests, products };
+  });
+
+  app.post('/custom-video', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, membershipStatus: true, membershipExpiresAt: true, role: true } });
+    if (effectiveMembership(user!).status !== 'ACTIVE') {
+      return reply.code(403).send({ error: 'Necesitas una membresía activa para pedir tu video personalizado' });
+    }
+
+    const { photos, productIds } = createCustomVideoSchema.parse(request.body);
+
+    const last = await prisma.customVideoRequest.findFirst({
+      where: { userId, status: { not: 'CANCELADO' } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (last) {
+      const next = new Date(last.createdAt.getTime() + CUSTOM_VIDEO_WINDOW_MS);
+      if (next > new Date()) return reply.code(400).send({ error: `Ya tienes una solicitud este mes. Podrás pedir otra el ${next.toLocaleDateString('es-ES')}.` });
+    }
+
+    const products = await prisma.tikTokProduct.findMany({ where: { id: { in: productIds }, isActive: true }, select: { id: true } });
+    if (products.length !== 2) return reply.code(400).send({ error: 'Selecciona 2 productos válidos del catálogo' });
+
+    const created = await prisma.customVideoRequest.create({
+      data: {
+        userId,
+        status: 'SOLICITADO',
+        photos,
+        items: { create: productIds.map((pid, i) => ({ productId: pid, order: i })) },
+      },
+      include: { items: { orderBy: { order: 'asc' }, include: { product: { select: { id: true, name: true, imageUrl: true } } } } },
+    });
+    return { request: created };
+  });
+
+  app.put('/custom-video/:id', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const { id } = request.params as { id: string };
+    const req = await prisma.customVideoRequest.findUnique({ where: { id } });
+    if (!req || req.userId !== userId) return reply.code(404).send({ error: 'Solicitud no encontrada' });
+    if (req.locked) return reply.code(400).send({ error: 'La solicitud ya fue recibida y no se puede editar' });
+
+    const { photos, productIds } = createCustomVideoSchema.parse(request.body);
+    const products = await prisma.tikTokProduct.findMany({ where: { id: { in: productIds }, isActive: true }, select: { id: true } });
+    if (products.length !== 2) return reply.code(400).send({ error: 'Selecciona 2 productos válidos del catálogo' });
+
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.customVideoRequestItem.deleteMany({ where: { requestId: id } });
+      return tx.customVideoRequest.update({
+        where: { id },
+        data: { photos, items: { create: productIds.map((pid, i) => ({ productId: pid, order: i })) } },
+        include: { items: { orderBy: { order: 'asc' }, include: { product: { select: { id: true, name: true, imageUrl: true } } } } },
+      });
+    });
+    return { request: updated };
+  });
+
+  app.delete('/custom-video/:id', { preHandler: authMiddleware }, async (request, reply) => {
+    const userId = (request.user as JWTPayload).sub;
+    const { id } = request.params as { id: string };
+    const req = await prisma.customVideoRequest.findUnique({ where: { id } });
+    if (!req || req.userId !== userId) return reply.code(404).send({ error: 'Solicitud no encontrada' });
+    if (req.locked) return reply.code(400).send({ error: 'La solicitud ya fue recibida y no se puede cancelar' });
+    await prisma.customVideoRequest.update({ where: { id }, data: { status: 'CANCELADO' } });
+    return { success: true };
   });
 
   // ─── Activar TikTok Shop (crea la campaña si no existe) ───

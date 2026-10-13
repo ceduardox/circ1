@@ -128,6 +128,7 @@ model User {
   tiktokCampaign    TikTokShopCampaign?
   tiktokCommissions TikTokCommission[]
   dailyEarnings     DailyEarning[]
+  customVideoRequests CustomVideoRequest[]
 
   @@map("users")
 }
@@ -459,6 +460,7 @@ model TikTokProduct {
   category ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   sales    TikTokSale[]
   media    ProductMedia[]
+  customVideoItems CustomVideoRequestItem[]
 
   @@map("tiktok_products")
 }
@@ -491,6 +493,41 @@ model ProductMedia {
   product TikTokProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_media")
+}
+
+enum CustomVideoStatus {
+  SOLICITADO
+  EN_PROCESO
+  ENTREGADO
+  CANCELADO
+}
+
+model CustomVideoRequest {
+  id        String            @id @default(uuid())
+  userId    String            @map("user_id")
+  status    CustomVideoStatus @default(SOLICITADO)
+  photos    Json?
+  locked    Boolean           @default(false)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  user  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CustomVideoRequestItem[]
+
+  @@map("custom_video_requests")
+}
+
+model CustomVideoRequestItem {
+  id        String  @id @default(uuid())
+  requestId String  @map("request_id")
+  productId String  @map("product_id")
+  videoUrl  String? @map("video_url")
+  order     Int     @default(0)
+
+  request CustomVideoRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  product TikTokProduct      @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@map("custom_video_request_items")
 }
 
 model TikTokSale {

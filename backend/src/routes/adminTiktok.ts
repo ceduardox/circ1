@@ -418,6 +418,79 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  // ─── Videos personalizados (solicitudes de usuarios) ───
+  app.get('/custom-videos', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
+    const requests = await prisma.customVideoRequest.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, username: true, country: true } },
+        items: { orderBy: { order: 'asc' }, include: { product: { select: { id: true, name: true, imageUrl: true } } } },
+      },
+    });
+    return { requests };
+  });
+
+  app.post('/custom-videos/:id/receive', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const req = await prisma.customVideoRequest.findUnique({ where: { id } });
+    if (!req) return reply.code(404).send({ error: 'Solicitud no encontrada' });
+    if (req.locked) return reply.code(400).send({ error: 'Ya estaba recibida' });
+    const updated = await prisma.customVideoRequest.update({ where: { id }, data: { locked: true, status: 'EN_PROCESO' } });
+    try {
+      await prisma.notification.create({ data: { userId: req.userId, title: 'Video personalizado recibido', message: 'Recibimos tu solicitud. Estamos trabajando en tu video personalizado.' } });
+      const u = await prisma.user.findUnique({ where: { id: req.userId }, select: { pushEnabled: true, pushCommissions: true } });
+      if (u?.pushEnabled && u.pushCommissions) {
+        await sendWebPush({ externalUserIds: [req.userId], title: 'Video personalizado recibido', message: 'Estamos trabajando en tu video personalizado.', url: '/videos' });
+      }
+    } catch { /* no romper */ }
+    return { request: updated };
+  });
+
+  app.post('/custom-videos/items/:itemId/video', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { itemId } = request.params as { itemId: string };
+    const item = await prisma.customVideoRequestItem.findUnique({ where: { id: itemId }, include: { request: true } });
+    if (!item) return reply.code(404).send({ error: 'Item no encontrado' });
+
+    let data: any;
+    try { data = await (request as any).file({ limits: { fileSize: 200 * 1024 * 1024 } }); } catch { return reply.code(400).send({ error: 'Archivo no válido o demasiado grande (máx 200MB)' }); }
+    if (!data) return reply.code(400).send({ error: 'Debes enviar un video' });
+    const allowed: Record<string, string> = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' };
+    const ext = allowed[data.mimetype];
+    if (!ext) return reply.code(400).send({ error: 'Formato no permitido. Usa MP4, WEBM o MOV' });
+
+    const filename = `video-${randomUUID()}.${ext}`;
+    const dir = path.join(__dirname, '..', '..', 'uploads', 'custom-videos', item.request.userId);
+    await mkdir(dir, { recursive: true });
+    const buffer = await data.toBuffer();
+    if (data.file?.truncated) return reply.code(400).send({ error: 'El video supera los 200MB' });
+    await writeFile(path.join(dir, filename), buffer);
+
+    const proto = (request.headers['x-forwarded-proto'] as string) || request.protocol || 'https';
+    const host = (request.headers['x-forwarded-host'] as string) || request.headers.host;
+    const base = process.env.BACKEND_URL || (host ? `${proto}://${host}` : '');
+    const updated = await prisma.customVideoRequestItem.update({
+      where: { id: itemId },
+      data: { videoUrl: `${base}/uploads/custom-videos/${item.request.userId}/${filename}` },
+    });
+    return { item: updated };
+  });
+
+  app.post('/custom-videos/:id/deliver', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const req = await prisma.customVideoRequest.findUnique({ where: { id }, include: { items: true } });
+    if (!req) return reply.code(404).send({ error: 'Solicitud no encontrada' });
+    if (req.items.length === 0 || req.items.some(i => !i.videoUrl)) return reply.code(400).send({ error: 'Sube los 2 videos antes de entregar' });
+    const updated = await prisma.customVideoRequest.update({ where: { id }, data: { status: 'ENTREGADO', locked: true } });
+    try {
+      await prisma.notification.create({ data: { userId: req.userId, title: '🎬 Tu video personalizado está listo', message: 'Ya puedes ver y descargar tus videos personalizados.' } });
+      const u = await prisma.user.findUnique({ where: { id: req.userId }, select: { pushEnabled: true, pushCommissions: true } });
+      if (u?.pushEnabled && u.pushCommissions) {
+        await sendWebPush({ externalUserIds: [req.userId], title: 'Tu video personalizado está listo', message: 'Ya puedes ver y descargar tus videos.', url: '/videos' });
+      }
+    } catch { /* no romper */ }
+    return { request: updated };
+  });
+
   // ─── Registrar venta (crea comisiones PENDING alumno 25% + patrocinador 5%) ───
   const saleSchema = z.object({
     creatorId: z.string().uuid(),

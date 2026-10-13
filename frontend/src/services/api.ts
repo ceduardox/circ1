@@ -204,6 +204,15 @@ export const tiktokApi = {
   extraPaymentStatus: (id: string) => api.get(`/tiktok/extra-payment/${id}/status`),
   updateProductPlan: (productIds: string[]) => api.put('/tiktok/product-plan', { productIds }),
   material: () => api.get('/tiktok/material'),
+  customVideo: () => api.get('/tiktok/custom-video'),
+  uploadCustomVideoPhoto: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/tiktok/custom-video/upload-photo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  createCustomVideo: (data: any) => api.post('/tiktok/custom-video', data),
+  updateCustomVideo: (id: string, data: any) => api.put(`/tiktok/custom-video/${id}`, data),
+  cancelCustomVideo: (id: string) => api.delete(`/tiktok/custom-video/${id}`),
 };
 
 export const adminTiktokApi = {
@@ -242,6 +251,19 @@ export const adminTiktokApi = {
   },
   updateMedia: (id: string, data: any) => api.put(`/admin/tiktok/media/${id}`, data),
   deleteMedia: (id: string) => api.delete(`/admin/tiktok/media/${id}`),
+  customVideos: () => api.get('/admin/tiktok/custom-videos'),
+  receiveCustomVideo: (id: string) => api.post(`/admin/tiktok/custom-videos/${id}/receive`),
+  uploadCustomVideoItem: (itemId: string, file: File, onProgress?: (pct: number) => void) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/admin/tiktok/custom-videos/items/${itemId}/video`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.min(100, Math.round((e.loaded / e.total) * 100)));
+      },
+    });
+  },
+  deliverCustomVideo: (id: string) => api.post(`/admin/tiktok/custom-videos/${id}/deliver`),
   registerSale: (data: any) => api.post('/admin/tiktok/sales', data),
   deleteSale: (id: string) => api.delete(`/admin/tiktok/sales/${id}`),
   pendingCommissions: () => api.get('/admin/tiktok/commissions/pending'),

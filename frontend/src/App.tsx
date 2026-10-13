@@ -24,6 +24,7 @@ import { NotificationsPage } from '@/pages/Notifications';
 import { VipProPage } from '@/pages/VipPro';
 import { TikTokShopPage } from '@/pages/TikTokShop';
 import { ContentMaterialsPage } from '@/pages/ContentMaterials';
+import { MyVideoPage } from '@/pages/MyVideo';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboard';
 import { AdminDaysPage } from '@/pages/admin/AdminDays';
 import { AdminDayDetailPage } from '@/pages/admin/AdminDayDetail';
@@ -105,6 +106,7 @@ function App() {
             <Route path="/vip-pro" element={<VipProPage />} />
             <Route path="/tiktok-shop" element={<TikTokShopPage />} />
             <Route path="/contenido" element={<ContentMaterialsPage />} />
+            <Route path="/videos" element={<MyVideoPage />} />
             <Route path="/chat" element={<ChatRedirect />} />
 
             <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>

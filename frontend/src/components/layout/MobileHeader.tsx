@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, BellRing, Sliders, Smartphone, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck, Sparkles, Compass, Package, DollarSign } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, BellRing, Sliders, Smartphone, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck, Sparkles, Compass, Package, DollarSign, Clapperboard } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 
 const progressSubItems = [
@@ -121,6 +121,7 @@ export function MobileHeader() {
     { path: '/earnings', label: 'Ganancias', icon: Wallet, color: 'from-amber-500 to-orange-600', isExpandable: true, isExpanded: earningsExpanded, toggleExpand: () => setEarningsExpanded(v => !v), subItems: earningsSubItems },
     { path: '/vip-pro', label: 'VIP Pro', icon: Crown, color: 'from-violet-600 to-fuchsia-600' },
     ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600', isExpandable: true, isExpanded: tiktokExpanded, toggleExpand: () => setTiktokExpanded(v => !v), subItems: tiktokSubItems }] : []),
+    ...(hasTikTok ? [{ path: '/videos', label: 'Mi Video', icon: Clapperboard, color: 'from-fuchsia-500 to-pink-600' }] : []),
     { path: '/contenido', label: 'Contenido', icon: FolderOpen, color: 'from-teal-500 to-emerald-600', isExpandable: true, isExpanded: contenidoExpanded, toggleExpand: () => setContenidoExpanded(v => !v), subItems: contenidoSubItems },
     { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600', isExpandable: true, isExpanded: notificationsExpanded, toggleExpand: () => setNotificationsExpanded(v => !v), subItems: notificationsSubItems },
     { path: '/profile', label: 'Perfil', icon: User, color: 'from-pink-500 to-rose-600' },
