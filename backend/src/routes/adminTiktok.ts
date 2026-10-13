@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, writeFile, unlink } from 'fs/promises';
 import { randomUUID } from 'crypto';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
@@ -12,6 +12,24 @@ import { sendWebPush } from '../utils/onesignal.js';
 interface JWTPayload { sub: string; email: string; role: string; type?: string; }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Resuelve la ruta local de un archivo servido desde /uploads/ (para borrarlo del disco).
+const uploadsRoot = path.join(__dirname, '..', '..', 'uploads');
+function localUploadPath(url: string | null | undefined): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const idx = url.indexOf('/uploads/');
+  if (idx === -1) return null;
+  const rel = url.slice(idx + '/uploads/'.length);
+  const full = path.normalize(path.join(uploadsRoot, rel));
+  if (!full.startsWith(uploadsRoot)) return null;
+  return full;
+}
+
+async function removeUploadedFile(url: string | null | undefined) {
+  const p = localUploadPath(url);
+  if (!p) return;
+  try { await unlink(p); } catch { /* ya no existe */ }
+}
 
 const fmtUSD = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
@@ -324,6 +342,12 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const sales = await prisma.tikTokSale.count({ where: { productId: id } });
     if (sales > 0) return reply.code(400).send({ error: 'No se puede eliminar un producto con ventas registradas' });
+    // Borra también los archivos del producto (imagen principal y material).
+    const product = await prisma.tikTokProduct.findUnique({ where: { id }, include: { media: true } });
+    if (product) {
+      await removeUploadedFile(product.imageUrl);
+      for (const m of product.media) await removeUploadedFile(m.url);
+    }
     await prisma.tikTokProduct.delete({ where: { id } });
     return { success: true };
   });
@@ -415,6 +439,7 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     const existing = await prisma.productMedia.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: 'Archivo no encontrado' });
     await prisma.productMedia.delete({ where: { id } });
+    await removeUploadedFile(existing.url);
     return { success: true };
   });
 
@@ -469,6 +494,7 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     const host = (request.headers['x-forwarded-host'] as string) || request.headers.host;
     const base = process.env.BACKEND_URL || (host ? `${proto}://${host}` : '');
     const videoUrl = `${base}/uploads/custom-videos/${item.request.userId}/${filename}`;
+    if (item.videoUrl) await removeUploadedFile(item.videoUrl);
     const updated = await prisma.customVideoRequestItem.update({ where: { id: itemId }, data: { videoUrl } });
 
     // El video queda disponible para el usuario de inmediato (bloquea la solicitud y avisa).

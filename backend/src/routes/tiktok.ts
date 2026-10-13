@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, writeFile, unlink } from 'fs/promises';
 import { randomUUID } from 'crypto';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -21,6 +21,17 @@ const baseUrlOf = (request: any) => {
   const host = (request.headers['x-forwarded-host'] as string) || request.headers.host;
   return process.env.BACKEND_URL || (host ? `${proto}://${host}` : '');
 };
+
+// Borra del disco un archivo servido desde /uploads/ (para no dejar huérfanos).
+const uploadsRoot = path.join(__dirname, '..', '..', 'uploads');
+async function removeUploadedFile(url: string | null | undefined) {
+  if (!url || typeof url !== 'string') return;
+  const idx = url.indexOf('/uploads/');
+  if (idx === -1) return;
+  const full = path.normalize(path.join(uploadsRoot, url.slice(idx + '/uploads/'.length)));
+  if (!full.startsWith(uploadsRoot)) return;
+  try { await unlink(full); } catch { /* ya no existe */ }
+}
 
 const PAYMENT_TTL_MINUTES = 30;
 const CUSTOM_VIDEO_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
@@ -269,6 +280,8 @@ export async function tiktokRoutes(app: FastifyInstance) {
     const products = await prisma.tikTokProduct.findMany({ where: { id: { in: productIds }, isActive: true }, select: { id: true } });
     if (products.length !== 2) return reply.code(400).send({ error: 'Selecciona 2 productos válidos del catálogo' });
 
+    const oldPhotos: string[] = Array.isArray(req.photos) ? (req.photos as string[]) : [];
+
     const updated = await prisma.$transaction(async (tx) => {
       await tx.customVideoRequestItem.deleteMany({ where: { requestId: id } });
       return tx.customVideoRequest.update({
@@ -277,6 +290,11 @@ export async function tiktokRoutes(app: FastifyInstance) {
         include: { items: { orderBy: { order: 'asc' }, include: { product: { select: { id: true, name: true, imageUrl: true } } } } },
       });
     });
+
+    // Borra del disco las fotos que ya no se usan.
+    for (const url of oldPhotos) {
+      if (!photos.includes(url)) await removeUploadedFile(url);
+    }
     return { request: updated };
   });
 
