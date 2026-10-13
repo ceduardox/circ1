@@ -448,7 +448,7 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
 
   app.post('/custom-videos/items/:itemId/video', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
     const { itemId } = request.params as { itemId: string };
-    const item = await prisma.customVideoRequestItem.findUnique({ where: { id: itemId }, include: { request: true } });
+    const item = await prisma.customVideoRequestItem.findUnique({ where: { id: itemId }, include: { request: true, product: { select: { name: true } } } });
     if (!item) return reply.code(404).send({ error: 'Item no encontrado' });
 
     let data: any;
@@ -468,18 +468,38 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     const proto = (request.headers['x-forwarded-proto'] as string) || request.protocol || 'https';
     const host = (request.headers['x-forwarded-host'] as string) || request.headers.host;
     const base = process.env.BACKEND_URL || (host ? `${proto}://${host}` : '');
-    const updated = await prisma.customVideoRequestItem.update({
-      where: { id: itemId },
-      data: { videoUrl: `${base}/uploads/custom-videos/${item.request.userId}/${filename}` },
+    const videoUrl = `${base}/uploads/custom-videos/${item.request.userId}/${filename}`;
+    const updated = await prisma.customVideoRequestItem.update({ where: { id: itemId }, data: { videoUrl } });
+
+    // El video queda disponible para el usuario de inmediato (bloquea la solicitud y avisa).
+    const all = await prisma.customVideoRequestItem.findMany({ where: { requestId: item.requestId } });
+    const allDelivered = all.length > 0 && all.every(i => i.videoUrl);
+    await prisma.customVideoRequest.update({
+      where: { id: item.requestId },
+      data: { locked: true, status: allDelivered ? 'ENTREGADO' : 'EN_PROCESO' },
     });
-    return { item: updated };
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: item.request.userId,
+          title: '🎬 Tu video personalizado está listo',
+          message: `${item.product?.name ? item.product.name + ': ' : ''}ya puedes ver y descargar tu video personalizado.`,
+        },
+      });
+      const u = await prisma.user.findUnique({ where: { id: item.request.userId }, select: { pushEnabled: true, pushCommissions: true } });
+      if (u?.pushEnabled && u.pushCommissions) {
+        await sendWebPush({ externalUserIds: [item.request.userId], title: 'Tu video personalizado está listo', message: 'Ya puedes ver y descargar tu video.', url: '/videos' });
+      }
+    } catch { /* no romper */ }
+
+    return { item: updated, allDelivered };
   });
 
   app.post('/custom-videos/:id/deliver', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const req = await prisma.customVideoRequest.findUnique({ where: { id }, include: { items: true } });
     if (!req) return reply.code(404).send({ error: 'Solicitud no encontrada' });
-    if (req.items.length === 0 || req.items.some(i => !i.videoUrl)) return reply.code(400).send({ error: 'Sube los 2 videos antes de entregar' });
+    if (req.items.length === 0 || !req.items.some(i => i.videoUrl)) return reply.code(400).send({ error: 'Sube al menos un video antes de entregar' });
     const updated = await prisma.customVideoRequest.update({ where: { id }, data: { status: 'ENTREGADO', locked: true } });
     try {
       await prisma.notification.create({ data: { userId: req.userId, title: '🎬 Tu video personalizado está listo', message: 'Ya puedes ver y descargar tus videos personalizados.' } });

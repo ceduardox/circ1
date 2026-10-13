@@ -158,17 +158,20 @@ export function MyVideoPage() {
               ))}
             </div>
 
-            {activeReq.status === 'ENTREGADO' && (
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(activeReq.items || []).filter((it: any) => it.videoUrl).map((it: any) => (
-                  <div key={it.id} className="rounded-xl overflow-hidden border border-gray-100 dark:border-dark-700 bg-black">
-                    <video src={it.videoUrl} controls preload="metadata" className="w-full h-48 object-contain bg-black" />
-                    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-dark-800">
-                      <span className="text-xs font-semibold text-gray-700 dark:text-dark-200 truncate">{it.product?.name}</span>
-                      <a href={it.videoUrl} download target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 dark:text-primary-400"><Download className="w-3.5 h-3.5" /> Descargar</a>
+            {(activeReq.items || []).some((it: any) => it.videoUrl) && (
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1"><Download className="w-3.5 h-3.5" /> Tus videos personalizados</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(activeReq.items || []).filter((it: any) => it.videoUrl).map((it: any) => (
+                    <div key={it.id} className="rounded-xl overflow-hidden border border-gray-100 dark:border-dark-700 bg-black">
+                      <video src={it.videoUrl} controls preload="metadata" className="w-full h-48 object-contain bg-black" />
+                      <div className="flex items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-dark-800">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-dark-200 truncate">{it.product?.name}</span>
+                        <a href={it.videoUrl} download target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 dark:text-primary-400"><Download className="w-3.5 h-3.5" /> Descargar</a>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 

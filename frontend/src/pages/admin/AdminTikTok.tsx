@@ -2033,7 +2033,7 @@ function CustomVideosTab() {
       {list.length === 0 && <div className="text-center py-10 text-gray-400 dark:text-dark-500 text-sm">No hay solicitudes.</div>}
       {list.map(r => {
         const st = cvStatusMeta[r.status] || cvStatusMeta.SOLICITADO;
-        const allVideos = r.items.length > 0 && r.items.every((i: any) => i.videoUrl);
+        const hasVideo = r.items.some((i: any) => i.videoUrl);
         return (
           <div key={r.id} className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm p-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -2050,7 +2050,7 @@ function CustomVideosTab() {
                   {busy === 'receive-' + r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Recibir
                 </Button>
               )}
-              {allVideos && r.status !== 'ENTREGADO' && (
+              {hasVideo && r.status !== 'ENTREGADO' && (
                 <Button size="sm" disabled={busy === 'deliver-' + r.id} className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => deliver(r.id)}>
                   {busy === 'deliver-' + r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Entregar
                 </Button>
