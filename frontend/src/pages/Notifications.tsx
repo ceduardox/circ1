@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { membershipApi } from '@/services/api';
 import { PageHeader } from '@/components/ui';
+import { useConfirm } from '@/components/ui/confirm';
 import { PushNotificationsPanel } from '@/components/program/PushNotificationsPanel';
 import { hasPushPermission, getNativePushPermission } from '@/lib/onesignal';
 import { openGlobalChat } from '@/components/chat/FloatingChat';
@@ -189,6 +190,7 @@ export function NotificationsPage() {
 
   const { user } = useAuthStore();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const confirm = useConfirm();
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -255,7 +257,7 @@ export function NotificationsPage() {
 
   const clearAllNotifications = async () => {
     if (notifications.length === 0) return;
-    if (!confirm('¿Deseas vaciar toda tu bandeja de notificaciones?')) return;
+    if (!(await confirm({ title: 'Vaciar bandeja', message: '¿Deseas vaciar toda tu bandeja de notificaciones?', confirmText: 'Sí, vaciar' }))) return;
     try {
       await membershipApi.clearNotifications();
       setNotifications([]);

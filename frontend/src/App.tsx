@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { useEffect } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ConfirmProvider } from '@/components/ui/confirm';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { MembershipGate } from '@/components/program/MembershipGate';
 import { MobileHeader } from '@/components/layout/MobileHeader';
@@ -69,6 +70,7 @@ function App() {
 
   return (
     <ThemeProvider>
+    <ConfirmProvider>
     <BrowserRouter>
       <div className="min-h-screen bg-gray-100 dark:bg-dark-900">
         <SpeechCleanup />
@@ -128,6 +130,7 @@ function App() {
         {updateAvailable && <UpdateBanner onReload={reload} />}
       </div>
     </BrowserRouter>
+    </ConfirmProvider>
     </ThemeProvider>
   );
 }

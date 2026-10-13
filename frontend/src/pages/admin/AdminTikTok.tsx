@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { adminTiktokApi, adminBusinessApi } from '@/services/api';
 import { Input, Label, ButtonPrimary, Button, PageHeader } from '@/components/ui';
+import { useConfirm } from '@/components/ui/confirm';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 import { toast } from 'sonner';
 import { clsx } from 'clsx';
@@ -157,6 +158,7 @@ function UsersTab() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<any>(null);
+  const confirm = useConfirm();
   const [packBusy, setPackBusy] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'with_campaign' | 'no_campaign'>('all');
   const { base500, base1000 } = usePackBaseDefaults();
@@ -188,7 +190,7 @@ function UsersTab() {
 
   const assignPack = async (u: any, packType: number) => {
     const base = packType >= 1000 ? base1000 : base500;
-    if (!u.tiktokCampaign && !confirm(`¿Activar TikTok Shop para ${u.firstName || u.username} con Pack $${packType}? Se activará su membresía y se repartirán comisiones de red.`)) return;
+    if (!u.tiktokCampaign && !(await confirm({ title: 'Activar TikTok Shop', message: `¿Activar TikTok Shop para ${u.firstName || u.username} con Pack $${packType}? Se activará su membresía y se repartirán comisiones de red.`, confirmText: 'Sí, activar', danger: false }))) return;
     setPackBusy(u.id);
     try {
       const { data: res } = await adminTiktokApi.updatePack(u.id, { packType, baseCreators: base });
@@ -521,6 +523,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   const [editingCreator, setEditingCreator] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [saleForm, setSaleForm] = useState({ creatorId: '', productId: '', quantity: 1, saleDate: new Date().toISOString().slice(0, 10), notes: '' });
+  const confirm = useConfirm();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [planSlots, setPlanSlots] = useState<string[]>([]);
   const [planPicker, setPlanPicker] = useState<number | null>(null);
@@ -587,7 +590,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   };
 
   const removeCreator = async (id: string) => {
-    if (!confirm('¿Eliminar este creador de contenido?')) return;
+    if (!(await confirm({ title: 'Eliminar creador', message: '¿Eliminar este creador de contenido?', confirmText: 'Sí, eliminar' }))) return;
     try {
       await adminTiktokApi.deleteCreator(id);
       toast.success('Creador eliminado');
@@ -625,7 +628,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   };
 
   const removeSale = async (id: string) => {
-    if (!confirm('¿Eliminar esta venta? Se revierten las comisiones aprobadas.')) return;
+    if (!(await confirm({ title: 'Eliminar venta', message: '¿Eliminar esta venta? Se revierten las comisiones aprobadas.', confirmText: 'Sí, eliminar' }))) return;
     setPendingId(id);
     try {
       await adminTiktokApi.deleteSale(id);
@@ -677,7 +680,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
               onChange={async (e) => {
                 const packType = Number(e.target.value);
                 const base = packType >= 1000 ? base1000 : base500;
-                if (!campaign && !confirm('¿Activar TikTok Shop para este usuario?')) return;
+                if (!campaign && !(await confirm({ title: 'Activar TikTok Shop', message: '¿Activar TikTok Shop para este usuario?', confirmText: 'Sí, activar', danger: false }))) return;
                 try {
                   const { data: res } = await adminTiktokApi.updatePack(user.id, { packType, baseCreators: base });
                   toast.success(`Pack ${packType} (${base} creadores) asignado`);
@@ -1055,6 +1058,7 @@ function ProductsTab() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const confirm = useConfirm();
   const [form, setForm] = useState({ name: '', price: '', commissionRate: 25, sponsorRate: 5, imageUrl: '' });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -1145,7 +1149,7 @@ function ProductsTab() {
   };
 
   const remove = async (p: any) => {
-    if (!confirm(`¿Eliminar "${p.name}"?`)) return;
+    if (!(await confirm({ title: 'Eliminar producto', message: `¿Eliminar "${p.name}"? Se borrarán su imagen y material.`, confirmText: 'Sí, eliminar' }))) return;
     try {
       await adminTiktokApi.deleteProduct(p.id);
       toast.success('Producto eliminado');
@@ -1313,6 +1317,7 @@ function MaterialTab() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'VIDEO' | 'IMAGE'>('all');
   const [loading, setLoading] = useState(true);
+  const confirm = useConfirm();
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [newCat, setNewCat] = useState('');
@@ -1356,7 +1361,7 @@ function MaterialTab() {
   };
 
   const deleteCategory = async (id: string) => {
-    if (!confirm('¿Eliminar la categoría? Los productos quedarán sin categoría.')) return;
+    if (!(await confirm({ title: 'Eliminar categoría', message: '¿Eliminar la categoría? Los productos quedarán sin categoría.', confirmText: 'Sí, eliminar' }))) return;
     try {
       await adminTiktokApi.deleteMediaCategory(id);
       toast.success('Categoría eliminada');
@@ -1400,7 +1405,7 @@ function MaterialTab() {
   };
 
   const removeMedia = async (id: string) => {
-    if (!confirm('¿Eliminar este archivo multimedia?')) return;
+    if (!(await confirm({ title: 'Eliminar archivo', message: '¿Eliminar este archivo multimedia? Se borrará permanentemente.', confirmText: 'Sí, eliminar' }))) return;
     try {
       await adminTiktokApi.deleteMedia(id);
       toast.success('Archivo eliminado');
@@ -1965,6 +1970,7 @@ function CustomVideosTab() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const confirm = useConfirm();
 
   const load = async () => {
     try {
@@ -1980,7 +1986,7 @@ function CustomVideosTab() {
   useEffect(() => { load(); }, []);
 
   const receive = async (id: string) => {
-    if (!confirm('¿Marcar como recibido? El usuario ya no podrá editar ni cancelar.')) return;
+    if (!(await confirm({ title: 'Recibir solicitud', message: '¿Marcar como recibido? El usuario ya no podrá editar ni cancelar.', confirmText: 'Sí, recibir', danger: false }))) return;
     setBusy('receive-' + id);
     try {
       await adminTiktokApi.receiveCustomVideo(id);
@@ -2010,7 +2016,7 @@ function CustomVideosTab() {
   };
 
   const deliver = async (id: string) => {
-    if (!confirm('¿Entregar? Se notificará al usuario.')) return;
+    if (!(await confirm({ title: 'Entregar videos', message: '¿Entregar? Se notificará al usuario.', confirmText: 'Sí, entregar', danger: false }))) return;
     setBusy('deliver-' + id);
     try {
       await adminTiktokApi.deliverCustomVideo(id);

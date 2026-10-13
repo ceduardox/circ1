@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { countryFlag } from '@/lib/utils';
 import { hasPushPermission, requestPushPermission, syncPushUser } from '@/lib/onesignal';
+import { useConfirm } from '@/components/ui/confirm';
 import { toast } from 'sonner';
 import 'flag-icons/css/flag-icons.min.css';
 
@@ -281,6 +282,7 @@ export function FloatingChat() {
   const { user, isAuthenticated, isInitializing, updatePushPreferences } = useAuthStore();
   const membershipStatus = useMembershipStore(s => s.status);
   const fetchStatus = useMembershipStore(s => s.fetchStatus);
+  const confirm = useConfirm();
   const [devicePushEnabled, setDevicePushEnabled] = useState(false);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -556,7 +558,7 @@ export function FloatingChat() {
   };
 
   const deleteMessage = async (id: string) => {
-    if (!confirm('¿Eliminar este mensaje del chat? Se ocultará para todos los usuarios.')) return;
+    if (!(await confirm({ title: 'Eliminar mensaje', message: '¿Eliminar este mensaje del chat? Se ocultará para todos los usuarios.', confirmText: 'Sí, eliminar' }))) return;
     try {
       await chatApi.deleteMessage(id);
       await loadMessages();
@@ -579,7 +581,7 @@ export function FloatingChat() {
   const toggleBlock = async (u: ChatUser) => {
     const next = !u.chatBlocked;
     const action = next ? 'bloquear' : 'desbloquear';
-    if (next && !confirm(`¿Bloquear a ${u.firstName || u.username} para que no pueda chatear?`)) return;
+    if (next && !(await confirm({ title: 'Bloquear usuario', message: `¿Bloquear a ${u.firstName || u.username} para que no pueda chatear?`, confirmText: 'Sí, bloquear' }))) return;
     try {
       await chatApi.setBlocked(u.id, next);
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, chatBlocked: next } : x));

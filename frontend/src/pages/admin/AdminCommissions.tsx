@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Settings2, DollarSign, CheckCircle, XCircle, Loader2, RefreshCw, Ban, Users, Search, CalendarPlus, Infinity as InfinityIcon, Package } from 'lucide-react';
 import { adminBusinessApi } from '@/services/api';
 import { Input, Label, Card, CardContent, ButtonPrimary, Button, PageHeader } from '@/components/ui';
+import { useConfirm } from '@/components/ui/confirm';
 import { toast } from 'sonner';
 
 const statusPayment: Record<string, { label: string; classes: string }> = {
@@ -34,6 +35,7 @@ export function AdminCommissionsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     load();
@@ -91,7 +93,7 @@ export function AdminCommissionsPage() {
 
   const handleDeactivate = async (payment: any) => {
     const name = payment.user?.firstName || payment.user?.username || 'este usuario';
-    if (!confirm(`¿Desactivar la membresía de ${name}? Se revierten las comisiones generadas por este pago, como si no hubiera pagado.`)) return;
+    if (!(await confirm({ title: 'Desactivar membresía', message: `¿Desactivar la membresía de ${name}? Se revierten las comisiones generadas por este pago, como si no hubiera pagado.`, confirmText: 'Sí, desactivar' }))) return;
     setProcessingId(payment.id);
     try {
       await adminBusinessApi.deactivatePayment(payment.id);
@@ -137,7 +139,7 @@ export function AdminCommissionsPage() {
       activate30: 'activar 30 días',
       deactivate: 'desactivar la cuenta',
     };
-    if (!confirm(`¿${labels[action]} de ${name}?`)) return;
+    if (!(await confirm({ title: 'Cuota mensual', message: `¿${labels[action]} de ${name}?`, confirmText: 'Sí' }))) return;
     setMemberProcessingId(m.id);
     try {
       await adminBusinessApi.setMemberMembership(m.id, action);
@@ -154,7 +156,7 @@ export function AdminCommissionsPage() {
     const plan = (settings.plans || []).find((p: any) => p.id === planId);
     if (!plan) return;
     const name = m.firstName || m.username || 'este miembro';
-    if (!confirm(`¿Asignar pack ${plan.name} (${fmt(Number(plan.price) || 0)}) a ${name}? Se activará su membresía 30 días y se generarán comisiones de red como una activación normal.`)) return;
+    if (!(await confirm({ title: 'Asignar pack', message: `¿Asignar pack ${plan.name} (${fmt(Number(plan.price) || 0)}) a ${name}? Se activará su membresía 30 días y se generarán comisiones de red como una activación normal.`, confirmText: 'Sí, asignar' }))) return;
     setMemberProcessingId(m.id);
     try {
       await adminBusinessApi.assignPlan(m.id, planId);

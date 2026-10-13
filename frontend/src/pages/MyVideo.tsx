@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Video, Upload, Loader2, X, CheckCircle2, Download, AlertCircle, Package, Trash2 } from 'lucide-react';
 import { tiktokApi } from '@/services/api';
 import { ButtonPrimary, PageHeader } from '@/components/ui';
+import { useConfirm } from '@/components/ui/confirm';
 import { toast } from 'sonner';
 import { clsx } from 'clsx';
 
@@ -19,6 +20,7 @@ export function MyVideoPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const confirm = useConfirm();
 
   const load = async () => {
     try {
@@ -106,7 +108,7 @@ export function MyVideoPage() {
   };
 
   const cancel = async (id: string) => {
-    if (!confirm('¿Cancelar la solicitud?')) return;
+    if (!(await confirm({ title: 'Cancelar solicitud', message: '¿Cancelar la solicitud de video personalizado?', confirmText: 'Sí, cancelar' }))) return;
     try {
       await tiktokApi.cancelCustomVideo(id);
       toast.success('Solicitud cancelada');

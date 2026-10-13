@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, PageHeader } from '@/components/ui';
 import { ButtonPrimary, ButtonGhost, ButtonDanger, Input, Label, Textarea } from '@/components/ui';
+import { useConfirm } from '@/components/ui/confirm';
 import { Plus, Trash2, Edit, ChevronLeft, Loader2, BookOpen, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -54,6 +55,7 @@ export function AdminDaysPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingDay, setEditingDay] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const confirm = useConfirm();
 
   useEffect(() => { fetchDays(); }, [fetchDays]);
 
@@ -85,7 +87,7 @@ export function AdminDaysPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este día y todos sus contenidos?')) return;
+    if (!(await confirm({ title: 'Eliminar día', message: '¿Eliminar este día y todos sus contenidos?', confirmText: 'Sí, eliminar' }))) return;
     try {
       await deleteDay(id);
       toast.success('Eliminado');

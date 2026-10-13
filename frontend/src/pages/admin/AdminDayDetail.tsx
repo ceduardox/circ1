@@ -11,6 +11,7 @@ import { DndContext, closestCenter, useSensors, useSensor, PointerSensor } from 
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ContentRenderer } from '@/components/program/ContentRenderer';
+import { useConfirm } from '@/components/ui/confirm';
 
 const contentTypeLabels: Record<string, string> = {
   REFLECTION: '🎯 Reflexión',
@@ -332,6 +333,7 @@ export function AdminDayDetailPage() {
   const [editingContent, setEditingContent] = useState<ContentItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedType, setSelectedType] = useState('REFLECTION');
+  const confirm = useConfirm();
   const [formTitle, setFormTitle] = useState('');
   const [formOrderIndex, setFormOrderIndex] = useState(0);
   const [formIsRequired, setFormIsRequired] = useState(true);
@@ -393,7 +395,7 @@ export function AdminDayDetailPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este contenido?')) return;
+    if (!(await confirm({ title: 'Eliminar contenido', message: '¿Eliminar este contenido?', confirmText: 'Sí, eliminar' }))) return;
     try {
       await deleteContent(id);
       toast.success('Eliminado');
