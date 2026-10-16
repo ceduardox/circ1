@@ -148,7 +148,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-[#17172a]/20 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1340px] flex-col items-center justify-between gap-4 text-center text-xs text-[#62616a] sm:flex-row"><div className="flex items-center gap-2 font-bold text-[#0a0d29]"><span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#090d2b]"><img src="/images/favicon.png" alt="Círculo 1" className="w-full h-full object-cover" /></span>Círculo 1</div><p>Neuroentrenamiento para crecer desde adentro hacia afuera.</p>{!isAuthenticated && <Link to="/login" className="font-semibold hover:text-[#392099]">Acceso para miembros</Link>}</div></footer>
+      <footer className="border-t border-[#17172a]/20 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1340px] flex-col items-center justify-between gap-4 text-center text-xs text-[#62616a] sm:flex-row"><div className="flex items-center gap-2 font-bold text-[#0a0d29]"><span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#090d2b]"><img src="/images/favicon.png" alt="Círculo 1" className="w-full h-full object-cover" /></span>Círculo 1</div><p>Neuroentrenamiento para crecer desde adentro hacia afuera.</p>{!isAuthenticated && <Link to="/login" className="font-semibold hover:text-[#392099]">Acceso para miembros</Link>}<a href="https://ryztor.us/" target="_blank" rel="noopener noreferrer" className="font-semibold hover:text-[#392099]">Desarrollado por RYZTOR</a></div></footer>
     </div>
   );
 }
