@@ -20,6 +20,7 @@ import { vipProRoutes } from './routes/vipPro.js';
 import { teamRoutes } from './routes/team.js';
 import { tiktokRoutes } from './routes/tiktok.js';
 import { adminTiktokRoutes } from './routes/adminTiktok.js';
+import { contractRoutes, adminContractRoutes } from './routes/contracts.js';
 import { syncDayVideos } from './utils/dayVideos.js';
 import { syncFakeUsers } from './utils/fakeUsers.js';
 import { scheduleDailyReminder } from './utils/dailyReminder.js';
@@ -135,6 +136,8 @@ await app.register(vipProRoutes, { prefix: '/api/vip-pro' });
 await app.register(teamRoutes, { prefix: '/api/team' });
 await app.register(tiktokRoutes, { prefix: '/api/tiktok' });
 await app.register(adminTiktokRoutes, { prefix: '/api/admin/tiktok' });
+await app.register(contractRoutes, { prefix: '/api/contracts' });
+await app.register(adminContractRoutes, { prefix: '/api/admin/contracts' });
 
 // ─── Frontend (SPA) ───
 // Si existe la build del frontend, se sirve como estático y cualquier ruta

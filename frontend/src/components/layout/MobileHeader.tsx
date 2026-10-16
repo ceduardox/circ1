@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, BellRing, Sliders, Smartphone, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck, Sparkles, Compass, Package, DollarSign, Clapperboard } from 'lucide-react';
+import { Home, User, BarChart, LogOut, BookOpen, Users, Menu, X, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, BellRing, Sliders, Smartphone, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Landmark, History, Award, Flame, Target, CalendarCheck, Sparkles, Compass, Package, DollarSign, Clapperboard, FileSignature } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
 
 const progressSubItems = [
@@ -123,6 +123,7 @@ export function MobileHeader() {
     ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600', isExpandable: true, isExpanded: tiktokExpanded, toggleExpand: () => setTiktokExpanded(v => !v), subItems: tiktokSubItems }] : []),
     ...(hasTikTok ? [{ path: '/videos', label: 'Mi Video', icon: Clapperboard, color: 'from-fuchsia-500 to-pink-600' }] : []),
     { path: '/contenido', label: 'Contenido', icon: FolderOpen, color: 'from-teal-500 to-emerald-600', isExpandable: true, isExpanded: contenidoExpanded, toggleExpand: () => setContenidoExpanded(v => !v), subItems: contenidoSubItems },
+    { path: '/contratos', label: 'Contratos', icon: FileSignature, color: 'from-indigo-500 to-purple-600' },
     { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600', isExpandable: true, isExpanded: notificationsExpanded, toggleExpand: () => setNotificationsExpanded(v => !v), subItems: notificationsSubItems },
     { path: '/profile', label: 'Perfil', icon: User, color: 'from-pink-500 to-rose-600' },
   ];
@@ -136,6 +137,7 @@ export function MobileHeader() {
     { path: '/admin/withdrawals', label: 'Retiros', icon: Wallet },
     { path: '/admin/transcribe', label: 'Transcribir', icon: FileText },
     { path: '/admin/tiktok', label: 'TikTok Shop', icon: TikTokShopIcon, isExpandable: true, isExpanded: adminTiktokExpanded, toggleExpand: () => setAdminTiktokExpanded(v => !v), subItems: adminTikTokSubItems },
+    { path: '/admin/contracts', label: 'Contratos', icon: FileSignature },
     { path: '/admin/network', label: 'Red Global', icon: Network },
   ];
 

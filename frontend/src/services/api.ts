@@ -271,3 +271,16 @@ export const adminTiktokApi = {
   rejectCommission: (id: string) => api.post(`/admin/tiktok/commissions/${id}/reject`),
   allCommissions: () => api.get('/admin/tiktok/commissions'),
 };
+
+export const contractsApi = {
+  my: () => api.get('/contracts'),
+  sign: (id: string, data: { signedName: string; signatureImage: string }) => api.post(`/contracts/${id}/sign`, data),
+};
+
+export const adminContractsApi = {
+  list: () => api.get('/admin/contracts'),
+  create: (data: { title: string; body: string }) => api.post('/admin/contracts', data),
+  update: (id: string, data: { title?: string; body?: string }) => api.put(`/admin/contracts/${id}`, data),
+  remove: (id: string) => api.delete(`/admin/contracts/${id}`),
+  assign: (id: string, userIds: string[]) => api.post(`/admin/contracts/${id}/assign`, { userIds }),
+};

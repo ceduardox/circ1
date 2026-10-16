@@ -129,6 +129,7 @@ model User {
   tiktokCommissions TikTokCommission[]
   dailyEarnings     DailyEarning[]
   customVideoRequests CustomVideoRequest[]
+  contractSignatures  ContractSignature[]
 
   @@map("users")
 }
@@ -528,6 +529,44 @@ model CustomVideoRequestItem {
   product TikTokProduct      @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@map("custom_video_request_items")
+}
+
+enum ContractStatus {
+  PENDIENTE
+  FIRMADO
+}
+
+model Contract {
+  id        String   @id @default(uuid())
+  title     String
+  body      String
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  signatures ContractSignature[]
+
+  @@map("contracts")
+}
+
+model ContractSignature {
+  id             String         @id @default(uuid())
+  contractId     String         @map("contract_id")
+  userId         String         @map("user_id")
+  status         ContractStatus @default(PENDIENTE)
+  signedName     String?        @map("signed_name")
+  signatureImage String?        @map("signature_image")
+  contentHash    String?        @map("content_hash")
+  ip             String?
+  userAgent      String?        @map("user_agent")
+  signedAt       DateTime?      @map("signed_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, userId])
+  @@map("contract_signatures")
 }
 
 model TikTokSale {
