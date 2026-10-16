@@ -4,6 +4,7 @@ import { useMembershipStore } from '@/store/membershipStore';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Home, User, BarChart, LogOut, BookOpen, Users, LayoutDashboard, Moon, Sun, Wallet, Network, Zap, Crown, FileText, Bell, BellRing, Sliders, Smartphone, Users2, ShoppingBag, FolderOpen, Link as LinkIcon, GitBranch, Calculator, TrendingUp, ChevronDown, Sparkles, Landmark, History, Award, Flame, Target, CalendarCheck, Compass, Package, DollarSign, Clapperboard, FileSignature } from 'lucide-react';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
+import { useContractsStore } from '@/store/contractsStore';
 import { useState, useEffect } from 'react';
 
 const progressSubItems = [
@@ -80,6 +81,10 @@ export function DesktopSidebar() {
   const [contenidoExpanded, setContenidoExpanded] = useState<boolean>(() => location.pathname === '/contenido');
   const [notificationsExpanded, setNotificationsExpanded] = useState<boolean>(() => location.pathname === '/notifications');
   const [adminTiktokExpanded, setAdminTiktokExpanded] = useState<boolean>(() => location.pathname === '/admin/tiktok');
+  const hasContracts = useContractsStore(s => s.hasAny);
+  const fetchContracts = useContractsStore(s => s.fetch);
+
+  useEffect(() => { void fetchContracts(); }, [fetchContracts]);
 
   useEffect(() => {
     if (location.pathname === '/progress') {
@@ -121,7 +126,7 @@ export function DesktopSidebar() {
     ...(hasTikTok ? [{ path: '/tiktok-shop', label: 'TikTok Shop', icon: TikTokIcon, color: 'from-pink-500 to-rose-600', isExpandable: true, isExpanded: tiktokExpanded, toggleExpand: () => setTiktokExpanded(v => !v), subItems: tiktokSubItems }] : []),
     ...(hasTikTok ? [{ path: '/videos', label: 'Mi Video', icon: Clapperboard, color: 'from-fuchsia-500 to-pink-600' }] : []),
     { path: '/contenido', label: 'Contenido', icon: FolderOpen, color: 'from-teal-500 to-emerald-600', isExpandable: true, isExpanded: contenidoExpanded, toggleExpand: () => setContenidoExpanded(v => !v), subItems: contenidoSubItems },
-    { path: '/contratos', label: 'Contratos', icon: FileSignature, color: 'from-indigo-500 to-purple-600' },
+    ...(hasContracts ? [{ path: '/contratos', label: 'Contratos', icon: FileSignature, color: 'from-indigo-500 to-purple-600' }] : []),
     { path: '/notifications', label: 'Notificaciones', icon: Bell, color: 'from-sky-500 to-blue-600', isExpandable: true, isExpanded: notificationsExpanded, toggleExpand: () => setNotificationsExpanded(v => !v), subItems: notificationsSubItems },
     { path: '/profile', label: 'Perfil', icon: User, color: 'from-pink-500 to-rose-600' },
   ];
