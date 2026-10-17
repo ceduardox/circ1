@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FileSignature, Plus, Trash2, Pencil, Loader2, CheckCircle2, Clock, Download, X, Users, Send, Search } from 'lucide-react';
 import { adminContractsApi, adminApi } from '@/services/api';
 import { Button, ButtonPrimary, Input, Label, PageHeader } from '@/components/ui';
+import { ContractText } from '@/components/ui/ContractText';
 import { useConfirm } from '@/components/ui/confirm';
 import { printContract } from '@/lib/contractPrint';
 import { toast } from 'sonner';
@@ -137,6 +138,9 @@ export function AdminContractsPage() {
               placeholder="Pega aquí el contrato con todos los detalles..."
               className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm text-gray-900 dark:text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
             />
+            <p className="text-[11px] text-gray-400 mt-1">
+              Formato: <b>**negrita**</b> · <code>## Cláusula</code> (se numera sola) · <code>- </code> viñetas · <code>1. </code> listas. La <b>fecha del contrato</b> se pone automáticamente al crearlo.
+            </p>
           </div>
           <div className="flex gap-2">
             <ButtonPrimary type="submit" disabled={submitting}>
@@ -173,7 +177,7 @@ export function AdminContractsPage() {
                     {s.status === 'FIRMADO' ? (
                       <>
                         <span className="text-[11px] text-gray-500 dark:text-dark-400 inline-flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {s.signedAt ? new Date(s.signedAt).toLocaleDateString('es-ES') : ''}</span>
-                        <Button size="sm" onClick={() => setViewSig({ ...s, contract: { title: c.title, body: c.body } })} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Download className="w-3.5 h-3.5" /> Ver firmado</Button>
+                        <Button size="sm" onClick={() => setViewSig({ ...s, contract: { title: c.title, body: c.body, createdAt: c.createdAt } })} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Download className="w-3.5 h-3.5" /> Ver firmado</Button>
                       </>
                     ) : (
                       <span className="text-[11px] text-amber-600 dark:text-amber-400 inline-flex items-center gap-1"><Clock className="w-3 h-3" /> Pendiente</span>
@@ -233,7 +237,8 @@ export function AdminContractsPage() {
               <button onClick={() => setViewSig(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-4 max-h-[45vh] overflow-y-auto">
-              <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 dark:text-dark-200 leading-relaxed">{viewSig.contract.body}</pre>
+              <p className="text-xs text-gray-500 dark:text-dark-400 mb-3">Fecha del contrato: {viewSig.contract.createdAt ? new Date(viewSig.contract.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}</p>
+              <ContractText text={viewSig.contract.body} />
             </div>
             <div className="p-4 border-t border-gray-100 dark:border-dark-700 space-y-2">
               <p className="text-xs text-gray-500 dark:text-dark-400">Firmado por <b className="text-gray-700 dark:text-dark-200">{viewSig.signedName}</b> el {viewSig.signedAt ? new Date(viewSig.signedAt).toLocaleString('es-ES') : ''}</p>

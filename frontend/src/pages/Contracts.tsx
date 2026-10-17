@@ -3,6 +3,7 @@ import { FileSignature, Loader2, CheckCircle2, Clock, Download, X, PenLine, Aler
 import { contractsApi } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 import { ButtonPrimary, Button, PageHeader } from '@/components/ui';
+import { ContractText } from '@/components/ui/ContractText';
 import { toast } from 'sonner';
 import { printContract } from '@/lib/contractPrint';
 
@@ -185,7 +186,8 @@ export function ContractsPage() {
               <button onClick={() => setActive(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-4 max-h-[45vh] overflow-y-auto">
-              <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 dark:text-dark-200 leading-relaxed">{active.contract.body}</pre>
+              <p className="text-xs text-gray-500 dark:text-dark-400 mb-3">Fecha del contrato: {active.contract.createdAt ? new Date(active.contract.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}</p>
+              <ContractText text={active.contract.body} />
             </div>
 
             {active.status === 'FIRMADO' ? (
