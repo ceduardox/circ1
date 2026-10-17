@@ -283,4 +283,5 @@ export const adminContractsApi = {
   update: (id: string, data: { title?: string; body?: string }) => api.put(`/admin/contracts/${id}`, data),
   remove: (id: string) => api.delete(`/admin/contracts/${id}`),
   assign: (id: string, userIds: string[]) => api.post(`/admin/contracts/${id}/assign`, { userIds }),
+  repSign: (id: string, data: { name: string; signatureImage: string }) => api.post(`/admin/contracts/${id}/rep-sign`, data),
 };

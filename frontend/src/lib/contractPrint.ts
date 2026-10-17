@@ -18,6 +18,11 @@ export function printContract(c: any): boolean {
   const signedDate = c.signedAt ? new Date(c.signedAt).toLocaleString('es-ES') : '';
   const sig = c.signatureImage ? `<img src="${c.signatureImage}" style="max-height:120px" />` : '';
 
+  const reps: any[] = Array.isArray(c.repSignatures) ? c.repSignatures : (Array.isArray(c.contract?.repSignatures) ? c.contract.repSignatures : []);
+  const repsHtml = reps.length
+    ? `<div style="margin-top:22px"><p style="margin:0 0 6px"><strong>Representantes de RYZTOR:</strong></p>${reps.map((r: any) => `<div style="margin:10px 0"><p style="margin:0">${escapeHtml(r.name || '')}${r.signedAt ? ' — ' + new Date(r.signedAt).toLocaleString('es-ES') : ''}</p>${r.signatureImage ? `<img src="${r.signatureImage}" style="max-height:100px" />` : ''}</div>`).join('')}</div>`
+    : '';
+
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
   <style>
     body{font-family:system-ui,Arial,sans-serif;color:#111;margin:40px;line-height:1.55}
@@ -40,6 +45,7 @@ export function printContract(c: any): boolean {
   <p><strong>Firmado por:</strong> ${escapeHtml(signedBy)}</p>
   ${signedDate ? `<p><strong>Fecha de firma:</strong> ${signedDate}</p>` : ''}
   <div>${sig}</div>
+  ${repsHtml}
   <p class="muted">Hash: ${c.contentHash || ''}</p>
   <script>window.onload=function(){window.print();};</script>
   </body></html>`);

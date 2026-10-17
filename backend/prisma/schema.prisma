@@ -541,6 +541,7 @@ model Contract {
   title     String
   body      String
   createdBy String?  @map("created_by")
+  repSignatures Json? @map("rep_signatures")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

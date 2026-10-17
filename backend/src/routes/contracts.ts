@@ -27,7 +27,7 @@ export async function contractRoutes(app: FastifyInstance) {
     const signatures = await prisma.contractSignature.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      include: { contract: { select: { id: true, title: true, body: true, createdAt: true } } },
+      include: { contract: { select: { id: true, title: true, body: true, createdAt: true, repSignatures: true } } },
     });
     const contracts = signatures.map(s => ({
       id: s.id,
@@ -138,5 +138,31 @@ export async function adminContractRoutes(app: FastifyInstance) {
       await notifyUsers(toAssign, 'Nuevo contrato para firmar', `Tienes un contrato pendiente de firma: "${contract.title}".`, '/contratos');
     }
     return { assigned: toAssign.length, skipped: existingIds.size };
+  });
+
+  // Firma de un representante de RYZTOR (Jhonatan / Jose) desde la cuenta admin.
+  app.post('/:id/rep-sign', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { name, signatureImage } = z.object({
+      name: z.string().min(3, 'Escribe el nombre').max(120),
+      signatureImage: z.string().min(50, 'Firma requerida').max(500000),
+    }).parse(request.body);
+
+    const contract = await prisma.contract.findUnique({ where: { id } });
+    if (!contract) return reply.code(404).send({ error: 'Contrato no encontrado' });
+
+    const existing = Array.isArray(contract.repSignatures) ? (contract.repSignatures as any[]) : [];
+    if (existing.some((s: any) => (s.name || '').trim().toLowerCase() === name.trim().toLowerCase())) {
+      return reply.code(400).send({ error: 'Ese representante ya firmó este contrato' });
+    }
+    const entry = {
+      name: name.trim(),
+      signatureImage,
+      signedAt: new Date().toISOString(),
+      ip: request.ip,
+      userAgent: (request.headers['user-agent'] as string) || null,
+    };
+    const updated = await prisma.contract.update({ where: { id }, data: { repSignatures: [...existing, entry] } });
+    return { repSignatures: updated.repSignatures };
   });
 }

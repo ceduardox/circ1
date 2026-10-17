@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { FileSignature, Plus, Trash2, Pencil, Loader2, CheckCircle2, Clock, Download, X, Users, Send, Search } from 'lucide-react';
+import { FileSignature, Plus, Trash2, Pencil, Loader2, CheckCircle2, Clock, Download, X, Users, Send, Search, PenLine } from 'lucide-react';
 import { adminContractsApi, adminApi } from '@/services/api';
 import { Button, ButtonPrimary, Input, Label, PageHeader } from '@/components/ui';
 import { ContractText } from '@/components/ui/ContractText';
+import { SignaturePad } from '@/components/ui/SignaturePad';
 import { useConfirm } from '@/components/ui/confirm';
 import { printContract } from '@/lib/contractPrint';
 import { toast } from 'sonner';
@@ -21,6 +22,10 @@ export function AdminContractsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
   const [viewSig, setViewSig] = useState<any>(null);
+  const [repFor, setRepFor] = useState<any>(null);
+  const [repName, setRepName] = useState('');
+  const [repImage, setRepImage] = useState<string | null>(null);
+  const [repSigning, setRepSigning] = useState(false);
   const confirm = useConfirm();
 
   const load = async () => {
@@ -110,6 +115,23 @@ export function AdminContractsPage() {
 
   const signedCount = (c: any) => c.signatures.filter((s: any) => s.status === 'FIRMADO').length;
 
+  const doRepSign = async () => {
+    if (!repFor) return;
+    if (repName.trim().length < 3) { toast.error('Escribe el nombre del representante'); return; }
+    if (!repImage) { toast.error('Dibuja la firma'); return; }
+    setRepSigning(true);
+    try {
+      await adminContractsApi.repSign(repFor.id, { name: repName.trim(), signatureImage: repImage });
+      toast.success('Firma registrada');
+      setRepFor(null); setRepName(''); setRepImage(null);
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al firmar');
+    } finally {
+      setRepSigning(false);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary-600" /></div>;
 
   return (
@@ -177,7 +199,7 @@ export function AdminContractsPage() {
                     {s.status === 'FIRMADO' ? (
                       <>
                         <span className="text-[11px] text-gray-500 dark:text-dark-400 inline-flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {s.signedAt ? new Date(s.signedAt).toLocaleDateString('es-ES') : ''}</span>
-                        <Button size="sm" onClick={() => setViewSig({ ...s, contract: { title: c.title, body: c.body, createdAt: c.createdAt } })} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Download className="w-3.5 h-3.5" /> Ver firmado</Button>
+                        <Button size="sm" onClick={() => setViewSig({ ...s, contract: { title: c.title, body: c.body, createdAt: c.createdAt, repSignatures: c.repSignatures } })} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Download className="w-3.5 h-3.5" /> Ver firmado</Button>
                       </>
                     ) : (
                       <span className="text-[11px] text-amber-600 dark:text-amber-400 inline-flex items-center gap-1"><Clock className="w-3 h-3" /> Pendiente</span>
@@ -186,6 +208,18 @@ export function AdminContractsPage() {
                 ))}
               </div>
             )}
+
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <span className="text-xs font-semibold text-gray-700 dark:text-dark-200">Firmas de RYZTOR:</span>
+              {(c.repSignatures || []).length === 0 ? (
+                <span className="text-[11px] text-gray-400">Sin firmar</span>
+              ) : (
+                (c.repSignatures || []).map((r: any, i: number) => (
+                  <span key={i} className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="w-3 h-3" /> {r.name}</span>
+                ))
+              )}
+              <Button size="sm" onClick={() => { setRepFor(c); setRepName(''); setRepImage(null); }} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><PenLine className="w-3.5 h-3.5" /> Firmar (RYZTOR)</Button>
+            </div>
           </div>
         );
       })}
@@ -246,6 +280,36 @@ export function AdminContractsPage() {
               {viewSig.signatureImage && <img src={viewSig.signatureImage} alt="firma" className="max-h-24 bg-white rounded-lg border border-gray-200 dark:border-dark-600" />}
               <p className="text-[10px] text-gray-400 break-all">Hash: {viewSig.contentHash}</p>
               <ButtonPrimary size="sm" onClick={() => { if (!printContract({ ...viewSig, contract: viewSig.contract })) toast.error('Permite ventanas emergentes'); }}><Download className="w-4 h-4" /> Descargar PDF</ButtonPrimary>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal firmar representante de RYZTOR */}
+      {repFor && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setRepFor(null)}>
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 p-4 border-b border-gray-100 dark:border-dark-700">
+              <h3 className="font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2"><FileSignature className="w-4 h-4 text-primary-600" /> Firmar como representante</h3>
+              <button onClick={() => setRepFor(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-800 dark:text-dark-100">Representante de RYZTOR</label>
+                <div className="flex flex-wrap gap-2 mt-1 mb-2">
+                  <button type="button" onClick={() => setRepName('Jhonatan Quiroga')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Jhonatan Quiroga</button>
+                  <button type="button" onClick={() => setRepName('Jose Eduardo Callau')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Jose Eduardo Callau</button>
+                </div>
+                <Input value={repName} onChange={e => setRepName(e.target.value)} placeholder="Nombre del representante" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-800 dark:text-dark-100">Firma</label>
+                <p className="text-xs text-gray-500 dark:text-dark-400 mb-1">Dibuja la firma del representante.</p>
+                <SignaturePad onChange={setRepImage} />
+              </div>
+              <ButtonPrimary onClick={doRepSign} disabled={repSigning}>
+                {repSigning ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />} Firmar
+              </ButtonPrimary>
             </div>
           </div>
         </div>
