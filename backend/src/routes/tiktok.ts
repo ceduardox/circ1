@@ -118,6 +118,7 @@ export async function tiktokRoutes(app: FastifyInstance) {
 
     const max = campaign ? await campaignMaxCreators(campaign.id) : 0;
     const extraCreatorPrice = await getExtraCreatorPrice();
+    const planBaseCreators = (await resolvePackForUser(userId)).baseCreators;
 
     return {
       campaign: campaign
@@ -139,6 +140,7 @@ export async function tiktokRoutes(app: FastifyInstance) {
       extraPayments,
       products,
       extraCreatorPrice,
+      planBaseCreators,
       memberStatus: eff.status,
       graceEndsAt: eff.graceEndsAt,
     };

@@ -1552,7 +1552,7 @@ function LandingView({ data, activating, onActivate }: { data: any; activating: 
               <span className="text-sm font-bold">
                 Tu membresía te incluye{' '}
                 <span className="text-amber-300 font-black">
-                  {data?.campaign?.packType === 1000 ? '10' : '5'} creadores
+                  {data?.planBaseCreators ?? (data?.campaign?.packType === 1000 ? 10 : 5)} creadores
                 </span>{' '}
                 de contenido iniciales
               </span>
