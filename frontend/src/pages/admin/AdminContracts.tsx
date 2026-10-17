@@ -332,12 +332,19 @@ export function AdminContractsPage() {
       {/* Modal firmar representante de RYZTOR */}
       {repFor && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setRepFor(null)}>
-          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-3 p-4 border-b border-gray-100 dark:border-dark-700">
               <h3 className="font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2"><FileSignature className="w-4 h-4 text-primary-600" /> Firmar como representante</h3>
               <button onClick={() => setRepFor(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 mb-1">{repFor.title}</p>
+                <p className="text-xs text-gray-500 dark:text-dark-400 mb-2">Fecha del contrato: {repFor.createdAt ? new Date(repFor.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}</p>
+                <div className="max-h-[32vh] overflow-y-auto rounded-xl border border-gray-100 dark:border-dark-700 p-3">
+                  <ContractText text={repFor.body} />
+                </div>
+              </div>
               <div>
                 <label className="text-sm font-medium text-gray-800 dark:text-dark-100">Representante de RYZTOR</label>
                 <div className="flex flex-wrap gap-2 mt-1 mb-2">
