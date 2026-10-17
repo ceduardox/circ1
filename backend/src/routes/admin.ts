@@ -357,7 +357,7 @@ export async function adminRoutes(app: FastifyInstance) {
     level2Percent: number;
     paymentCurrency: string;
     registerOpen: boolean;
-    plans: { id: string; name: string; price: number; monthlyFee?: number; tiktok?: boolean; whopUrl?: string; restricted?: boolean; allowedUserIds?: string[]; renewal?: 'MONTHLY' | 'ANNUAL'; baseCreators?: number; badge?: string | null; dailyYield?: { enabled: boolean; min: number; max: number; bonusPerReferral?: number; bonusCap?: number; apps?: { name: string; logo?: string; url?: string }[] } | null }[];
+    plans: { id: string; name: string; price: number; monthlyFee?: number; tiktok?: boolean; whopUrl?: string; restricted?: boolean; allowedUserIds?: string[]; renewal?: 'MONTHLY' | 'ANNUAL'; durationDays?: number; baseCreators?: number; badge?: string | null; dailyYield?: { enabled: boolean; min: number; max: number; bonusPerReferral?: number; bonusCap?: number; apps?: { name: string; logo?: string; url?: string }[] } | null }[];
     appLibrary: { id: string; name: string; logo?: string; url?: string }[];
     tiktokExtraCreatorPrice: number;
     tiktokAutoApprove: boolean;
@@ -469,6 +469,7 @@ export async function adminRoutes(app: FastifyInstance) {
       restricted: z.boolean().optional(),
       allowedUserIds: z.array(z.string()).optional(),
       renewal: z.enum(['MONTHLY', 'ANNUAL']).optional(),
+      durationDays: z.number().int().min(1).max(3650).optional(),
       baseCreators: z.number().int().min(0).max(200).optional(),
       badge: z.string().max(40).optional().nullable(),
       dailyYield: z.object({

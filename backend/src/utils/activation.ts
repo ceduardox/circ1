@@ -58,7 +58,9 @@ export async function activateMembership(paymentId: string, processedBy: string)
   const now = new Date();
   const isRenewal = payment.type === 'MONTHLY';
   const renewalPlan = settings.plans.find((p: any) => p.id === payment.planId);
-  const durationDays = renewalPlan?.renewal === 'ANNUAL' ? 365 : 30;
+  const durationDays = Number(renewalPlan?.durationDays) > 0
+    ? Number(renewalPlan.durationDays)
+    : (renewalPlan?.renewal === 'ANNUAL' ? 365 : 30);
 
   const baseExpiry = isRenewal
     ? (payment.user.membershipExpiresAt && payment.user.membershipExpiresAt > now

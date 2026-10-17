@@ -378,11 +378,8 @@ export function AdminCommissionsPage() {
                       <Input value={pl.badge || ''} placeholder="ej. Oferta especial" className="!w-40 !px-2 !py-1.5 text-xs" onChange={e => { const plans = [...settings.plans]; plans[idx] = { ...pl, badge: e.target.value || null }; setSettings({ ...settings, plans }); }} />
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-gray-500 dark:text-dark-400">Renovación</span>
-                      <select value={pl.renewal || 'MONTHLY'} onChange={e => { const plans = [...settings.plans]; plans[idx] = { ...pl, renewal: e.target.value }; setSettings({ ...settings, plans }); }} className="rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 px-2 py-1.5 text-xs">
-                        <option value="MONTHLY">Mensual (30 días)</option>
-                        <option value="ANNUAL">Anual (365 días)</option>
-                      </select>
+                      <span className="text-gray-500 dark:text-dark-400">Duración (días)</span>
+                      <Input type="number" min={1} step={1} value={pl.durationDays ?? (pl.renewal === 'ANNUAL' ? 365 : 30)} title="30 = mensual · 365 = anual · 730 = 2 años · 1095 = 3 años" className="!w-24 !px-2 !py-1.5 text-xs" onChange={e => { const v = Number(e.target.value); const plans = [...settings.plans]; plans[idx] = { ...pl, durationDays: v }; setSettings({ ...settings, plans }); }} />
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-gray-500 dark:text-dark-400">Creadores</span>
