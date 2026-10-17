@@ -738,7 +738,8 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.post('/business/members/:id/membership', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { action } = (request.body as { action?: string }) || {};
+    const body = (request.body as { action?: string; days?: number }) || {};
+    const { action } = body;
     const user = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true } });
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
     if (user.role === 'ADMIN') return reply.code(400).send({ error: 'Los administradores no usan cuota' });
@@ -751,6 +752,12 @@ export async function adminRoutes(app: FastifyInstance) {
     } else if (action === 'activate30') {
       const expires = new Date(now);
       expires.setDate(expires.getDate() + 30);
+      data = { membershipStatus: 'ACTIVE', membershipExpiresAt: expires, membershipPaidAt: now };
+    } else if (action === 'setDays') {
+      const days = Math.floor(Number(body.days));
+      if (!Number.isFinite(days) || days <= 0) return reply.code(400).send({ error: 'Indica una cantidad de días válida' });
+      const expires = new Date(now);
+      expires.setDate(expires.getDate() + days);
       data = { membershipStatus: 'ACTIVE', membershipExpiresAt: expires, membershipPaidAt: now };
     } else if (action === 'deactivate') {
       data = { membershipStatus: 'INACTIVE', membershipExpiresAt: null, membershipPaidAt: null };

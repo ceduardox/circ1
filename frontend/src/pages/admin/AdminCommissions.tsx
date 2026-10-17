@@ -32,6 +32,7 @@ export function AdminCommissionsPage() {
   const [memberSearch, setMemberSearch] = useState('');
   const [memberProcessingId, setMemberProcessingId] = useState<string | null>(null);
   const [assignPlan, setAssignPlan] = useState<Record<string, string>>({});
+  const [memberDays, setMemberDays] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -165,6 +166,24 @@ export function AdminCommissionsPage() {
       await load();
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Error al asignar el pack');
+    } finally {
+      setMemberProcessingId(null);
+    }
+  };
+
+  const handleSetDays = async (m: any) => {
+    const days = Number(memberDays[m.id]);
+    if (!Number.isFinite(days) || days <= 0) { toast.error('Indica una cantidad de días válida'); return; }
+    const name = m.firstName || m.username || 'este miembro';
+    if (!(await confirm({ title: 'Fijar duración', message: `¿Fijar ${days} días de membresía a ${name} (desde hoy)?`, confirmText: 'Sí, aplicar', danger: false }))) return;
+    setMemberProcessingId(m.id);
+    try {
+      await adminBusinessApi.setMemberDays(m.id, Math.floor(days));
+      toast.success(`Membresía fijada a ${Math.floor(days)} días`);
+      setMemberDays(prev => { const n = { ...prev }; delete n[m.id]; return n; });
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al fijar la duración');
     } finally {
       setMemberProcessingId(null);
     }
@@ -711,6 +730,10 @@ export function AdminCommissionsPage() {
                       onClick={() => handleAssignPlan(m, assignPlan[m.id])} title="Asignar el pack elegido (activa 30 días y genera comisiones)">
                       {memberProcessingId === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />} Asignar
                     </Button>
+                    <div className="flex items-center gap-1 ml-auto">
+                      <Input type="number" min={1} placeholder="días" value={memberDays[m.id] || ''} onChange={e => setMemberDays(p => ({ ...p, [m.id]: e.target.value }))} className="!w-16 !px-2 !py-1.5 text-xs" title="Días desde hoy (730 = 2 años)" />
+                      <Button size="sm" disabled={memberProcessingId === m.id || !memberDays[m.id]} onClick={() => handleSetDays(m)} className="bg-transparent border border-indigo-200 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" title="Fijar duración desde hoy">Fijar</Button>
+                    </div>
                   </div>
                 </div>
               );
