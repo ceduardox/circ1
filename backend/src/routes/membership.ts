@@ -34,7 +34,7 @@ async function notifyAdmins(title: string, message: string) {
   }
 }
 
-async function getSettings(userPlans?: string[]) {
+async function getSettings(userPlans?: string[], userId?: string) {
   const rows = await prisma.adminSetting.findMany();
   const map: Record<string, any> = {};
   for (const r of rows) {
@@ -59,13 +59,16 @@ async function getSettings(userPlans?: string[]) {
   // Por defecto los planes incluyen TikTok Shop salvo que el admin lo desmarque.
   plans = plans.map((p: any) => ({ ...p, tiktok: p.tiktok !== false }));
 
-  // Filtra los planes según los que el referidor asignó a este usuario.
-  // userPlans ej: ["estandar","elite"] = ambos · ["estandar"] = solo 500 · ["elite"] = solo 1000
-  // Si el usuario no tiene referralPlans definidos (null), se muestran todos los planes.
-  if (Array.isArray(userPlans) && userPlans.length > 0) {
-    const filtered = plans.filter((p: any) => userPlans.includes(p.id));
-    if (filtered.length > 0) plans = filtered;
-  }
+  // Visibilidad de planes:
+  // - Restringidos: solo se muestran a los usuarios autorizados (allowedUserIds).
+  // - Normales: se filtran por referralPlans del usuario (si tiene definidos).
+  plans = plans.filter((p: any) => {
+    if (p.restricted) {
+      return !!userId && Array.isArray(p.allowedUserIds) && p.allowedUserIds.includes(userId);
+    }
+    if (Array.isArray(userPlans) && userPlans.length > 0) return userPlans.includes(p.id);
+    return true;
+  });
 
   return {
     membershipPrice: Number(map.MEMBERSHIP_PRICE ?? map.membershipPrice ?? defaults.MEMBERSHIP_PRICE),
@@ -170,7 +173,7 @@ export async function membershipRoutes(app: FastifyInstance) {
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
 
     const webBase = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const settings = await getSettings((user.referralPlans as string[] | null) ?? undefined);
+    const settings = await getSettings((user.referralPlans as string[] | null) ?? undefined, user.id);
     const eff = effectiveMembership(user);
 
     // Pack adquirido: del último pago de membresía aprobado (plan o monto).
@@ -219,11 +222,11 @@ export async function membershipRoutes(app: FastifyInstance) {
   app.post('/membership/payment/request', { preHandler: authMiddleware }, async (request, reply) => {
     const userId = (request.user as JWTPayload).sub;
     const body = requestPaymentSchema.parse(request.body);
-    const settings = await getSettings();
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
     if (user.membershipStatus === 'ACTIVE') return reply.code(400).send({ error: 'Tu membresía ya está activa' });
+    const settings = await getSettings((user.referralPlans as string[] | null) ?? undefined, user.id);
 
     // Métodos manuales (tarjeta Whop / banco): si hay un pago pendiente anterior
     // (ej. el usuario intentó cripto y quiere cambiar), se cancela para poder crear el nuevo.
@@ -310,10 +313,10 @@ export async function membershipRoutes(app: FastifyInstance) {
   app.post('/monthly/payment/request', { preHandler: authMiddleware }, async (request, reply) => {
     const userId = (request.user as JWTPayload).sub;
     const body = requestMonthlySchema.parse(request.body);
-    const settings = await getSettings();
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
+    const settings = await getSettings((user.referralPlans as string[] | null) ?? undefined, user.id);
 
     const eff = effectiveMembership(user);
     if (eff.status === 'ACTIVE') return reply.code(400).send({ error: 'Tu membresía aún está vigente' });

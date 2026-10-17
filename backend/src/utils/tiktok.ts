@@ -57,8 +57,24 @@ export async function resolvePackForUser(userId: string): Promise<{ packType: nu
     orderBy: { createdAt: 'desc' },
   });
   const elite = lastPaid?.planId === 'elite' || (lastPaid?.amount ?? 0) >= 1000;
+  const packType = elite ? 1000 : 500;
+
+  // Si el plan define una cantidad de creadores, se usa esa.
+  if (lastPaid?.planId) {
+    const row = await prisma.adminSetting.findUnique({ where: { key: 'PLANS' } });
+    if (row) {
+      try {
+        const plans = JSON.parse(row.value as any);
+        const plan = Array.isArray(plans) ? plans.find((p: any) => p.id === lastPaid.planId) : null;
+        if (plan && plan.baseCreators != null) {
+          return { packType, baseCreators: Math.max(0, Number(plan.baseCreators) || 0) };
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
   const { base500, base1000 } = await getPackBaseCreators();
-  return elite ? { packType: 1000, baseCreators: base1000 } : { packType: 500, baseCreators: base500 };
+  return { packType, baseCreators: elite ? base1000 : base500 };
 }
 
 // Total de slots disponibles: base del pack + creadores extra pagados.

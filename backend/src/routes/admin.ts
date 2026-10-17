@@ -357,7 +357,7 @@ export async function adminRoutes(app: FastifyInstance) {
     level2Percent: number;
     paymentCurrency: string;
     registerOpen: boolean;
-    plans: { id: string; name: string; price: number; monthlyFee?: number; tiktok?: boolean; whopUrl?: string; dailyYield?: { enabled: boolean; min: number; max: number; bonusPerReferral?: number; bonusCap?: number; apps?: { name: string; logo?: string; url?: string }[] } | null }[];
+    plans: { id: string; name: string; price: number; monthlyFee?: number; tiktok?: boolean; whopUrl?: string; restricted?: boolean; allowedUserIds?: string[]; renewal?: 'MONTHLY' | 'ANNUAL'; baseCreators?: number; badge?: string | null; dailyYield?: { enabled: boolean; min: number; max: number; bonusPerReferral?: number; bonusCap?: number; apps?: { name: string; logo?: string; url?: string }[] } | null }[];
     appLibrary: { id: string; name: string; logo?: string; url?: string }[];
     tiktokExtraCreatorPrice: number;
     tiktokAutoApprove: boolean;
@@ -466,6 +466,11 @@ export async function adminRoutes(app: FastifyInstance) {
       monthlyFee: z.number().min(0).max(1000).optional(),
       tiktok: z.boolean().optional(),
       whopUrl: z.string().optional(),
+      restricted: z.boolean().optional(),
+      allowedUserIds: z.array(z.string()).optional(),
+      renewal: z.enum(['MONTHLY', 'ANNUAL']).optional(),
+      baseCreators: z.number().int().min(0).max(200).optional(),
+      badge: z.string().max(40).optional().nullable(),
       dailyYield: z.object({
         enabled: z.boolean(),
         min: z.number().min(0).max(100),
@@ -522,14 +527,14 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     // Al guardar los planes, sincroniza el referralPlans de todos los usuarios
-    // (incluido admin) con los ids de los planes activos, para que los planes nuevos se vean.
+    // con los ids de los planes PÚBLICOS (los restringidos no se auto-asignan).
     if (body.plans) {
-      const allPlanIds = body.plans.map((p: any) => p.id);
+      const publicPlanIds = body.plans.filter((p: any) => !p.restricted).map((p: any) => p.id);
       const users = await prisma.user.findMany({ select: { id: true } });
       for (const u of users) {
         await prisma.user.update({
           where: { id: u.id },
-          data: { referralPlans: allPlanIds },
+          data: { referralPlans: publicPlanIds },
         });
       }
     }
@@ -772,6 +777,21 @@ export async function adminRoutes(app: FastifyInstance) {
     const settings = await getSettings();
     const plan = settings.plans.find((p: any) => p.id === planId);
     if (!plan) return reply.code(400).send({ error: 'Plan no encontrado' });
+
+    // Si el plan es restringido, damos acceso al usuario (lo agregamos a allowedUserIds).
+    if (plan.restricted) {
+      const row = await prisma.adminSetting.findUnique({ where: { key: 'PLANS' } });
+      if (row) {
+        let plansArr: any[] = [];
+        try { plansArr = JSON.parse(row.value as any); } catch { plansArr = []; }
+        if (Array.isArray(plansArr)) {
+          const updated = plansArr.map((p: any) => p.id === plan.id
+            ? { ...p, allowedUserIds: Array.from(new Set([...(p.allowedUserIds || []), id])) }
+            : p);
+          await prisma.adminSetting.update({ where: { key: 'PLANS' }, data: { value: JSON.stringify(updated) } });
+        }
+      }
+    }
 
     const now = new Date();
     const payment = await prisma.membershipPayment.create({

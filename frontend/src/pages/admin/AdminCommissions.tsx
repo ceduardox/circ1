@@ -372,6 +372,43 @@ export function AdminCommissionsPage() {
                       )}
                     </div>
                   </div>
+                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-gray-500 dark:text-dark-400">Etiqueta</span>
+                      <Input value={pl.badge || ''} placeholder="ej. Oferta especial" className="!w-40 !px-2 !py-1.5 text-xs" onChange={e => { const plans = [...settings.plans]; plans[idx] = { ...pl, badge: e.target.value || null }; setSettings({ ...settings, plans }); }} />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-gray-500 dark:text-dark-400">Renovación</span>
+                      <select value={pl.renewal || 'MONTHLY'} onChange={e => { const plans = [...settings.plans]; plans[idx] = { ...pl, renewal: e.target.value }; setSettings({ ...settings, plans }); }} className="rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 px-2 py-1.5 text-xs">
+                        <option value="MONTHLY">Mensual (30 días)</option>
+                        <option value="ANNUAL">Anual (365 días)</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-gray-500 dark:text-dark-400">Creadores</span>
+                      <Input type="number" min={0} value={pl.baseCreators ?? ''} placeholder="auto" className="!w-20 !px-2 !py-1.5 text-xs" onChange={e => { const v = e.target.value === '' ? undefined : Number(e.target.value); const plans = [...settings.plans]; plans[idx] = { ...pl, baseCreators: v }; setSettings({ ...settings, plans }); }} />
+                    </div>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-gray-600 dark:text-dark-300">
+                      <input type="checkbox" className="accent-purple-600 w-4 h-4" checked={!!pl.restricted} onChange={e => { const plans = [...settings.plans]; plans[idx] = { ...pl, restricted: e.target.checked, allowedUserIds: e.target.checked ? (pl.allowedUserIds || []) : [] }; setSettings({ ...settings, plans }); }} />
+                      Restringido (solo usuarios seleccionados)
+                    </label>
+                  </div>
+                  {pl.restricted && (
+                    <div className="text-xs">
+                      <p className="text-gray-500 dark:text-dark-400 mb-1">Usuarios con acceso ({(pl.allowedUserIds || []).length}). Luego actívalo desde "Cuota mensual por miembro".</p>
+                      <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto border border-gray-200 dark:border-dark-600 rounded-lg p-2">
+                        {members.map((m: any) => {
+                          const on = (pl.allowedUserIds || []).includes(m.id);
+                          return (
+                            <button key={m.id} type="button" onClick={() => { const ids = new Set(pl.allowedUserIds || []); if (on) ids.delete(m.id); else ids.add(m.id); const plans = [...settings.plans]; plans[idx] = { ...pl, allowedUserIds: Array.from(ids) }; setSettings({ ...settings, plans }); }} className={`px-2 py-1 rounded-lg border text-[11px] ${on ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300' : 'border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700'}`}>
+                              {m.firstName || m.username} {m.lastName || ''}
+                            </button>
+                          );
+                        })}
+                        {members.length === 0 && <span className="text-gray-400">Cargando usuarios…</span>}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex flex-col gap-2">
                     <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-dark-300 cursor-pointer select-none">
                       <input

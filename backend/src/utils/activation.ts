@@ -43,6 +43,7 @@ async function getSettings() {
     monthlyFee: Number(map.MONTHLY_FEE ?? defaults.MONTHLY_FEE),
     level1Percent: Number(map.LEVEL1_PERCENT ?? defaults.LEVEL1_PERCENT),
     level2Percent: Number(map.LEVEL2_PERCENT ?? defaults.LEVEL2_PERCENT),
+    plans: Array.isArray(map.PLANS ?? map.plans) ? (map.PLANS ?? map.plans) : [],
   };
 }
 
@@ -56,6 +57,8 @@ export async function activateMembership(paymentId: string, processedBy: string)
 
   const now = new Date();
   const isRenewal = payment.type === 'MONTHLY';
+  const renewalPlan = settings.plans.find((p: any) => p.id === payment.planId);
+  const durationDays = renewalPlan?.renewal === 'ANNUAL' ? 365 : 30;
 
   const baseExpiry = isRenewal
     ? (payment.user.membershipExpiresAt && payment.user.membershipExpiresAt > now
@@ -63,7 +66,7 @@ export async function activateMembership(paymentId: string, processedBy: string)
       : now)
     : now;
   const expires = new Date(baseExpiry);
-  expires.setDate(expires.getDate() + 30);
+  expires.setDate(expires.getDate() + durationDays);
 
   await prisma.$transaction(async (tx) => {
     await tx.membershipPayment.update({

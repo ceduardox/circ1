@@ -10,7 +10,7 @@ interface PaymentGateProps {
   onRequestManualPayment?: (method: 'whop' | 'bank', planId: string) => Promise<PaymentInfo | null>;
   requesting?: boolean;
   variant?: 'membership' | 'monthly';
-  plans?: { id: string; name: string; price: number; monthlyFee?: number; tiktok?: boolean; whopUrl?: string }[];
+  plans?: { id: string; name: string; price: number; monthlyFee?: number; tiktok?: boolean; whopUrl?: string; badge?: string | null; renewal?: 'MONTHLY' | 'ANNUAL'; baseCreators?: number }[];
   level1Percent?: number;
   level2Percent?: number;
   paymentCurrency?: string;
@@ -204,6 +204,9 @@ export function PaymentGate({ onRequestPayment, onRequestManualPayment, requesti
                           <span className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold shadow">
                             MÁS GANANCIAS
                           </span>
+                        )}
+                        {pl.badge && (
+                          <span className="inline-block mb-1.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-[10px] font-bold shadow-sm">{pl.badge}</span>
                         )}
                         <p className="text-sm font-semibold text-gray-900 dark:text-dark-100">{pl.name}</p>
                         <p className="text-2xl font-black text-gray-900 dark:text-dark-100 mt-1">
