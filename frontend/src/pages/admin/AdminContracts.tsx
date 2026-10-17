@@ -348,8 +348,8 @@ export function AdminContractsPage() {
               <div>
                 <label className="text-sm font-medium text-gray-800 dark:text-dark-100">Representante de RYZTOR</label>
                 <div className="flex flex-wrap gap-2 mt-1 mb-2">
-                  <button type="button" onClick={() => setRepName('Jhonatan Quiroga')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Jhonatan Quiroga</button>
-                  <button type="button" onClick={() => setRepName('Jose Eduardo Callau')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Jose Eduardo Callau</button>
+                  <button type="button" onClick={() => setRepName('Roberto Jhonattan Quiroga Ramirez')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Roberto Jhonattan Quiroga Ramirez</button>
+                  <button type="button" onClick={() => setRepName('Jose Eduardo Callau Silva')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Jose Eduardo Callau Silva</button>
                 </div>
                 <Input value={repName} onChange={e => setRepName(e.target.value)} placeholder="Nombre del representante" />
               </div>
@@ -378,8 +378,8 @@ export function AdminContractsPage() {
               <div>
                 <label className="text-sm font-medium text-gray-800 dark:text-dark-100">Nuevo link para un representante</label>
                 <div className="flex flex-wrap gap-2 mt-1 mb-2">
-                  <button type="button" onClick={() => setLinkName('Jhonatan Quiroga')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Jhonatan Quiroga</button>
-                  <button type="button" onClick={() => setLinkName('Jose Eduardo Callau')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Jose Eduardo Callau</button>
+                  <button type="button" onClick={() => setLinkName('Roberto Jhonattan Quiroga Ramirez')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Roberto Jhonattan Quiroga Ramirez</button>
+                  <button type="button" onClick={() => setLinkName('Jose Eduardo Callau Silva')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700">Jose Eduardo Callau Silva</button>
                 </div>
                 <div className="flex gap-2">
                   <Input value={linkName} onChange={e => setLinkName(e.target.value)} placeholder="Nombre del representante" />
