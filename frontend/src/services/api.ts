@@ -275,6 +275,8 @@ export const adminTiktokApi = {
 export const contractsApi = {
   my: () => api.get('/contracts'),
   sign: (id: string, data: { signedName: string; signatureImage: string }) => api.post(`/contracts/${id}/sign`, data),
+  publicGet: (token: string) => api.get(`/contracts/public/${token}`),
+  publicSign: (token: string, signatureImage: string) => api.post(`/contracts/public/${token}/sign`, { signatureImage }),
 };
 
 export const adminContractsApi = {
@@ -284,4 +286,6 @@ export const adminContractsApi = {
   remove: (id: string) => api.delete(`/admin/contracts/${id}`),
   assign: (id: string, userIds: string[]) => api.post(`/admin/contracts/${id}/assign`, { userIds }),
   repSign: (id: string, data: { name: string; signatureImage: string }) => api.post(`/admin/contracts/${id}/rep-sign`, data),
+  createRepInvite: (id: string, name: string) => api.post(`/admin/contracts/${id}/rep-invite`, { name }),
+  revokeRepInvite: (id: string, inviteId: string) => api.delete(`/admin/contracts/${id}/rep-invite/${inviteId}`),
 };

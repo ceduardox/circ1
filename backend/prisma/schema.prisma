@@ -546,8 +546,24 @@ model Contract {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   signatures ContractSignature[]
+  repInvites ContractRepInvite[]
 
   @@map("contracts")
+}
+
+model ContractRepInvite {
+  id        String    @id @default(uuid())
+  contractId String   @map("contract_id")
+  name      String
+  token     String    @unique
+  status    String    @default("PENDIENTE")
+  expiresAt DateTime  @map("expires_at")
+  signedAt  DateTime? @map("signed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("contract_rep_invites")
 }
 
 model ContractSignature {

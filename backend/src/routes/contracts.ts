@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { prisma } from '../utils/prisma.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
@@ -73,6 +73,49 @@ export async function contractRoutes(app: FastifyInstance) {
 
     return { signature: updated };
   });
+
+  // ─── Firma pública de representantes (sin login) ───
+  app.get('/public/:token', async (request, reply) => {
+    const { token } = request.params as { token: string };
+    const invite = await prisma.contractRepInvite.findUnique({
+      where: { token },
+      include: { contract: { select: { title: true, body: true, createdAt: true } } },
+    });
+    if (!invite) return reply.code(404).send({ error: 'Link no válido' });
+    if (invite.status === 'FIRMADO') return reply.code(400).send({ error: 'Este link ya fue utilizado' });
+    if (invite.expiresAt <= new Date()) return reply.code(410).send({ error: 'Este link expiró' });
+    return { name: invite.name, expiresAt: invite.expiresAt, contract: invite.contract };
+  });
+
+  app.post('/public/:token/sign', async (request, reply) => {
+    const { token } = request.params as { token: string };
+    const { signatureImage } = z.object({ signatureImage: z.string().min(50).max(500000) }).parse(request.body);
+    const invite = await prisma.contractRepInvite.findUnique({ where: { token }, include: { contract: true } });
+    if (!invite) return reply.code(404).send({ error: 'Link no válido' });
+    if (invite.status === 'FIRMADO') return reply.code(400).send({ error: 'Este link ya fue utilizado' });
+    if (invite.expiresAt <= new Date()) return reply.code(410).send({ error: 'Este link expiró' });
+
+    const existing = Array.isArray(invite.contract.repSignatures) ? (invite.contract.repSignatures as any[]) : [];
+    const entry = {
+      name: invite.name,
+      signatureImage,
+      signedAt: new Date().toISOString(),
+      ip: request.ip,
+      userAgent: (request.headers['user-agent'] as string) || null,
+    };
+
+    await prisma.$transaction([
+      prisma.contract.update({ where: { id: invite.contractId }, data: { repSignatures: [...existing, entry] } }),
+      prisma.contractRepInvite.update({ where: { id: invite.id }, data: { status: 'FIRMADO', signedAt: new Date() } }),
+    ]);
+
+    try {
+      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+      await notifyUsers(admins.map(a => a.id), 'Contrato firmado (representante)', `${invite.name} firmó "${invite.contract.title}".`, '/admin/contracts');
+    } catch { /* no romper */ }
+
+    return { success: true };
+  });
 }
 
 // ─── Contratos (admin) ───
@@ -87,6 +130,7 @@ export async function adminContractRoutes(app: FastifyInstance) {
           orderBy: { createdAt: 'asc' },
           include: { user: { select: { id: true, firstName: true, lastName: true, username: true, email: true } } },
         },
+        repInvites: { orderBy: { createdAt: 'desc' } },
       },
     });
     return { contracts };
@@ -164,5 +208,30 @@ export async function adminContractRoutes(app: FastifyInstance) {
     };
     const updated = await prisma.contract.update({ where: { id }, data: { repSignatures: [...existing, entry] } });
     return { repSignatures: updated.repSignatures };
+  });
+
+  // Genera un link público (sin login) para que un representante firme.
+  app.post('/:id/rep-invite', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { name } = z.object({ name: z.string().min(3).max(120) }).parse(request.body);
+    const contract = await prisma.contract.findUnique({ where: { id } });
+    if (!contract) return reply.code(404).send({ error: 'Contrato no encontrado' });
+
+    const token = randomBytes(20).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const invite = await prisma.contractRepInvite.create({
+      data: { contractId: id, name: name.trim(), token, expiresAt },
+    });
+    const front = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    return { invite, url: `${front}/firmar/${token}` };
+  });
+
+  // Revoca (elimina) un link de firma.
+  app.delete('/:id/rep-invite/:inviteId', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { inviteId } = request.params as { id: string; inviteId: string };
+    const invite = await prisma.contractRepInvite.findUnique({ where: { id: inviteId } });
+    if (!invite) return reply.code(404).send({ error: 'Invitación no encontrada' });
+    await prisma.contractRepInvite.delete({ where: { id: inviteId } });
+    return { success: true };
   });
 }

@@ -27,6 +27,7 @@ import { TikTokShopPage } from '@/pages/TikTokShop';
 import { ContentMaterialsPage } from '@/pages/ContentMaterials';
 import { MyVideoPage } from '@/pages/MyVideo';
 import { ContractsPage } from '@/pages/Contracts';
+import { SignContractPage } from '@/pages/SignContract';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboard';
 import { AdminDaysPage } from '@/pages/admin/AdminDays';
 import { AdminDayDetailPage } from '@/pages/admin/AdminDayDetail';
@@ -80,6 +81,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/firmar/:token" element={<SignContractPage />} />
 
           <Route element={
             <div className="min-h-screen bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-dark-100 flex flex-col">
