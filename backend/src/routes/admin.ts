@@ -740,7 +740,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const body = (request.body as { action?: string; days?: number }) || {};
     const { action } = body;
-    const user = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true } });
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true, membershipStatus: true, membershipExpiresAt: true } });
     if (!user) return reply.code(404).send({ error: 'Usuario no encontrado' });
     if (user.role === 'ADMIN') return reply.code(400).send({ error: 'Los administradores no usan cuota' });
 
@@ -759,6 +759,14 @@ export async function adminRoutes(app: FastifyInstance) {
       const expires = new Date(now);
       expires.setDate(expires.getDate() + days);
       data = { membershipStatus: 'ACTIVE', membershipExpiresAt: expires, membershipPaidAt: now };
+    } else if (action === 'addDays') {
+      const days = Math.floor(Number(body.days));
+      if (!Number.isFinite(days) || days <= 0) return reply.code(400).send({ error: 'Indica una cantidad de días válida' });
+      // Extiende desde el vencimiento actual (si sigue vigente) o desde hoy.
+      const stillActive = user.membershipStatus === 'ACTIVE' && user.membershipExpiresAt && user.membershipExpiresAt > now;
+      const base = stillActive ? new Date(user.membershipExpiresAt as Date) : new Date(now);
+      base.setDate(base.getDate() + days);
+      data = { membershipStatus: 'ACTIVE', membershipExpiresAt: base, membershipPaidAt: now };
     } else if (action === 'deactivate') {
       data = { membershipStatus: 'INACTIVE', membershipExpiresAt: null, membershipPaidAt: null };
     } else {

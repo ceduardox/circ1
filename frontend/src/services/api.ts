@@ -166,6 +166,8 @@ export const adminBusinessApi = {
     api.post(`/admin/business/members/${id}/membership`, { action }),
   setMemberDays: (id: string, days: number) =>
     api.post(`/admin/business/members/${id}/membership`, { action: 'setDays', days }),
+  addMemberDays: (id: string, days: number) =>
+    api.post(`/admin/business/members/${id}/membership`, { action: 'addDays', days }),
   assignPlan: (id: string, planId: string) =>
     api.post(`/admin/business/members/${id}/assign-plan`, { planId }),
   withdrawals: () => api.get('/admin/business/withdrawals'),

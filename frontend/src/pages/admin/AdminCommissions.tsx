@@ -189,6 +189,22 @@ export function AdminCommissionsPage() {
     }
   };
 
+  const handleAddDays = async (m: any, days: number) => {
+    const name = m.firstName || m.username || 'este miembro';
+    const label = days >= 365 ? `${Math.round(days / 365)} año(s)` : `${days} días`;
+    if (!(await confirm({ title: 'Extender membresía', message: `¿Extender ${label} a ${name}? (se suma al vencimiento actual; no cambia su plan)`, confirmText: 'Sí, extender', danger: false }))) return;
+    setMemberProcessingId(m.id);
+    try {
+      await adminBusinessApi.addMemberDays(m.id, days);
+      toast.success(`Membresía extendida ${days} días`);
+      await load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al extender');
+    } finally {
+      setMemberProcessingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -727,12 +743,17 @@ export function AdminCommissionsPage() {
                     </select>
                     <Button size="sm" disabled={!assignPlan[m.id] || memberProcessingId === m.id}
                       className="bg-transparent text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 border border-violet-200 dark:border-violet-900/40"
-                      onClick={() => handleAssignPlan(m, assignPlan[m.id])} title="Asignar el pack elegido (activa 30 días y genera comisiones)">
+                      onClick={() => handleAssignPlan(m, assignPlan[m.id])} title="Asignar el pack elegido (activa según la duración del plan y genera comisiones)">
                       {memberProcessingId === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />} Asignar
                     </Button>
-                    <div className="flex items-center gap-1 ml-auto">
-                      <Input type="number" min={1} placeholder="días" value={memberDays[m.id] || ''} onChange={e => setMemberDays(p => ({ ...p, [m.id]: e.target.value }))} className="!w-16 !px-2 !py-1.5 text-xs" title="Días desde hoy (730 = 2 años)" />
-                      <Button size="sm" disabled={memberProcessingId === m.id || !memberDays[m.id]} onClick={() => handleSetDays(m)} className="bg-transparent border border-indigo-200 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" title="Fijar duración desde hoy">Fijar</Button>
+                    <div className="flex items-center gap-1 flex-wrap ml-auto">
+                      <span className="text-[10px] text-gray-400 dark:text-dark-500">Extender:</span>
+                      <Button size="sm" disabled={memberProcessingId === m.id} onClick={() => handleAddDays(m, 90)} className="bg-transparent border border-indigo-200 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" title="Sumar 3 meses">+3m</Button>
+                      <Button size="sm" disabled={memberProcessingId === m.id} onClick={() => handleAddDays(m, 180)} className="bg-transparent border border-indigo-200 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" title="Sumar 6 meses">+6m</Button>
+                      <Button size="sm" disabled={memberProcessingId === m.id} onClick={() => handleAddDays(m, 365)} className="bg-transparent border border-indigo-200 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" title="Sumar 1 año">+1 año</Button>
+                      <Button size="sm" disabled={memberProcessingId === m.id} onClick={() => handleAddDays(m, 730)} className="bg-transparent border border-indigo-200 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" title="Sumar 2 años">+2 años</Button>
+                      <Input type="number" min={1} placeholder="días" value={memberDays[m.id] || ''} onChange={e => setMemberDays(p => ({ ...p, [m.id]: e.target.value }))} className="!w-16 !px-2 !py-1.5 text-xs" title="Fijar X días desde hoy (730 = 2 años)" />
+                      <Button size="sm" disabled={memberProcessingId === m.id || !memberDays[m.id]} onClick={() => handleSetDays(m)} className="bg-transparent border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700" title="Fijar la duración desde hoy">Fijar</Button>
                     </div>
                   </div>
                 </div>
