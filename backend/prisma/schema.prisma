@@ -531,6 +531,23 @@ model CustomVideoRequestItem {
   @@map("custom_video_request_items")
 }
 
+model TikTokCreatorPool {
+  id         String   @id @default(uuid())
+  username   String   @unique
+  name       String?
+  followers  Int      @default(0)
+  hasShop    Boolean  @default(false) @map("has_shop")
+  verified   Boolean  @default(false)
+  bio        String?
+  web        String?
+  likes      Int      @default(0)
+  videos     Int      @default(0)
+  profileUrl String   @map("profile_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("tiktok_creator_pool")
+}
+
 enum ContractStatus {
   PENDIENTE
   FIRMADO

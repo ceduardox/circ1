@@ -281,6 +281,49 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  // ─── Base de TikTokers (importada del seed) ───
+  app.get('/creator-pool', { preHandler: [authMiddleware, adminMiddleware] }, async (request) => {
+    const q = request.query as any;
+    const page = Math.max(1, parseInt(q.page || '1', 10) || 1);
+    const take = 20;
+    const search = (q.search || '').trim();
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { username: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { bio: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (q.hasShop === '1' || q.hasShop === 'true') where.hasShop = true;
+    if (q.verified === '1' || q.verified === 'true') where.verified = true;
+    if (q.minFollowers) where.followers = { gte: parseInt(q.minFollowers, 10) || 0 };
+    const orderBy = q.sort === 'likes' ? { likes: 'desc' as const } : { followers: 'desc' as const };
+    const [items, total] = await Promise.all([
+      prisma.tikTokCreatorPool.findMany({ where, orderBy, skip: (page - 1) * take, take }),
+      prisma.tikTokCreatorPool.count({ where }),
+    ]);
+    return { items, total, page, totalPages: Math.ceil(total / take) };
+  });
+
+  app.post('/campaigns/:userId/creators/from-pool', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { userId } = request.params as { userId: string };
+    const { poolId } = (request.body as { poolId?: string }) || {};
+    const pool = await prisma.tikTokCreatorPool.findUnique({ where: { id: poolId || '' } });
+    if (!pool) return reply.code(404).send({ error: 'Creador no encontrado en la base' });
+
+    let campaign = await prisma.tikTokShopCampaign.findUnique({ where: { userId } });
+    if (!campaign) {
+      const { packType, baseCreators } = await resolvePackForUser(userId);
+      campaign = await prisma.tikTokShopCampaign.create({ data: { userId, packType, baseCreators } });
+    }
+
+    const creator = await prisma.tikTokCreator.create({
+      data: { campaignId: campaign.id, name: pool.name || pool.username, tiktokUrl: pool.profileUrl, status: 'PENDIENTE' },
+    });
+    return { creator };
+  });
+
   // ─── Catálogo de productos ───
   const productSchema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio').max(255),

@@ -82,6 +82,15 @@ try {
   console.error('⚠️ No se pudieron sincronizar los usuarios fake:', e);
 }
 
+// Sincroniza la base de TikTokers (idempotente) en cada arranque.
+try {
+  const { syncTikTokCreatorPool } = await import('./utils/tiktokPool.js');
+  const poolSynced = await syncTikTokCreatorPool();
+  if (poolSynced > 0) console.log(`🎯 Base de TikTokers sincronizada: ${poolSynced}`);
+} catch (e) {
+  console.error('⚠️ No se pudo sincronizar la base de TikTokers:', e);
+}
+
 // Construye la red y ganancias de celis (una sola vez, con marca en la BD).
 if (config.nodeEnv === 'production') {
   try {

@@ -5,7 +5,7 @@ import {
   Package, Music, DollarSign, ExternalLink, Users, ShoppingBag, ChevronLeft,
   ChevronRight, ChevronDown, Mail, MapPin, Crown, X, FolderOpen, Film,
   Upload, Sparkles, Zap, Flame, ShieldAlert, Eye, TrendingUp, Check, Layers,
-  Filter, Play, ArrowRight, Video, Image as ImageIcon
+  Filter, Play, ArrowRight, Video, Image as ImageIcon, Copy
 } from 'lucide-react';
 import { adminTiktokApi, adminBusinessApi } from '@/services/api';
 import { Input, Label, ButtonPrimary, Button, PageHeader } from '@/components/ui';
@@ -524,6 +524,15 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   const [submitting, setSubmitting] = useState(false);
   const [saleForm, setSaleForm] = useState({ creatorId: '', productId: '', quantity: 1, saleDate: new Date().toISOString().slice(0, 10), notes: '' });
   const confirm = useConfirm();
+  const [poolOpen, setPoolOpen] = useState(false);
+  const [poolItems, setPoolItems] = useState<any[]>([]);
+  const [poolLoading, setPoolLoading] = useState(false);
+  const [poolSearch, setPoolSearch] = useState('');
+  const [poolShop, setPoolShop] = useState(false);
+  const [poolSort, setPoolSort] = useState<'followers' | 'likes'>('followers');
+  const [poolPage, setPoolPage] = useState(1);
+  const [poolTotalPages, setPoolTotalPages] = useState(1);
+  const [poolAssigning, setPoolAssigning] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [planSlots, setPlanSlots] = useState<string[]>([]);
   const [planPicker, setPlanPicker] = useState<number | null>(null);
@@ -576,6 +585,41 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const loadPool = async (opts?: { search?: string; shop?: boolean; sort?: 'followers' | 'likes'; page?: number }) => {
+    const search = opts?.search ?? poolSearch;
+    const shop = opts?.shop ?? poolShop;
+    const sort = opts?.sort ?? poolSort;
+    const page = opts?.page ?? poolPage;
+    setPoolLoading(true);
+    try {
+      const { data } = await adminTiktokApi.creatorPool({ search, hasShop: shop ? '1' : '', sort, page });
+      setPoolItems(data.items || []);
+      setPoolTotalPages(data.totalPages || 1);
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al cargar la base');
+    } finally {
+      setPoolLoading(false);
+    }
+  };
+
+  const assignPool = async (p: any) => {
+    setPoolAssigning(p.id);
+    try {
+      await adminTiktokApi.assignFromPool(user.id, p.id);
+      toast.success('Creador asignado a la campaña');
+      const { data: fresh } = await adminTiktokApi.campaign(user.id);
+      onRefresh(fresh);
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Error al asignar');
+    } finally {
+      setPoolAssigning(null);
+    }
+  };
+
+  const copyLink = (url: string) => {
+    navigator.clipboard.writeText(url).then(() => toast.success('Link copiado')).catch(() => toast.error('No se pudo copiar'));
   };
 
   const updateCreator = async (id: string, patch: any) => {
@@ -795,9 +839,12 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
               Límite total: {maxCreators} creadores ({creators.length} asignados)
             </p>
           </div>
-          <ButtonPrimary size="sm" onClick={() => setShowAddCreator(!showAddCreator)} className="!bg-pink-600 !border-0">
-            <Plus className="w-4 h-4" /> Asignar Creador
-          </ButtonPrimary>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" onClick={() => { setPoolOpen(true); loadPool({ page: 1 }); }} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Search className="w-4 h-4" /> Elegir de la base</Button>
+            <ButtonPrimary size="sm" onClick={() => setShowAddCreator(!showAddCreator)} className="!bg-pink-600 !border-0">
+              <Plus className="w-4 h-4" /> Asignar Creador
+            </ButtonPrimary>
+          </div>
         </div>
 
         {showAddCreator && (
@@ -1047,6 +1094,67 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
           </div>
         )}
       </div>
+
+      {/* Modal: base de TikTokers */}
+      {poolOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-4 overflow-y-auto" onClick={() => setPoolOpen(false)}>
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-2xl my-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 p-4 border-b border-gray-100 dark:border-dark-700">
+              <h3 className="font-bold text-gray-900 dark:text-dark-100 flex items-center gap-2"><Search className="w-4 h-4 text-primary-600" /> Base de TikTokers</h3>
+              <button onClick={() => setPoolOpen(false)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[180px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input value={poolSearch} onChange={e => { setPoolSearch(e.target.value); loadPool({ search: e.target.value, page: 1 }); }} placeholder="Buscar por @usuario, nombre o bio..." className="pl-9" />
+                </div>
+                <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-dark-300 cursor-pointer">
+                  <input type="checkbox" className="accent-pink-600 w-4 h-4" checked={poolShop} onChange={e => { setPoolShop(e.target.checked); loadPool({ shop: e.target.checked, page: 1 }); }} /> TikTok Shop
+                </label>
+                <select value={poolSort} onChange={e => { const v = e.target.value as 'followers' | 'likes'; setPoolSort(v); loadPool({ sort: v, page: 1 }); }} className="text-xs rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-700 dark:text-dark-200 px-2 py-1.5">
+                  <option value="followers">Más seguidores</option>
+                  <option value="likes">Más me gusta</option>
+                </select>
+              </div>
+
+              <div className="max-h-[55vh] overflow-y-auto divide-y divide-gray-100 dark:divide-dark-700 rounded-xl border border-gray-100 dark:border-dark-700">
+                {poolLoading ? (
+                  <div className="flex items-center justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary-600" /></div>
+                ) : poolItems.length === 0 ? (
+                  <p className="text-center text-sm text-gray-400 py-8">Sin resultados.</p>
+                ) : poolItems.map((p: any) => (
+                  <div key={p.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                      {(p.name || p.username || '?').replace(/^@/, '').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-[150px]">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">{p.name || p.username} <span className="text-gray-400 font-normal">@{String(p.username || '').replace(/^@/, '')}</span></p>
+                      <p className="text-[11px] text-gray-500 dark:text-dark-400">
+                        {Number(p.followers).toLocaleString('en-US')} seguidores · {Number(p.likes).toLocaleString('en-US')} me gusta
+                        {p.hasShop && <span className="text-emerald-600 dark:text-emerald-400"> · TikTok Shop</span>}
+                        {p.verified && <span className="text-blue-600 dark:text-blue-400"> · ✓</span>}
+                      </p>
+                    </div>
+                    <Button size="sm" onClick={() => copyLink(p.profileUrl)} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Copy className="w-3.5 h-3.5" /> Link</Button>
+                    <ButtonPrimary size="sm" disabled={poolAssigning === p.id} onClick={() => assignPool(p)}>
+                      {poolAssigning === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Asignar
+                    </ButtonPrimary>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 dark:text-dark-400">Página {poolPage} de {poolTotalPages}</span>
+                <div className="flex gap-2">
+                  <Button size="sm" disabled={poolPage <= 1} onClick={() => { const pg = poolPage - 1; setPoolPage(pg); loadPool({ page: pg }); }} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">Anterior</Button>
+                  <Button size="sm" disabled={poolPage >= poolTotalPages} onClick={() => { const pg = poolPage + 1; setPoolPage(pg); loadPool({ page: pg }); }} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">Siguiente</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
