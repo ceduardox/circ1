@@ -315,6 +315,20 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     const pool = await prisma.tikTokCreatorPool.findUnique({ where: { id: poolId || '' } });
     if (!pool) return reply.code(404).send({ error: 'Creador no encontrado en la base' });
 
+    // No permitir asignar el mismo creador a más de un usuario.
+    const existing = await prisma.tikTokCreator.findFirst({
+      where: { tiktokUrl: pool.profileUrl },
+      include: { campaign: { include: { user: { select: { id: true, firstName: true, lastName: true, username: true } } } } },
+    });
+    if (existing) {
+      if (existing.campaign.userId === userId) {
+        return reply.code(409).send({ error: 'Este creador ya está asignado a este usuario.' });
+      }
+      const u = existing.campaign.user;
+      const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username;
+      return reply.code(409).send({ error: `Este creador ya está asignado a otro usuario: ${name} (@${u.username}).` });
+    }
+
     let campaign = await prisma.tikTokShopCampaign.findUnique({ where: { userId } });
     if (!campaign) {
       const { packType, baseCreators } = await resolvePackForUser(userId);
