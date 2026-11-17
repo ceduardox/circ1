@@ -1131,10 +1131,11 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                     <div className="flex-1 min-w-[150px]">
                       <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">{p.name || p.username} <span className="text-gray-400 font-normal">@{String(p.username || '').replace(/^@/, '')}</span></p>
                       <p className="text-[11px] text-gray-500 dark:text-dark-400">
-                        {Number(p.followers).toLocaleString('en-US')} seguidores · {Number(p.likes).toLocaleString('en-US')} me gusta
+                        {Number(p.followers).toLocaleString('en-US')} seguidores{Number(p.likes) > 0 ? ` · ${Number(p.likes).toLocaleString('en-US')} me gusta` : ''}
                         {p.hasShop && <span className="text-emerald-600 dark:text-emerald-400"> · TikTok Shop</span>}
                         {p.verified && <span className="text-blue-600 dark:text-blue-400"> · ✓</span>}
                       </p>
+                      {p.bio && <p className="text-[11px] text-gray-400 dark:text-dark-500 truncate" title={p.bio}>{p.bio}</p>}
                     </div>
                     <Button size="sm" onClick={() => copyLink(p.profileUrl)} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Copy className="w-3.5 h-3.5" /> Link</Button>
                     <ButtonPrimary size="sm" disabled={poolAssigning === p.id} onClick={() => assignPool(p)}>
