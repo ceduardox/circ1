@@ -536,7 +536,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   const [poolLoading, setPoolLoading] = useState(false);
   const [poolSearch, setPoolSearch] = useState('');
   const [poolShop, setPoolShop] = useState(false);
-  const [poolSort, setPoolSort] = useState<'followers' | 'likes'>('followers');
+  const [poolSort, setPoolSort] = useState<'followers' | 'likes' | 'gmv7d' | 'gmvTotal'>('gmv7d');
   const [poolPage, setPoolPage] = useState(1);
   const [poolTotalPages, setPoolTotalPages] = useState(1);
   const [poolAssigning, setPoolAssigning] = useState<string | null>(null);
@@ -596,7 +596,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
     }
   };
 
-  const loadPool = async (opts?: { search?: string; shop?: boolean; sort?: 'followers' | 'likes'; page?: number }) => {
+  const loadPool = async (opts?: { search?: string; shop?: boolean; sort?: 'followers' | 'likes' | 'gmv7d' | 'gmvTotal'; page?: number }) => {
     const search = opts?.search ?? poolSearch;
     const shop = opts?.shop ?? poolShop;
     const sort = opts?.sort ?? poolSort;
@@ -1123,7 +1123,9 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                 <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-dark-300 cursor-pointer">
                   <input type="checkbox" className="accent-pink-600 w-4 h-4" checked={poolShop} onChange={e => { setPoolShop(e.target.checked); loadPool({ shop: e.target.checked, page: 1 }); }} /> TikTok Shop
                 </label>
-                <select value={poolSort} onChange={e => { const v = e.target.value as 'followers' | 'likes'; setPoolSort(v); loadPool({ sort: v, page: 1 }); }} className="text-xs rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-700 dark:text-dark-200 px-2 py-1.5">
+                <select value={poolSort} onChange={e => { const v = e.target.value as 'followers' | 'likes' | 'gmv7d' | 'gmvTotal'; setPoolSort(v); loadPool({ sort: v, page: 1 }); }} className="text-xs rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-700 dark:text-dark-200 px-2 py-1.5">
+                  <option value="gmv7d">Mayor GMV 7d</option>
+                  <option value="gmvTotal">Mayor GMV total</option>
                   <option value="followers">Más seguidores</option>
                   <option value="likes">Más me gusta</option>
                 </select>
@@ -1158,7 +1160,15 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                         <p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(p.videos).toLocaleString('en-US')}</p>
                       </div>
                     </div>
-                    {p.bio && <p className="text-[11px] text-gray-500 dark:text-dark-400 line-clamp-2" title={p.bio}>{p.bio}</p>}
+                    {(Number(p.gmv7d) > 0 || Number(p.gmvTotal) > 0) && (
+                      <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1.5">
+                        <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">GMV 7d</span>
+                        <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">{fmt(Number(p.gmv7d))}</span>
+                        <span className="text-[10px] text-gray-400">total</span>
+                        <span className="text-xs font-bold text-gray-700 dark:text-dark-200">{fmt(Number(p.gmvTotal))}</span>
+                      </div>
+                    )}
+                    {p.bio && !/GMV/i.test(p.bio) && <p className="text-[11px] text-gray-500 dark:text-dark-400 line-clamp-2" title={p.bio}>{p.bio}</p>}
                     <div className="flex items-center gap-2 mt-auto">
                       <Button size="sm" onClick={(e) => { e.stopPropagation(); copyLink(p.profileUrl); }} className="flex-1 border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Copy className="w-3.5 h-3.5" /> Link</Button>
                       <ButtonPrimary size="sm" disabled={poolAssigning === p.id} onClick={(e) => { e.stopPropagation(); assignPool(p); }} className="flex-1">
@@ -1207,54 +1217,96 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                     {poolDetail.hasShop && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">TikTok Shop</span>}
                     {poolDetail.verified && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">Verificado</span>}
                     {assigned && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400">Asignado</span>}
+                    {poolDetail.country && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-300">{poolDetail.country}</span>}
                   </div>
                 </div>
                 <button onClick={() => setPoolDetail(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
               </div>
               <div className="p-4 space-y-4">
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-2">
-                    <p className="text-[10px] text-gray-400">Seguidores</p>
-                    <p className="text-sm font-black text-gray-800 dark:text-dark-100">{Number(poolDetail.followers).toLocaleString('en-US')}</p>
+                {/* GMV (lo importante) */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-3 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-wider opacity-80">GMV 7 días</p>
+                    <p className="text-xl font-black mt-0.5">{fmt(Number(poolDetail.gmv7d))}</p>
                   </div>
-                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-2">
-                    <p className="text-[10px] text-gray-400">Me gusta</p>
-                    <p className="text-sm font-black text-gray-800 dark:text-dark-100">{Number(poolDetail.likes).toLocaleString('en-US')}</p>
+                  <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 text-white p-3 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-wider opacity-80">GMV total</p>
+                    <p className="text-xl font-black mt-0.5">{fmt(Number(poolDetail.gmvTotal))}</p>
                   </div>
-                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-2">
-                    <p className="text-[10px] text-gray-400">Videos</p>
-                    <p className="text-sm font-black text-gray-800 dark:text-dark-100">{Number(poolDetail.videos).toLocaleString('en-US')}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 p-2.5 text-center">
+                    <p className="text-[10px] text-gray-400">Unidades</p>
+                    <p className="text-base font-black text-gray-800 dark:text-dark-100">{Number(poolDetail.units).toLocaleString('en-US')}</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 p-2.5 text-center">
+                    <p className="text-[10px] text-gray-400">Productos</p>
+                    <p className="text-base font-black text-gray-800 dark:text-dark-100">{Number(poolDetail.products).toLocaleString('en-US')}</p>
                   </div>
                 </div>
 
-                {poolDetail.bio && <p className="text-sm text-gray-600 dark:text-dark-300 leading-relaxed">{poolDetail.bio}</p>}
+                {Number(poolDetail.gmvTotal) > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-dark-400 mb-1">
+                      <span>Los últimos 7 días representan</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{Math.round(Number(poolDetail.gmv7d) / Number(poolDetail.gmvTotal) * 100)}% del GMV total</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 dark:bg-dark-700 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500" style={{ width: `${Math.min(100, Math.round(Number(poolDetail.gmv7d) / Number(poolDetail.gmvTotal) * 100))}%` }} />
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5">
+                    <p className="text-[10px] text-gray-400">Seguidores</p>
+                    <p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(poolDetail.followers).toLocaleString('en-US')}</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5">
+                    <p className="text-[10px] text-gray-400">Me gusta</p>
+                    <p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(poolDetail.likes).toLocaleString('en-US')}</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5">
+                    <p className="text-[10px] text-gray-400">Videos</p>
+                    <p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(poolDetail.videos).toLocaleString('en-US')}</p>
+                  </div>
+                </div>
+
+                {poolDetail.categories && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {String(poolDetail.categories).split(';').map((c: string) => c.trim()).filter(Boolean).map((c: string, i: number) => (
+                      <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300">{c}</span>
+                    ))}
+                  </div>
+                )}
                 {poolDetail.web && <p className="text-xs text-gray-500 dark:text-dark-400 truncate">Web: {poolDetail.web}</p>}
 
-                <div>
-                  <p className="text-xs font-semibold text-gray-700 dark:text-dark-200 mb-2">Últimos 7 días</p>
-                  <div className="grid grid-cols-2 gap-2 text-center mb-2">
-                    <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 py-2">
-                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400">Unidades vendidas</p>
-                      <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">{totalUnits}</p>
+                {assigned && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700 dark:text-dark-200 mb-2">Vendido en esta campaña (últimos 7 días)</p>
+                    <div className="grid grid-cols-2 gap-2 text-center mb-2">
+                      <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 py-2">
+                        <p className="text-[10px] text-emerald-700 dark:text-emerald-400">Unidades</p>
+                        <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">{totalUnits}</p>
+                      </div>
+                      <div className="rounded-xl bg-primary-50 dark:bg-primary-900/20 py-2">
+                        <p className="text-[10px] text-primary-700 dark:text-primary-400">Monto</p>
+                        <p className="text-sm font-black text-primary-700 dark:text-primary-400">{fmt(totalAmount)}</p>
+                      </div>
                     </div>
-                    <div className="rounded-xl bg-primary-50 dark:bg-primary-900/20 py-2">
-                      <p className="text-[10px] text-primary-700 dark:text-primary-400">Monto</p>
-                      <p className="text-sm font-black text-primary-700 dark:text-primary-400">{fmt(totalAmount)}</p>
+                    <div className="flex items-end gap-1.5 h-24">
+                      {dayKeys.map(k => {
+                        const h = Math.max(3, Math.round(byDay[k].amount / maxAmount * 84));
+                        return (
+                          <div key={k} className="flex-1 flex flex-col items-center gap-1" title={`${k}: ${byDay[k].units} u · ${fmt(byDay[k].amount)}`}>
+                            <div className="w-full rounded-t bg-gradient-to-t from-primary-600 to-purple-500" style={{ height: h }} />
+                            <span className="text-[8px] text-gray-400">{k.slice(5)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div className="flex items-end gap-1.5 h-28">
-                    {dayKeys.map(k => {
-                      const h = Math.max(3, Math.round(byDay[k].amount / maxAmount * 96));
-                      return (
-                        <div key={k} className="flex-1 flex flex-col items-center gap-1" title={`${k}: ${byDay[k].units} u · ${fmt(byDay[k].amount)}`}>
-                          <div className="w-full rounded-t bg-gradient-to-t from-pink-600 to-rose-400" style={{ height: h }} />
-                          <span className="text-[8px] text-gray-400">{k.slice(5)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {!assigned && <p className="text-[11px] text-gray-400 mt-1">Aún no está asignado a esta campaña; al asignarlo y registrar ventas se verán aquí.</p>}
-                </div>
+                )}
               </div>
               <div className="p-4 border-t border-gray-100 dark:border-dark-700 flex items-center gap-2">
                 <Button onClick={() => setPoolDetail(null)} className="flex-1 border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">Volver atrás</Button>

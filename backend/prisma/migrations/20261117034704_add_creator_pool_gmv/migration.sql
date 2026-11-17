@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "tiktok_creator_pool" ADD COLUMN     "categories" TEXT,
+ADD COLUMN     "country" TEXT,
+ADD COLUMN     "gmv_7d" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "gmv_total" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "products" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "units" INTEGER NOT NULL DEFAULT 0;

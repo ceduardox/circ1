@@ -298,7 +298,10 @@ export async function adminTiktokRoutes(app: FastifyInstance) {
     if (q.hasShop === '1' || q.hasShop === 'true') where.hasShop = true;
     if (q.verified === '1' || q.verified === 'true') where.verified = true;
     if (q.minFollowers) where.followers = { gte: parseInt(q.minFollowers, 10) || 0 };
-    const orderBy = q.sort === 'likes' ? { likes: 'desc' as const } : { followers: 'desc' as const };
+    const orderBy = q.sort === 'likes' ? { likes: 'desc' as const }
+      : q.sort === 'gmv7d' ? { gmv7d: 'desc' as const }
+      : q.sort === 'gmvTotal' ? { gmvTotal: 'desc' as const }
+      : { followers: 'desc' as const };
     const [items, total] = await Promise.all([
       prisma.tikTokCreatorPool.findMany({ where, orderBy, skip: (page - 1) * take, take }),
       prisma.tikTokCreatorPool.count({ where }),

@@ -542,6 +542,12 @@ model TikTokCreatorPool {
   web        String?
   likes      Int      @default(0)
   videos     Int      @default(0)
+  country    String?
+  gmv7d      Float    @default(0) @map("gmv_7d")
+  gmvTotal   Float    @default(0) @map("gmv_total")
+  units      Int      @default(0)
+  products   Int      @default(0)
+  categories String?
   profileUrl String   @map("profile_url")
   createdAt  DateTime @default(now()) @map("created_at")
 

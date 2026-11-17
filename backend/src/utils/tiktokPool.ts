@@ -37,6 +37,30 @@ const toBool = (s?: string) => {
   const v = (s || '').trim().toLowerCase();
   return v === 'si' || v === 'sí' || v === 'yes' || v === 'true';
 };
+const toMoney = (s?: string) => {
+  const n = parseFloat((s || '').replace(/[^\d.]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+};
+
+// Extrae métricas de la bio tipo:
+// "US · GMV 7d $114,666 · total $613,910 · 4,548 uds · 224 prod · Beauty & Personal Care; ..."
+function parseBioMetrics(bio: string | null) {
+  const out = { country: null as string | null, gmv7d: 0, gmvTotal: 0, units: 0, products: 0, categories: null as string | null };
+  if (!bio) return out;
+  const m7 = bio.match(/GMV\s*7d\s*\$?([\d.,]+)/i);
+  if (m7) out.gmv7d = toMoney(m7[1]);
+  const mt = bio.match(/total\s*\$?([\d.,]+)/i);
+  if (mt) out.gmvTotal = toMoney(mt[1]);
+  const mu = bio.match(/([\d.,]+)\s*uds/i);
+  if (mu) out.units = Math.round(toMoney(mu[1]));
+  const mp = bio.match(/([\d.,]+)\s*prod/i);
+  if (mp) out.products = Math.round(toMoney(mp[1]));
+  const mc = bio.match(/prod\s*[·•|]\s*([^·•|]+)/i);
+  if (mc) out.categories = mc[1].trim();
+  const mc2 = bio.match(/^([A-Z]{2})\b/);
+  if (mc2) out.country = mc2[1];
+  return out;
+}
 
 // Carga la base de TikTokers desde prisma/data/tiktok_creadores.csv (idempotente por usuario).
 export async function syncTikTokCreatorPool(): Promise<number> {
@@ -83,6 +107,7 @@ export async function syncTikTokCreatorPool(): Promise<number> {
       likes: iLikes >= 0 ? toInt(r[iLikes]) : 0,
       videos: iVideos >= 0 ? toInt(r[iVideos]) : 0,
       profileUrl,
+      ...parseBioMetrics(iBio >= 0 ? (r[iBio] || '').trim() || null : null),
     };
 
     await prisma.tikTokCreatorPool.upsert({
