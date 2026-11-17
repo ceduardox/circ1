@@ -1145,6 +1145,9 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                         <p className="text-xs text-gray-500 dark:text-dark-400 truncate">@{String(p.username || '').replace(/^@/, '')}</p>
                       </div>
                       {p.hasShop && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 shrink-0">Shop</span>}
+                      <a href={p.profileUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg text-gray-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-dark-700 shrink-0" title="Abrir en TikTok">
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 text-center">
                       <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5">
@@ -1220,6 +1223,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                     {poolDetail.country && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-dark-300">{poolDetail.country}</span>}
                   </div>
                 </div>
+                <a href={poolDetail.profileUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-gray-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-dark-700" title="Abrir en TikTok"><ExternalLink className="w-4 h-4" /></a>
                 <button onClick={() => setPoolDetail(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
               </div>
               <div className="p-4 space-y-4">
