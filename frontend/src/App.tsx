@@ -91,7 +91,7 @@ function App() {
               <div className="flex flex-col flex-1 overflow-hidden md:pl-60">
                 <DesktopHeader />
                 <ImpersonationBanner />
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 min-h-screen overflow-x-hidden min-w-0 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 min-h-screen overflow-x-hidden min-w-0 max-w-[1680px] mx-auto w-full">
                   <ProtectedRoute>
                     <MembershipGate>
                       <Outlet />
