@@ -120,6 +120,28 @@ export async function tiktokRoutes(app: FastifyInstance) {
     const extraCreatorPrice = await getExtraCreatorPrice();
     const planBaseCreators = (await resolvePackForUser(userId)).baseCreators;
 
+    // Adjunta datos de la base de TikTokers (GMV, seguidores, etc.) a cada creador asignado.
+    let creatorsWithPool: any[] = campaign?.creators ?? [];
+    if (campaign?.creators?.length) {
+      const handleOf = (url?: string | null) => {
+        const m = (url || '').match(/tiktok\.com\/@?([A-Za-z0-9_.]+)/i);
+        return m ? m[1].toLowerCase() : '';
+      };
+      const pool = await prisma.tikTokCreatorPool.findMany();
+      const byHandle = new Map(pool.map(p => [String(p.username).replace(/^@/, '').toLowerCase(), p]));
+      creatorsWithPool = campaign.creators.map(c => {
+        const p = byHandle.get(handleOf(c.tiktokUrl));
+        return {
+          ...c,
+          pool: p ? {
+            gmv7d: p.gmv7d, gmvTotal: p.gmvTotal, units: p.units, products: p.products,
+            categories: p.categories, country: p.country, followers: p.followers, likes: p.likes,
+            videos: p.videos, bio: p.bio, web: p.web, profileUrl: p.profileUrl,
+          } : null,
+        };
+      });
+    }
+
     return {
       campaign: campaign
         ? {
@@ -133,7 +155,7 @@ export async function tiktokRoutes(app: FastifyInstance) {
           }
         : null,
       maxCreators: max,
-      creators: campaign?.creators ?? [],
+      creators: creatorsWithPool,
       sales,
       commissions: myCommissions,
       summary,

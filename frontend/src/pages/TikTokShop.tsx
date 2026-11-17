@@ -10,12 +10,19 @@ import {
 } from 'lucide-react';
 import { tiktokApi } from '@/services/api';
 import { ButtonPrimary, Button, PageHeader } from '@/components/ui';
+import { TikTokAvatar } from '@/components/TikTokAvatar';
 import { TikTokIcon, TikTokShopIcon, TikTokLogo } from '@/components/TikTokLogo';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 import { clsx } from 'clsx';
 
 const fmt = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+
+const handleFromUrl = (url?: string | null) => {
+  if (!url) return '';
+  const m = url.match(/tiktok\.com\/@?([A-Za-z0-9_.]+)/i) || url.match(/@([A-Za-z0-9_.]+)/);
+  return m ? m[1] : '';
+};
 
 const creatorStatusMeta: Record<string, { label: string; classes: string; dot: string }> = {
   ACTIVO: {
@@ -75,6 +82,7 @@ export function TikTokShopPage() {
   const [pickerSearch, setPickerSearch] = useState('');
   const [savingSlots, setSavingSlots] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<{ type: string; url: string; title?: string } | null>(null);
+  const [creatorModal, setCreatorModal] = useState<any>(null);
 
   // Filtros de creadores
   const [creatorSearch, setCreatorSearch] = useState('');
@@ -551,12 +559,11 @@ export function TikTokShopPage() {
               return (
                 <div
                   key={c.id}
-                  className="bg-white dark:bg-dark-800 rounded-3xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 sm:p-5 flex flex-col justify-between gap-4 hover:shadow-md hover:border-pink-200 dark:hover:border-pink-900/40 transition-all group"
+                  onClick={() => setCreatorModal(c)}
+                  className="cursor-pointer bg-white dark:bg-dark-800 rounded-3xl border border-gray-100 dark:border-dark-700 shadow-sm p-4 sm:p-5 flex flex-col justify-between gap-4 hover:shadow-md hover:border-pink-200 dark:hover:border-pink-900/40 transition-all group"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 text-white flex items-center justify-center text-lg font-black shrink-0 shadow-md shadow-pink-500/20 group-hover:scale-105 transition-transform">
-                      {c.name?.[0]?.toUpperCase() || '?'}
-                    </div>
+                    <TikTokAvatar username={handleFromUrl(c.tiktokUrl)} name={c.name} size={48} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-900 dark:text-dark-100 truncate">
                         {highlightMatch(c.name || 'Creador Sin Nombre', creatorSearch)}
@@ -566,6 +573,7 @@ export function TikTokShopPage() {
                           href={c.tiktokUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
                           className="text-xs text-pink-600 dark:text-pink-400 flex items-center gap-1 hover:underline mt-0.5 truncate font-medium"
                         >
                           <TikTokIcon className="w-3 h-3 text-pink-500 shrink-0" />
@@ -1503,6 +1511,93 @@ export function TikTokShopPage() {
           </div>
         </div>
       )}
+
+      {/* Modal: datos del creador */}
+      {creatorModal && (() => {
+        const c = creatorModal;
+        const p = c.pool;
+        const handle = handleFromUrl(c.tiktokUrl);
+        const meta = creatorStatusMeta[c.status] || creatorStatusMeta.PENDIENTE;
+        const ratio = p && Number(p.gmvTotal) > 0 ? Math.min(100, Math.round(Number(p.gmv7d) / Number(p.gmvTotal) * 100)) : 0;
+        return (
+          <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto" onClick={() => setCreatorModal(null)}>
+            <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-2xl w-full max-w-lg my-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="relative bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 p-5 text-white">
+                <button onClick={() => setCreatorModal(null)} className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"><X className="w-4 h-4" /></button>
+                <div className="flex items-center gap-4">
+                  <TikTokAvatar username={handle} name={c.name} size={72} className="ring-4 ring-white/30" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-lg font-black truncate">{c.name || 'Creador'}</p>
+                    <p className="text-xs text-white/80">@{handle || 'sin enlace'}</p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${meta.classes}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} /> {meta.label}
+                      </span>
+                      {p?.country && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20">{p.country}</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 space-y-4">
+                {p ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-3">
+                        <p className="text-[10px] uppercase tracking-wider opacity-80">GMV 7 días</p>
+                        <p className="text-xl font-black mt-0.5">{fmt(Number(p.gmv7d))}</p>
+                      </div>
+                      <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 text-white p-3">
+                        <p className="text-[10px] uppercase tracking-wider opacity-80">GMV total</p>
+                        <p className="text-xl font-black mt-0.5">{fmt(Number(p.gmvTotal))}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 p-2.5 text-center">
+                        <p className="text-[10px] text-gray-400">Unidades</p>
+                        <p className="text-base font-black text-gray-800 dark:text-dark-100">{Number(p.units).toLocaleString('en-US')}</p>
+                      </div>
+                      <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 p-2.5 text-center">
+                        <p className="text-[10px] text-gray-400">Productos</p>
+                        <p className="text-base font-black text-gray-800 dark:text-dark-100">{Number(p.products).toLocaleString('en-US')}</p>
+                      </div>
+                    </div>
+                    {Number(p.gmvTotal) > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-dark-400 mb-1">
+                          <span>Últimos 7 días</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{ratio}% del GMV total</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-gray-100 dark:bg-dark-700 overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500" style={{ width: `${ratio}%` }} />
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5"><p className="text-[10px] text-gray-400">Seguidores</p><p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(p.followers).toLocaleString('en-US')}</p></div>
+                      <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5"><p className="text-[10px] text-gray-400">Me gusta</p><p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(p.likes).toLocaleString('en-US')}</p></div>
+                      <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5"><p className="text-[10px] text-gray-400">Videos</p><p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(p.videos).toLocaleString('en-US')}</p></div>
+                    </div>
+                    {p.categories && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {String(p.categories).split(';').map((x: string) => x.trim()).filter(Boolean).map((x: string, i: number) => (
+                          <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300">{x}</span>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-dark-400">No hay datos de desempeño de este creador en la base.</p>
+                )}
+                {c.tiktokUrl && !hideCreatorLink && (
+                  <a href={c.tiktokUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-1.5 w-full px-4 py-2.5 rounded-xl bg-black text-white text-sm font-bold hover:bg-gray-800">
+                    <TikTokIcon className="w-4 h-4" /> Abrir en TikTok <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
