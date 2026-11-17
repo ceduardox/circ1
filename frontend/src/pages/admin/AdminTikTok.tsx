@@ -8,6 +8,7 @@ import {
   Filter, Play, ArrowRight, Video, Image as ImageIcon, Copy
 } from 'lucide-react';
 import { adminTiktokApi, adminBusinessApi } from '@/services/api';
+import { TikTokAvatar } from '@/components/TikTokAvatar';
 import { Input, Label, ButtonPrimary, Button, PageHeader } from '@/components/ui';
 import { useConfirm } from '@/components/ui/confirm';
 import { TikTokIcon, TikTokShopIcon } from '@/components/TikTokLogo';
@@ -15,6 +16,12 @@ import { toast } from 'sonner';
 import { clsx } from 'clsx';
 
 const fmt = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+
+const handleFromUrl = (url?: string | null) => {
+  if (!url) return '';
+  const m = url.match(/tiktok\.com\/@?([A-Za-z0-9_.]+)/i) || url.match(/@([A-Za-z0-9_.]+)/);
+  return m ? m[1] : '';
+};
 
 // Helper de búsqueda estilo WhatsApp con resaltado en negrita
 const highlightMatch = (text: string, query: string) => {
@@ -533,6 +540,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   const [poolPage, setPoolPage] = useState(1);
   const [poolTotalPages, setPoolTotalPages] = useState(1);
   const [poolAssigning, setPoolAssigning] = useState<string | null>(null);
+  const [perfCreator, setPerfCreator] = useState<any>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [planSlots, setPlanSlots] = useState<string[]>([]);
   const [planPicker, setPlanPicker] = useState<number | null>(null);
@@ -899,9 +907,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
             {creators.map((c: any) => (
               <div key={c.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/50 dark:hover:bg-dark-700/30 transition-colors">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                    {c.name?.[0]?.toUpperCase() || '?'}
-                  </div>
+                  <TikTokAvatar username={handleFromUrl(c.tiktokUrl)} name={c.name} size={40} />
                   <div className="flex-1 min-w-0">
                     {editingCreator?.id === c.id ? (
                       <div className="flex flex-col sm:flex-row gap-2">
@@ -920,13 +926,9 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                     ) : (
                       <>
                         <p className="text-sm font-bold text-gray-900 dark:text-dark-100">{c.name}</p>
-                        {c.tiktokUrl ? (
-                          <a href={c.tiktokUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-pink-600 dark:text-pink-400 flex items-center gap-1 hover:underline truncate">
-                            <TikTokIcon className="w-3 h-3" /> {c.tiktokUrl} <ExternalLink className="w-3 h-3" />
-                          </a>
-                        ) : (
-                          <p className="text-xs text-gray-400">Sin link directo</p>
-                        )}
+                        <p className="text-xs text-gray-500 dark:text-dark-400 flex items-center gap-1 truncate">
+                          <TikTokIcon className="w-3 h-3" /> {handleFromUrl(c.tiktokUrl) ? `@${handleFromUrl(c.tiktokUrl)}` : 'Sin link directo'}
+                        </p>
                       </>
                     )}
                   </div>
@@ -960,6 +962,14 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                       <option value="ACEPTADO">Aceptado</option>
                       <option value="ACTIVO">Activo</option>
                     </select>
+                    <button
+                      type="button"
+                      onClick={() => setPerfCreator(c)}
+                      className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                      title="Ver gráfico de ventas/ganancias"
+                    >
+                      <TrendingUp className="w-4 h-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => setEditingCreator(c)}
@@ -1118,29 +1128,42 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                 </select>
               </div>
 
-              <div className="max-h-[55vh] overflow-y-auto divide-y divide-gray-100 dark:divide-dark-700 rounded-xl border border-gray-100 dark:border-dark-700">
+              <div className="max-h-[58vh] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3 p-1">
                 {poolLoading ? (
-                  <div className="flex items-center justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary-600" /></div>
+                  <div className="col-span-full flex items-center justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary-600" /></div>
                 ) : poolItems.length === 0 ? (
-                  <p className="text-center text-sm text-gray-400 py-8">Sin resultados.</p>
+                  <p className="col-span-full text-center text-sm text-gray-400 py-8">Sin resultados.</p>
                 ) : poolItems.map((p: any) => (
-                  <div key={p.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                      {(p.name || p.username || '?').replace(/^@/, '').charAt(0).toUpperCase()}
+                  <div key={p.id} className="rounded-2xl border border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800 p-3 flex flex-col gap-2.5 shadow-sm hover:shadow-md hover:border-pink-200 dark:hover:border-pink-900/40 transition-all">
+                    <div className="flex items-center gap-3">
+                      <TikTokAvatar username={p.username} name={p.name} size={46} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 dark:text-dark-100 truncate">{p.name || p.username}</p>
+                        <p className="text-xs text-gray-500 dark:text-dark-400 truncate">@{String(p.username || '').replace(/^@/, '')}</p>
+                      </div>
+                      {p.hasShop && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 shrink-0">Shop</span>}
                     </div>
-                    <div className="flex-1 min-w-[150px]">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-dark-100 truncate">{p.name || p.username} <span className="text-gray-400 font-normal">@{String(p.username || '').replace(/^@/, '')}</span></p>
-                      <p className="text-[11px] text-gray-500 dark:text-dark-400">
-                        {Number(p.followers).toLocaleString('en-US')} seguidores{Number(p.likes) > 0 ? ` · ${Number(p.likes).toLocaleString('en-US')} me gusta` : ''}
-                        {p.hasShop && <span className="text-emerald-600 dark:text-emerald-400"> · TikTok Shop</span>}
-                        {p.verified && <span className="text-blue-600 dark:text-blue-400"> · ✓</span>}
-                      </p>
-                      {p.bio && <p className="text-[11px] text-gray-400 dark:text-dark-500 truncate" title={p.bio}>{p.bio}</p>}
+                    <div className="grid grid-cols-3 gap-1.5 text-center">
+                      <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5">
+                        <p className="text-[10px] text-gray-400">Seguidores</p>
+                        <p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(p.followers).toLocaleString('en-US')}</p>
+                      </div>
+                      <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5">
+                        <p className="text-[10px] text-gray-400">Me gusta</p>
+                        <p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(p.likes).toLocaleString('en-US')}</p>
+                      </div>
+                      <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-1.5">
+                        <p className="text-[10px] text-gray-400">Videos</p>
+                        <p className="text-xs font-bold text-gray-800 dark:text-dark-100">{Number(p.videos).toLocaleString('en-US')}</p>
+                      </div>
                     </div>
-                    <Button size="sm" onClick={() => copyLink(p.profileUrl)} className="border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Copy className="w-3.5 h-3.5" /> Link</Button>
-                    <ButtonPrimary size="sm" disabled={poolAssigning === p.id} onClick={() => assignPool(p)}>
-                      {poolAssigning === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Asignar
-                    </ButtonPrimary>
+                    {p.bio && <p className="text-[11px] text-gray-500 dark:text-dark-400 line-clamp-2" title={p.bio}>{p.bio}</p>}
+                    <div className="flex items-center gap-2 mt-auto">
+                      <Button size="sm" onClick={() => copyLink(p.profileUrl)} className="flex-1 border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Copy className="w-3.5 h-3.5" /> Link</Button>
+                      <ButtonPrimary size="sm" disabled={poolAssigning === p.id} onClick={() => assignPool(p)} className="flex-1">
+                        {poolAssigning === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Asignar
+                      </ButtonPrimary>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1156,6 +1179,72 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
           </div>
         </div>
       )}
+
+      {/* Modal: desempeño del creador (ventas/ganancias por fecha) */}
+      {perfCreator && (() => {
+        const mySales = (sales || []).filter((s: any) => s.creatorId === perfCreator.id);
+        const studentAmount = (s: any) => (s.commissions || []).find((c: any) => c.type === 'STUDENT')?.amount || 0;
+        const byDate: Record<string, { revenue: number; earnings: number; count: number }> = {};
+        for (const s of mySales) {
+          const key = new Date(s.saleDate).toISOString().slice(0, 10);
+          if (!byDate[key]) byDate[key] = { revenue: 0, earnings: 0, count: 0 };
+          byDate[key].revenue += s.unitPrice * s.quantity;
+          byDate[key].earnings += studentAmount(s);
+          byDate[key].count += 1;
+        }
+        const dates = Object.keys(byDate).sort();
+        const maxRev = Math.max(1, ...dates.map(d => byDate[d].revenue));
+        const totalRevenue = mySales.reduce((a: number, s: any) => a + s.unitPrice * s.quantity, 0);
+        const totalEarnings = mySales.reduce((a: number, s: any) => a + studentAmount(s), 0);
+        return (
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setPerfCreator(null)}>
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between gap-3 p-4 border-b border-gray-100 dark:border-dark-700">
+                <div className="flex items-center gap-2 min-w-0">
+                  <TikTokAvatar username={handleFromUrl(perfCreator.tiktokUrl)} name={perfCreator.name} size={36} />
+                  <h3 className="font-bold text-gray-900 dark:text-dark-100 truncate">{perfCreator.name}</h3>
+                </div>
+                <button onClick={() => setPerfCreator(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 py-2">
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-400">Ventas</p>
+                    <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">{fmt(totalRevenue)}</p>
+                  </div>
+                  <div className="rounded-xl bg-primary-50 dark:bg-primary-900/20 py-2">
+                    <p className="text-[10px] text-primary-700 dark:text-primary-400">Ganancia</p>
+                    <p className="text-sm font-black text-primary-700 dark:text-primary-400">{fmt(totalEarnings)}</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-2">
+                    <p className="text-[10px] text-gray-500 dark:text-dark-400">N° ventas</p>
+                    <p className="text-sm font-black text-gray-800 dark:text-dark-100">{mySales.length}</p>
+                  </div>
+                </div>
+
+                {dates.length === 0 ? (
+                  <p className="text-center text-sm text-gray-400 py-6">Aún no hay ventas registradas para este creador.</p>
+                ) : (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 dark:text-dark-400 mb-2">Ventas por fecha</p>
+                    <div className="flex items-end gap-1.5 h-32">
+                      {dates.map(d => {
+                        const h = Math.max(4, Math.round(byDate[d].revenue / maxRev * 120));
+                        return (
+                          <div key={d} className="flex-1 flex flex-col items-center gap-1" title={`${d}: ${fmt(byDate[d].revenue)} · ganancia ${fmt(byDate[d].earnings)}`}>
+                            <div className="w-full rounded-t bg-gradient-to-t from-primary-600 to-purple-500" style={{ height: h }} />
+                            <span className="text-[8px] text-gray-400">{d.slice(5)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
