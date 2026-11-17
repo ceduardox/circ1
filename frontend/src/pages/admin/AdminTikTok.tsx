@@ -540,6 +540,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
   const [poolPage, setPoolPage] = useState(1);
   const [poolTotalPages, setPoolTotalPages] = useState(1);
   const [poolAssigning, setPoolAssigning] = useState<string | null>(null);
+  const [poolDetail, setPoolDetail] = useState<any>(null);
   const [perfCreator, setPerfCreator] = useState<any>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [planSlots, setPlanSlots] = useState<string[]>([]);
@@ -1134,7 +1135,7 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                 ) : poolItems.length === 0 ? (
                   <p className="col-span-full text-center text-sm text-gray-400 py-8">Sin resultados.</p>
                 ) : poolItems.map((p: any) => (
-                  <div key={p.id} className="rounded-2xl border border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800 p-3 flex flex-col gap-2.5 shadow-sm hover:shadow-md hover:border-pink-200 dark:hover:border-pink-900/40 transition-all">
+                  <div key={p.id} onClick={() => setPoolDetail(p)} className="cursor-pointer rounded-2xl border border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800 p-3 flex flex-col gap-2.5 shadow-sm hover:shadow-md hover:border-pink-200 dark:hover:border-pink-900/40 transition-all">
                     <div className="flex items-center gap-3">
                       <TikTokAvatar username={p.username} name={p.name} size={46} />
                       <div className="flex-1 min-w-0">
@@ -1159,8 +1160,8 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
                     </div>
                     {p.bio && <p className="text-[11px] text-gray-500 dark:text-dark-400 line-clamp-2" title={p.bio}>{p.bio}</p>}
                     <div className="flex items-center gap-2 mt-auto">
-                      <Button size="sm" onClick={() => copyLink(p.profileUrl)} className="flex-1 border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Copy className="w-3.5 h-3.5" /> Link</Button>
-                      <ButtonPrimary size="sm" disabled={poolAssigning === p.id} onClick={() => assignPool(p)} className="flex-1">
+                      <Button size="sm" onClick={(e) => { e.stopPropagation(); copyLink(p.profileUrl); }} className="flex-1 border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300"><Copy className="w-3.5 h-3.5" /> Link</Button>
+                      <ButtonPrimary size="sm" disabled={poolAssigning === p.id} onClick={(e) => { e.stopPropagation(); assignPool(p); }} className="flex-1">
                         {poolAssigning === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Asignar
                       </ButtonPrimary>
                     </div>
@@ -1179,6 +1180,92 @@ function CampaignDetail({ data, onBack, onRefresh }: { data: any; onBack: () => 
           </div>
         </div>
       )}
+
+      {/* Modal: perfil del TikToker (desde la base) */}
+      {poolDetail && (() => {
+        const handle = handleFromUrl(poolDetail.profileUrl) || String(poolDetail.username || '').replace(/^@/, '');
+        const assigned = (creators || []).find((c: any) => handleFromUrl(c.tiktokUrl) === handle);
+        const now = Date.now();
+        const dayKeys: string[] = [];
+        for (let i = 6; i >= 0; i--) dayKeys.push(new Date(now - i * 86400000).toISOString().slice(0, 10));
+        const byDay: Record<string, { units: number; amount: number }> = {};
+        for (const k of dayKeys) byDay[k] = { units: 0, amount: 0 };
+        const recent = assigned ? (sales || []).filter((s: any) => s.creatorId === assigned.id && new Date(s.saleDate).getTime() >= now - 7 * 86400000) : [];
+        for (const s of recent) { const k = new Date(s.saleDate).toISOString().slice(0, 10); if (byDay[k]) { byDay[k].units += s.quantity; byDay[k].amount += s.unitPrice * s.quantity; } }
+        const totalUnits = recent.reduce((a: number, s: any) => a + s.quantity, 0);
+        const totalAmount = recent.reduce((a: number, s: any) => a + s.unitPrice * s.quantity, 0);
+        const maxAmount = Math.max(1, ...dayKeys.map(k => byDay[k].amount));
+        return (
+          <div className="fixed inset-0 z-[60] bg-black/80 flex items-start justify-center p-4 overflow-y-auto" onClick={() => setPoolDetail(null)}>
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-lg my-4" onClick={e => e.stopPropagation()}>
+              <div className="p-4 border-b border-gray-100 dark:border-dark-700 flex items-center gap-3">
+                <TikTokAvatar username={handle} name={poolDetail.name} size={56} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-900 dark:text-dark-100 truncate">{poolDetail.name || poolDetail.username}</p>
+                  <p className="text-xs text-gray-500 dark:text-dark-400">@{handle}</p>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    {poolDetail.hasShop && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">TikTok Shop</span>}
+                    {poolDetail.verified && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">Verificado</span>}
+                    {assigned && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400">Asignado</span>}
+                  </div>
+                </div>
+                <button onClick={() => setPoolDetail(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-2">
+                    <p className="text-[10px] text-gray-400">Seguidores</p>
+                    <p className="text-sm font-black text-gray-800 dark:text-dark-100">{Number(poolDetail.followers).toLocaleString('en-US')}</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-2">
+                    <p className="text-[10px] text-gray-400">Me gusta</p>
+                    <p className="text-sm font-black text-gray-800 dark:text-dark-100">{Number(poolDetail.likes).toLocaleString('en-US')}</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700/50 py-2">
+                    <p className="text-[10px] text-gray-400">Videos</p>
+                    <p className="text-sm font-black text-gray-800 dark:text-dark-100">{Number(poolDetail.videos).toLocaleString('en-US')}</p>
+                  </div>
+                </div>
+
+                {poolDetail.bio && <p className="text-sm text-gray-600 dark:text-dark-300 leading-relaxed">{poolDetail.bio}</p>}
+                {poolDetail.web && <p className="text-xs text-gray-500 dark:text-dark-400 truncate">Web: {poolDetail.web}</p>}
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-700 dark:text-dark-200 mb-2">Últimos 7 días</p>
+                  <div className="grid grid-cols-2 gap-2 text-center mb-2">
+                    <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 py-2">
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400">Unidades vendidas</p>
+                      <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">{totalUnits}</p>
+                    </div>
+                    <div className="rounded-xl bg-primary-50 dark:bg-primary-900/20 py-2">
+                      <p className="text-[10px] text-primary-700 dark:text-primary-400">Monto</p>
+                      <p className="text-sm font-black text-primary-700 dark:text-primary-400">{fmt(totalAmount)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-end gap-1.5 h-28">
+                    {dayKeys.map(k => {
+                      const h = Math.max(3, Math.round(byDay[k].amount / maxAmount * 96));
+                      return (
+                        <div key={k} className="flex-1 flex flex-col items-center gap-1" title={`${k}: ${byDay[k].units} u · ${fmt(byDay[k].amount)}`}>
+                          <div className="w-full rounded-t bg-gradient-to-t from-pink-600 to-rose-400" style={{ height: h }} />
+                          <span className="text-[8px] text-gray-400">{k.slice(5)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {!assigned && <p className="text-[11px] text-gray-400 mt-1">Aún no está asignado a esta campaña; al asignarlo y registrar ventas se verán aquí.</p>}
+                </div>
+              </div>
+              <div className="p-4 border-t border-gray-100 dark:border-dark-700 flex items-center gap-2">
+                <Button onClick={() => setPoolDetail(null)} className="flex-1 border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-dark-300">Volver atrás</Button>
+                <ButtonPrimary onClick={() => assignPool(poolDetail)} disabled={poolAssigning === poolDetail.id || !!assigned} className="flex-1">
+                  {poolAssigning === poolDetail.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {assigned ? 'Ya asignado' : 'Asignar'}
+                </ButtonPrimary>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal: desempeño del creador (ventas/ganancias por fecha) */}
       {perfCreator && (() => {
