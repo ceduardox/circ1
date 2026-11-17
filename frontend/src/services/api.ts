@@ -183,6 +183,7 @@ export const adminApi = {
   users: (params?: any) => api.get('/admin/users', { params }),
   createUser: (data: any) => api.post('/admin/users', data),
   updateUser: (id: string, data: any) => api.put(`/admin/users/${id}`, data),
+  impersonate: (id: string) => api.post(`/admin/impersonate/${id}`),
   getDays: () => api.get('/admin/program/days'),
   createDay: (data: any) => api.post('/admin/program/days', data),
   updateDay: (id: string, data: any) => api.put(`/admin/program/days/${id}`, data),

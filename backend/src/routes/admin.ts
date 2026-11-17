@@ -224,6 +224,20 @@ export async function adminRoutes(app: FastifyInstance) {
     return user;
   });
 
+  // Entrar como usuario (impersonar): el admin obtiene un token de ese usuario para ver su cuenta.
+  app.post('/impersonate/:id', { preHandler: [authMiddleware, adminMiddleware] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const admin = (request as any).user as { sub: string };
+    if (id === admin.sub) return reply.code(400).send({ error: 'Ya estás en tu propia cuenta' });
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, username: true, firstName: true, lastName: true, country: true, avatarUrl: true, role: true },
+    });
+    if (!target) return reply.code(404).send({ error: 'Usuario no encontrado' });
+    const accessToken = app.jwt.sign({ sub: target.id, email: target.email, role: target.role });
+    return { accessToken, user: target };
+  });
+
   app.get('/program/days', { preHandler: [authMiddleware, adminMiddleware] }, async () => {
     return prisma.programDay.findMany({ orderBy: { dayNumber: 'asc' }, include: { contents: { orderBy: { orderIndex: 'asc' } } } });
   });

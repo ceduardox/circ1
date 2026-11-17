@@ -9,6 +9,7 @@ import { MembershipGate } from '@/components/program/MembershipGate';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
 import { DesktopHeader } from '@/components/layout/DesktopHeader';
+import { ImpersonationBanner } from '@/components/layout/ImpersonationBanner';
 import { LoginPage } from '@/pages/Login';
 import { RegisterPage } from '@/pages/Register';
 import { LandingPage } from '@/pages/Landing';
@@ -89,6 +90,7 @@ function App() {
               <DesktopSidebar />
               <div className="flex flex-col flex-1 overflow-hidden md:pl-60">
                 <DesktopHeader />
+                <ImpersonationBanner />
                 <main className="flex-1 p-4 sm:p-6 lg:p-8 min-h-screen overflow-x-hidden min-w-0 max-w-7xl mx-auto w-full">
                   <ProtectedRoute>
                     <MembershipGate>

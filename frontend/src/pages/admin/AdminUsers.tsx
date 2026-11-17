@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAdminStore } from '@/store/adminStore';
 import { useAuthStore } from '@/store/authStore';
-import { adminBusinessApi } from '@/services/api';
+import { adminBusinessApi, adminApi } from '@/services/api';
 import { Card, CardContent, PageHeader } from '@/components/ui';
 import { ButtonGhost, Input, Label, ButtonPrimary } from '@/components/ui';
 import { CountrySelect } from '@/components/ui/CountrySelect';
-import { ChevronLeft, ChevronRight, Search, User, Download, Plus, ChevronDown, Mail, MapPin, Calendar, Shield, Pencil, Wallet, Loader2, Copy, Check, Link2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, User, Download, Plus, ChevronDown, Mail, MapPin, Calendar, Shield, Pencil, Wallet, Loader2, Copy, Check, Link2, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui';
 import { toast } from 'sonner';
@@ -43,6 +43,7 @@ function RefCode({ code }: { code?: string | null }) {
 export function AdminUsersPage() {
   const { users, fetchUsers, loading, createUser, updateUser } = useAdminStore();
   const { user } = useAuthStore();
+  const startImpersonation = useAuthStore(s => s.startImpersonation);
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -66,6 +67,7 @@ export function AdminUsersPage() {
   const [balanceUser, setBalanceUser] = useState<any>(null);
   const [balanceLogs, setBalanceLogs] = useState<any[]>([]);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [enteringId, setEnteringId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearchDebounced(search), 300);
@@ -149,6 +151,20 @@ export function AdminUsersPage() {
     setShowEditDialog(true);
   };
 
+  const enterAsUser = async (u: any) => {
+    setEnteringId(u.id);
+    try {
+      const { data } = await adminApi.impersonate(u.id);
+      startImpersonation(data.accessToken, data.user);
+      toast.success(`Entrando como ${u.firstName || u.username}`);
+      navigate('/dashboard');
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'No se pudo entrar como usuario');
+    } finally {
+      setEnteringId(null);
+    }
+  };
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
@@ -213,6 +229,14 @@ export function AdminUsersPage() {
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {roleBadge(u.role)}
+            <button
+              onClick={(e) => { e.stopPropagation(); enterAsUser(u); }}
+              disabled={enteringId === u.id}
+              className="p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+              title="Entrar como usuario"
+            >
+              {enteringId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+            </button>
             <button
               onClick={(e) => { e.stopPropagation(); openEditDialog(u); }}
               className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
@@ -408,6 +432,14 @@ export function AdminUsersPage() {
                       <td className="px-6 py-4 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => enterAsUser(u)}
+                            disabled={enteringId === u.id}
+                            className="p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                            title="Entrar como usuario"
+                          >
+                            {enteringId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+                          </button>
                           <button
                             onClick={() => openBalanceLog(u)}
                             className="p-2 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"

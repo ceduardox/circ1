@@ -26,6 +26,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isInitializing: boolean;
+  impersonation: { adminToken: string; adminUser: User | null } | null;
   login: (emailOrUsername: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -34,6 +35,8 @@ interface AuthState {
   updateAvatar: (file: File) => Promise<void>;
   updatePushPreferences: (data: Partial<Pick<User, 'pushEnabled' | 'pushChat' | 'pushChatAll' | 'pushCommissions' | 'pushPayments'>>) => Promise<void>;
   setAccessToken: (token: string) => void;
+  startImpersonation: (accessToken: string, user: User) => void;
+  stopImpersonation: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -44,9 +47,22 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       isInitializing: true,
+      impersonation: null,
 
       setAccessToken: (token) => {
         set({ accessToken: token });
+      },
+
+      startImpersonation: (accessToken, user) => {
+        const { accessToken: adminToken, user: adminUser } = get();
+        if (!adminToken || !adminUser) return;
+        set({ impersonation: { adminToken, adminUser }, accessToken, user, isAuthenticated: true });
+      },
+
+      stopImpersonation: () => {
+        const imp = get().impersonation;
+        if (!imp) return;
+        set({ accessToken: imp.adminToken, user: imp.adminUser, isAuthenticated: !!imp.adminToken, impersonation: null });
       },
 
       login: async (identifier, password) => {
@@ -109,7 +125,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user: { ...get().user, ...data } as any });
       },
     }),
-    { name: 'auth-storage', partialize: (s) => ({ user: s.user, accessToken: s.accessToken, isAuthenticated: s.isAuthenticated }) }
+    { name: 'auth-storage', partialize: (s) => ({ user: s.user, accessToken: s.accessToken, isAuthenticated: s.isAuthenticated, impersonation: s.impersonation }) }
   )
 );
 
