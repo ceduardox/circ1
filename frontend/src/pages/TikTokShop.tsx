@@ -1541,6 +1541,12 @@ export function TikTokShopPage() {
               <div className="p-4 space-y-4">
                 {p ? (
                   <>
+                    <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-2.5">
+                      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                        <b>Datos históricos del creador en TikTok</b> (referencia). <b>No son tus ventas ni ganancias</b>; tus resultados reales aparecen en <b>Ganancias</b>.
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-3">
                         <p className="text-[10px] uppercase tracking-wider opacity-80">GMV 7 días</p>
